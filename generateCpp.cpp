@@ -691,7 +691,9 @@ status_t AST::generatePassthroughMethod(Formatter &out,
     out << "auto _hidl_return = ";
 
     if (method->isOneway()) {
-        out << "addOnewayTask([this, &_hidl_error";
+        out << "addOnewayTask([mImpl = this->mImpl, "
+               "mEnableInstrumentation = this->mEnableInstrumentation, "
+               "mInstrumentationCallbacks = this->mInstrumentationCallbacks";
         for (const auto &arg : method->args()) {
             out << ", "
                 << (arg->type().isInterface() ? "_hidl_wrapped_" : "")
@@ -699,7 +701,6 @@ status_t AST::generatePassthroughMethod(Formatter &out,
         }
         out << "] {\n";
         out.indent();
-        out << "this->";
     }
 
     out << "mImpl->"
@@ -710,6 +711,8 @@ status_t AST::generatePassthroughMethod(Formatter &out,
         out << (arg->type().isInterface() ? "_hidl_wrapped_" : "") << arg->name();
     });
     if (returnsValue && elidedReturn == nullptr) {
+        // never true if oneway since oneway methods don't return values
+
         if (!method->args().empty()) {
             out << ", ";
         }
@@ -1836,6 +1839,7 @@ status_t AST::generatePassthroughHeader(const std::string &outputPath) const {
     getPackageAndVersionComponents(
             &packageComponents, false /* cpp_compatible */);
 
+    out << "#include <android-base/macros.h>\n";
     out << "#include <cutils/trace.h>\n";
     out << "#include <future>\n";
 
