@@ -49,7 +49,6 @@ namespace android {
  * work.
  */
 enum {
-    // These values are defined in hardware::IBinder.
     /////////////////// User defined transactions
     FIRST_CALL_TRANSACTION  = 0x00000001,
     LAST_CALL_TRANSACTION   = 0x0effffff,
@@ -750,18 +749,10 @@ status_t Interface::emitTypeDefinitions(
         << " o) ";
 
     out.block([&] {
-        out << "std::string os;\n";
-        out << "auto ret = o->interfaceDescriptor([&os] (const auto &name) ";
-        out.block([&] {
-            out << "os += name.c_str();\n";
-        });
-        out << ");\n";
-        out.sIf("!ret.isOk()", [&] {
-            out << "os += \"[class or subclass of \";\n"
-                << "os += " << fullName() << "::descriptor;\n"
-                << "os += \"]\";\n";
-        }).endl();
-        out << "os += o->isRemote() ? \"@remote\" : \"@local\";\n"
+        out << "std::string os = \"[class or subclass of \";\n"
+            << "os += " << fullName() << "::descriptor;\n"
+            << "os += \"]\";\n"
+            << "os += o->isRemote() ? \"@remote\" : \"@local\";\n"
             << "return os;\n";
     }).endl().endl();
 
