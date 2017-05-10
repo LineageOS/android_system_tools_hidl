@@ -45,11 +45,15 @@ struct OutputHandler {
         PASS_FULL
     };
     const std::string& name() { return mKey; }
-    ValRes (*validate)(const FQName &, const std::string &language);
-    status_t (*generate)(const FQName &fqName,
-                         const char *hidl_gen,
-                         Coordinator *coordinator,
-                         const std::string &outputDir);
+
+    using ValidationFunction = std::function<ValRes(const FQName &, const std::string &language)>;
+    using GenerationFunction = std::function<status_t(const FQName &fqName,
+                                                      const char *hidl_gen,
+                                                      Coordinator *coordinator,
+                                                      const std::string &outputDir)>;
+
+    ValidationFunction validate;
+    GenerationFunction generate;
 };
 
 static status_t generateSourcesForFile(
@@ -87,6 +91,12 @@ static status_t generateSourcesForFile(
     }
     if (lang == "c++") {
         return ast->generateCpp(outputDir);
+    }
+    if (lang == "c++-headers") {
+        return ast->generateCppHeaders(outputDir);
+    }
+    if (lang == "c++-sources") {
+        return ast->generateCppSources(outputDir);
     }
     if (lang == "c++-impl") {
         return ast->generateCppImpl(outputDir);
@@ -130,6 +140,26 @@ static status_t generateSourcesForPackage(
     }
 
     return OK;
+}
+
+OutputHandler::GenerationFunction generationFunctionForFileOrPackage(const std::string &language) {
+    return [language](const FQName &fqName,
+              const char *hidl_gen, Coordinator *coordinator,
+              const std::string &outputDir) -> status_t {
+        if (fqName.isFullyQualified()) {
+                    return generateSourcesForFile(fqName,
+                                                  hidl_gen,
+                                                  coordinator,
+                                                  outputDir,
+                                                  language);
+        } else {
+                    return generateSourcesForPackage(fqName,
+                                                     hidl_gen,
+                                                     coordinator,
+                                                     outputDir,
+                                                     language);
+        }
+    };
 }
 
 static std::string makeLibraryName(const FQName &packageFQName) {
@@ -750,7 +780,7 @@ static status_t generateAndroidBpForPackage(
             coordinator,
             halFilegroupName,
             genSourceName,
-            "c++",
+            "c++-sources",
             packageInterfaces,
             importedPackagesHierarchy,
             [&pathPrefix](Formatter &out, const FQName &fqName) {
@@ -769,7 +799,7 @@ static status_t generateAndroidBpForPackage(
             coordinator,
             halFilegroupName,
             genHeaderName,
-            "c++",
+            "c++-headers",
             packageInterfaces,
             importedPackagesHierarchy,
             [&pathPrefix](Formatter &out, const FQName &fqName) {
@@ -917,6 +947,10 @@ static status_t generateAndroidBpImplForPackage(
                 << "\"" << makeLibraryName(packageFQName) << "\",\n";
 
             for (const auto &importedPackage : importedPackages) {
+                if (isHidlTransportPackage(importedPackage)) {
+                    continue;
+                }
+
                 out << "\"" << makeLibraryName(importedPackage) << "\",\n";
             }
         });
@@ -1122,45 +1156,25 @@ static std::vector<OutputHandler> formats = {
     {"check",
      OutputHandler::NOT_NEEDED /* mOutputMode */,
      validateForSource,
-     [](const FQName &fqName,
-        const char *hidl_gen, Coordinator *coordinator,
-        const std::string &outputDir) -> status_t {
-            if (fqName.isFullyQualified()) {
-                        return generateSourcesForFile(fqName,
-                                                      hidl_gen,
-                                                      coordinator,
-                                                      outputDir,
-                                                      "check");
-            } else {
-                        return generateSourcesForPackage(fqName,
-                                                         hidl_gen,
-                                                         coordinator,
-                                                         outputDir,
-                                                         "check");
-            }
-        }
+     generationFunctionForFileOrPackage("check")
     },
 
     {"c++",
      OutputHandler::NEEDS_DIR /* mOutputMode */,
      validateForSource,
-     [](const FQName &fqName,
-        const char *hidl_gen, Coordinator *coordinator,
-        const std::string &outputDir) -> status_t {
-            if (fqName.isFullyQualified()) {
-                        return generateSourcesForFile(fqName,
-                                                      hidl_gen,
-                                                      coordinator,
-                                                      outputDir,
-                                                      "c++");
-            } else {
-                        return generateSourcesForPackage(fqName,
-                                                         hidl_gen,
-                                                         coordinator,
-                                                         outputDir,
-                                                         "c++");
-            }
-        }
+     generationFunctionForFileOrPackage("c++")
+    },
+
+    {"c++-headers",
+     OutputHandler::NEEDS_DIR /* mOutputMode */,
+     validateForSource,
+     generationFunctionForFileOrPackage("c++-headers")
+    },
+
+    {"c++-sources",
+     OutputHandler::NEEDS_DIR /* mOutputMode */,
+     validateForSource,
+     generationFunctionForFileOrPackage("c++-sources")
     },
 
     {"export-header",
@@ -1184,45 +1198,14 @@ static std::vector<OutputHandler> formats = {
     {"c++-impl",
      OutputHandler::NEEDS_DIR /* mOutputMode */,
      validateForSource,
-     [](const FQName &fqName,
-        const char *hidl_gen, Coordinator *coordinator,
-        const std::string &outputDir) -> status_t {
-            if (fqName.isFullyQualified()) {
-                        return generateSourcesForFile(fqName,
-                                                      hidl_gen,
-                                                      coordinator,
-                                                      outputDir, "c++-impl");
-            } else {
-                        return generateSourcesForPackage(fqName,
-                                                         hidl_gen,
-                                                         coordinator,
-                                                         outputDir, "c++-impl");
-            }
-        }
+     generationFunctionForFileOrPackage("c++-impl")
     },
 
 
     {"java",
      OutputHandler::NEEDS_DIR /* mOutputMode */,
      validateForSource,
-     [](const FQName &fqName,
-        const char *hidl_gen, Coordinator *coordinator,
-        const std::string &outputDir) -> status_t {
-            if (fqName.isFullyQualified()) {
-                return generateSourcesForFile(fqName,
-                                              hidl_gen,
-                                              coordinator,
-                                              outputDir,
-                                              "java");
-            }
-            else {
-                return generateSourcesForPackage(fqName,
-                                                 hidl_gen,
-                                                 coordinator,
-                                                 outputDir,
-                                                 "java");
-            }
-        }
+     generationFunctionForFileOrPackage("java")
     },
 
     {"java-constants",
@@ -1244,22 +1227,7 @@ static std::vector<OutputHandler> formats = {
     {"vts",
      OutputHandler::NEEDS_DIR /* mOutputMode */,
      validateForSource,
-     [](const FQName &fqName,
-        const char * hidl_gen,
-        Coordinator *coordinator,
-        const std::string &outputDir) -> status_t {
-            if (fqName.isFullyQualified()) {
-                return generateSourcesForFile(fqName,
-                                              hidl_gen,
-                                              coordinator,
-                                              outputDir, "vts");
-            } else {
-                return generateSourcesForPackage(fqName,
-                                                 hidl_gen,
-                                                 coordinator,
-                                                 outputDir, "vts");
-            }
-       }
+     generationFunctionForFileOrPackage("vts")
     },
 
     {"makefile",
