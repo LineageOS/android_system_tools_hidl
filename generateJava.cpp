@@ -67,7 +67,7 @@ status_t AST::generateJavaTypes(
         path.append(typeName);
         path.append(".java");
 
-        CHECK(Coordinator::MakeParentHierarchy(path));
+        CHECK(Coordinator::MakeParentHierarchy(path)) << path;
         FILE *file = fopen(path.c_str(), "w");
 
         if (file == NULL) {
@@ -108,12 +108,12 @@ status_t AST::generateJava(
         return UNKNOWN_ERROR;
     }
 
-    std::string ifaceName;
-    if (!AST::isInterface(&ifaceName)) {
+    if (!AST::isInterface()) {
         return generateJavaTypes(outputPath, limitToType);
     }
 
     const Interface *iface = mRootScope->getInterface();
+    std::string ifaceName = iface->localName();
 
     const std::string baseName = iface->getBaseName();
 

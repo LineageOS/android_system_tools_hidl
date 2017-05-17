@@ -80,14 +80,12 @@ status_t AST::generateStubImplMethod(Formatter &out,
 }
 
 status_t AST::generateStubImplHeader(const std::string &outputPath) const {
-    std::string ifaceName;
-    if (!AST::isInterface(&ifaceName)) {
+    if (!AST::isInterface()) {
         // types.hal does not get a stub header.
         return OK;
     }
 
     const Interface *iface = mRootScope->getInterface();
-
     const std::string baseName = iface->getBaseName();
 
     std::string path = outputPath;
@@ -116,38 +114,6 @@ status_t AST::generateStubImplHeader(const std::string &outputPath) const {
     enterLeaveNamespace(out, true /* enter */);
     out << "namespace implementation {\n\n";
 
-    // this is namespace aware code and doesn't require post-processing
-    out.setNamespace("");
-
-    std::vector<const Interface *> chain = iface->typeChain();
-
-    std::set<const FQName> usedTypes{};
-
-    for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
-        const Interface *superInterface = *it;
-        superInterface->addNamedTypesToSet(usedTypes);
-    }
-
-    for (const auto &tuple : iface->allMethodsFromRoot()) {
-        const Method *method = tuple.method();
-        for(const auto & arg : method->args()) {
-            arg->type().addNamedTypesToSet(usedTypes);
-        }
-        for(const auto & results : method->results()) {
-            results->type().addNamedTypesToSet(usedTypes);
-        }
-    }
-
-    std::set<const FQName> topLevelTypes{};
-
-    for (const auto &name : usedTypes) {
-        topLevelTypes.insert(name.getTopLevelType());
-    }
-
-    for (const FQName &name : topLevelTypes) {
-        out << "using " << name.cppName() << ";\n";
-    }
-
     out << "using ::android::hardware::hidl_array;\n";
     out << "using ::android::hardware::hidl_memory;\n";
     out << "using ::android::hardware::hidl_string;\n";
@@ -161,7 +127,7 @@ status_t AST::generateStubImplHeader(const std::string &outputPath) const {
     out << "struct "
         << baseName
         << " : public "
-        << ifaceName
+        << iface->localName()
         << " {\n";
 
     out.indent();
@@ -187,9 +153,9 @@ status_t AST::generateStubImplHeader(const std::string &outputPath) const {
 
     out << "// FIXME: most likely delete, this is only for passthrough implementations\n"
         << "// extern \"C\" "
-        << ifaceName
+        << iface->localName()
         << "* ";
-    generateFetchSymbol(out, ifaceName);
+    generateFetchSymbol(out, iface->localName());
     out << "(const char* name);\n\n";
 
     out << "}  // namespace implementation\n";
@@ -201,8 +167,7 @@ status_t AST::generateStubImplHeader(const std::string &outputPath) const {
 }
 
 status_t AST::generateStubImplSource(const std::string &outputPath) const {
-    std::string ifaceName;
-    if (!AST::isInterface(&ifaceName)) {
+    if (!AST::isInterface()) {
         // types.hal does not get a stub header.
         return OK;
     }
@@ -228,9 +193,6 @@ status_t AST::generateStubImplSource(const std::string &outputPath) const {
     enterLeaveNamespace(out, true /* enter */);
     out << "namespace implementation {\n\n";
 
-    // this is namespace aware code and doesn't require post-processing
-    out.setNamespace("");
-
     status_t err = generateMethods(out, [&](const Method *method, const Interface *) {
         return generateStubImplMethod(out, baseName, method);
     });
@@ -240,9 +202,9 @@ status_t AST::generateStubImplSource(const std::string &outputPath) const {
     }
 
     out.setLinePrefix("//");
-    out << ifaceName
+    out << iface->localName()
         << "* ";
-    generateFetchSymbol(out, ifaceName);
+    generateFetchSymbol(out, iface->localName());
     out << "(const char* /* name */) {\n";
     out.indent();
     out << "return new " << baseName << "();\n";

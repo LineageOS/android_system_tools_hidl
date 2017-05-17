@@ -33,7 +33,7 @@
 
 namespace android {
 
-AST::AST(Coordinator *coordinator, const std::string &path)
+AST::AST(const Coordinator *coordinator, const std::string &path)
     : mCoordinator(coordinator),
       mPath(path),
       mScanner(NULL),
@@ -46,8 +46,6 @@ AST::~AST() {
     mRootScope = nullptr;
 
     CHECK(mScanner == NULL);
-
-    // Ownership of "coordinator" was NOT transferred.
 }
 
 // used by the parser.
@@ -88,8 +86,8 @@ FQName AST::package() const {
     return mPackage;
 }
 
-bool AST::isInterface(std::string *ifaceName) const {
-    return mRootScope->containsSingleInterface(ifaceName);
+bool AST::isInterface() const {
+    return mRootScope->getInterface() != nullptr;
 }
 
 bool AST::containsInterfaces() const {
@@ -532,8 +530,7 @@ void AST::getAllImportedNames(std::set<FQName> *allImportNames) const {
 }
 
 bool AST::isJavaCompatible() const {
-    std::string ifaceName;
-    if (!AST::isInterface(&ifaceName)) {
+    if (!AST::isInterface()) {
         for (const auto *type : mRootScope->getSubTypes()) {
             if (!type->isJavaCompatible()) {
                 return false;
@@ -559,6 +556,12 @@ bool AST::isIBase() const {
 
 const Interface *AST::getInterface() const {
     return mRootScope->getInterface();
+}
+
+std::string AST::getBaseName() const {
+    const Interface *iface = mRootScope->getInterface();
+
+    return iface ? iface->getBaseName() : "types";
 }
 
 }  // namespace android;
