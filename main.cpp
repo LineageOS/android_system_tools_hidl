@@ -189,7 +189,7 @@ static void generatePackagePathsSection(
         options.insert(coordinator->getPackageRootOption(interface));
     }
     options.insert(coordinator->getPackageRootOption(packageFQName));
-    options.insert(coordinator->getPackageRootOption(gIBasePackageFqName));
+    options.insert(coordinator->getPackageRootOption(gIBaseFqName));
     for (const auto &option : options) {
         out << "-r"
             << option
@@ -293,7 +293,7 @@ static void generateMakefileSection(
         if (fqName.name() == "types") {
             CHECK(typesAST != nullptr);
 
-            Scope *rootScope = typesAST->scope();
+            Scope* rootScope = typesAST->getRootScope();
 
             std::vector<NamedType *> subTypes = rootScope->getSubTypes();
             std::sort(
@@ -405,7 +405,7 @@ static bool packageNeedsJavaCode(
     // We'll have to generate Java code if types.hal contains any non-typedef
     // type declarations.
 
-    Scope *rootScope = typesAST->scope();
+    Scope* rootScope = typesAST->getRootScope();
     std::vector<NamedType *> subTypes = rootScope->getSubTypes();
 
     for (const auto &subType : subTypes) {
@@ -649,9 +649,16 @@ bool validateIsPackage(
     return true;
 }
 
-bool isHidlTransportPackage(const FQName &package) {
-    return package == gIBasePackageFqName ||
-           package == gIManagerPackageFqName;
+bool isHidlTransportPackage(const FQName& fqName) {
+    return fqName.package() == gIBasePackageFqName.string() ||
+           fqName.package() == gIManagerPackageFqName.string();
+}
+
+bool isSystemPackage(const FQName &package) {
+    return package.inPackage("android.hidl") ||
+           package.inPackage("android.system") ||
+           package.inPackage("android.frameworks") ||
+           package.inPackage("android.hardware");
 }
 
 static void generateAndroidBpGenSection(
@@ -696,6 +703,23 @@ static void generateAndroidBpGenSection(
     out << "}\n\n";
 }
 
+static void generateAndroidBpDependencyList(
+        Formatter &out,
+        const std::set<FQName> &importedPackagesHierarchy,
+        bool generateVendor) {
+    for (const auto &importedPackage : importedPackagesHierarchy) {
+        if (isHidlTransportPackage(importedPackage)) {
+            continue;
+        }
+
+        out << "\"" << makeLibraryName(importedPackage);
+        if (generateVendor && !isSystemPackage(importedPackage)) {
+            out << "_vendor";
+        }
+        out << "\",\n";
+    }
+}
+
 static void generateAndroidBpLibSection(
         Formatter &out,
         bool generateVendor,
@@ -727,13 +751,7 @@ static void generateAndroidBpLibSection(
         << "\"liblog\",\n"
         << "\"libutils\",\n"
         << "\"libcutils\",\n";
-    for (const auto &importedPackage : importedPackagesHierarchy) {
-        if (isHidlTransportPackage(importedPackage)) {
-            continue;
-        }
-
-        out << "\"" << makeLibraryName(importedPackage) << "\",\n";
-    }
+    generateAndroidBpDependencyList(out, importedPackagesHierarchy, generateVendor);
     out.unindent();
 
     out << "],\n";
@@ -744,13 +762,7 @@ static void generateAndroidBpLibSection(
         << "\"libhidltransport\",\n"
         << "\"libhwbinder\",\n"
         << "\"libutils\",\n";
-    for (const auto &importedPackage : importedPackagesHierarchy) {
-        if (isHidlTransportPackage(importedPackage)) {
-            continue;
-        }
-
-        out << "\"" << makeLibraryName(importedPackage) << "\",\n";
-    }
+    generateAndroidBpDependencyList(out, importedPackagesHierarchy, generateVendor);
     out.unindent();
     out << "],\n";
     out.unindent();
@@ -898,10 +910,7 @@ static status_t generateAndroidBpForPackage(
         // they will be available even on the generic system image.
         // Because of this, they should always be referenced without the
         // '_vendor' name suffix.
-        if (!(packageFQName.inPackage("android.hidl") ||
-                packageFQName.inPackage("android.system") ||
-                packageFQName.inPackage("android.frameworks") ||
-                packageFQName.inPackage("android.hardware"))) {
+        if (!isSystemPackage(packageFQName)) {
 
             // Note, not using cc_defaults here since it's already not used and
             // because generating this libraries will be removed when the VNDK
