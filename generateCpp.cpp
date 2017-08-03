@@ -467,6 +467,7 @@ status_t AST::generateInterfaceHeader(const std::string &outputPath) const {
 
         out.indent();
 
+        generateCppTag(out, "android::hardware::details::i_tag");
     }
 
     status_t err = emitTypeDeclarations(out);
@@ -510,15 +511,6 @@ status_t AST::generateInterfaceHeader(const std::string &outputPath) const {
             out << method->name()
                 << "(";
             method->emitCppArgSignature(out, true /* specify namespaces */);
-
-            if (returnsValue && elidedReturn == nullptr) {
-                if (!method->args().empty()) {
-                    out << ", ";
-                }
-
-                out << method->name() << "_cb _hidl_cb";
-            }
-
             out << ")";
             if (method->isHidlReserved()) {
                 if (!isIBase()) {
@@ -739,13 +731,10 @@ status_t AST::generatePassthroughMethod(Formatter &out,
 
         out << ") {\n";
         out.indent();
-        status_t status = generateCppInstrumentationCall(
+        generateCppInstrumentationCall(
                 out,
                 InstrumentationEvent::PASSTHROUGH_EXIT,
                 method);
-        if (status != OK) {
-            return status;
-        }
 
         for (const auto &arg : method->results()) {
             wrapPassthroughArg(out, arg, true /* addPrefixToName */, [&] {
@@ -776,13 +765,10 @@ status_t AST::generatePassthroughMethod(Formatter &out,
                 << " = _hidl_return;\n"
                 << "#endif // __ANDROID_DEBUGGABLE__\n";
         }
-        status_t status = generateCppInstrumentationCall(
+        generateCppInstrumentationCall(
                 out,
                 InstrumentationEvent::PASSTHROUGH_EXIT,
                 method);
-        if (status != OK) {
-            return status;
-        }
     }
 
     if (method->isOneway()) {
@@ -831,6 +817,10 @@ void AST::generateTemplatizationLink(Formatter& out) const {
     out << "typedef " << mRootScope.getInterface()->localName() << " Pure;\n\n";
 }
 
+void AST::generateCppTag(Formatter& out, const std::string& tag) const {
+    out << "typedef " << tag << " _hidl_tag;\n\n";
+}
+
 status_t AST::generateStubHeader(const std::string &outputPath) const {
     if (!AST::isInterface()) {
         // types.hal does not get a stub header.
@@ -861,6 +851,7 @@ status_t AST::generateStubHeader(const std::string &outputPath) const {
     out << "#define " << guard << "\n\n";
 
     generateCppPackageInclude(out, mPackage, iface->getHwName());
+
     out << "\n";
 
     enterLeaveNamespace(out, true /* enter */);
@@ -902,6 +893,7 @@ status_t AST::generateStubHeader(const std::string &outputPath) const {
 
     out.endl();
     generateTemplatizationLink(out);
+    generateCppTag(out, "android::hardware::details::bnhw_tag");
 
     out << "::android::sp<" << iface->localName() << "> getImpl() { return _hidl_mImpl; };\n";
     out.unindent();
@@ -994,6 +986,7 @@ status_t AST::generateProxyHeader(const std::string &outputPath) const {
         << "\n\n";
 
     generateTemplatizationLink(out);
+    generateCppTag(out, "android::hardware::details::bphw_tag");
 
     out << "virtual bool isRemote() const override { return true; }\n\n";
 
@@ -1275,13 +1268,10 @@ status_t AST::generateProxyMethodSource(Formatter &out,
         generateCheckNonNull(out, "_hidl_cb");
     }
 
-    status_t status = generateCppInstrumentationCall(
+    generateCppInstrumentationCall(
             out,
             InstrumentationEvent::CLIENT_API_ENTRY,
             method);
-    if (status != OK) {
-        return status;
-    }
 
     out << "::android::hardware::Parcel _hidl_data;\n";
     out << "::android::hardware::Parcel _hidl_reply;\n";
@@ -1384,13 +1374,10 @@ status_t AST::generateProxyMethodSource(Formatter &out,
             out << ");\n\n";
         }
     }
-    status = generateCppInstrumentationCall(
+    generateCppInstrumentationCall(
             out,
             InstrumentationEvent::CLIENT_API_EXIT,
             method);
-    if (status != OK) {
-        return status;
-    }
 
     if (elidedReturn != nullptr) {
         out << "_hidl_status.setFromStatusT(_hidl_err);\n";
@@ -1660,13 +1647,10 @@ status_t AST::generateStubSourceForMethod(
                 false /* addPrefixToName */);
     }
 
-    status_t status = generateCppInstrumentationCall(
+    generateCppInstrumentationCall(
             out,
             InstrumentationEvent::SERVER_API_ENTRY,
             method);
-    if (status != OK) {
-        return status;
-    }
 
     const bool returnsValue = !method->results().empty();
     const TypedVar *elidedReturn = method->canElideCallback();
@@ -1710,13 +1694,10 @@ status_t AST::generateStubSourceForMethod(
                 Type::ErrorMode_Ignore,
                 true /* addPrefixToName */);
 
-        status_t status = generateCppInstrumentationCall(
+        generateCppInstrumentationCall(
                 out,
                 InstrumentationEvent::SERVER_API_EXIT,
                 method);
-        if (status != OK) {
-            return status;
-        }
 
         out << "_hidl_cb(*_hidl_reply);\n";
     } else {
@@ -1783,13 +1764,10 @@ status_t AST::generateStubSourceForMethod(
                         true /* addPrefixToName */);
             }
 
-            status_t status = generateCppInstrumentationCall(
+            generateCppInstrumentationCall(
                     out,
                     InstrumentationEvent::SERVER_API_EXIT,
                     method);
-            if (status != OK) {
-                return status;
-            }
 
             out << "_hidl_cb(*_hidl_reply);\n";
 
@@ -1797,13 +1775,10 @@ status_t AST::generateStubSourceForMethod(
             out << "});\n\n";
         } else {
             out << ");\n\n";
-            status_t status = generateCppInstrumentationCall(
+            generateCppInstrumentationCall(
                     out,
                     InstrumentationEvent::SERVER_API_EXIT,
                     method);
-            if (status != OK) {
-                return status;
-            }
         }
 
         if (returnsValue) {
@@ -1892,6 +1867,7 @@ status_t AST::generatePassthroughHeader(const std::string &outputPath) const {
 
     out.endl();
     generateTemplatizationLink(out);
+    generateCppTag(out, "android::hardware::details::bs_tag");
 
     status_t err = generateMethods(out, [&](const Method *method, const Interface *) {
         return generatePassthroughMethod(out, method);
@@ -2038,7 +2014,7 @@ status_t AST::generatePassthroughSource(Formatter &out) const {
     return OK;
 }
 
-status_t AST::generateCppAtraceCall(Formatter &out,
+void AST::generateCppAtraceCall(Formatter &out,
                                     InstrumentationEvent event,
                                     const Method *method) const {
     const Interface* iface = mRootScope.getInterface();
@@ -2071,22 +2047,16 @@ status_t AST::generateCppAtraceCall(Formatter &out,
         }
         default:
         {
-            LOG(ERROR) << "Unsupported instrumentation event: " << event;
-            return UNKNOWN_ERROR;
+            LOG(FATAL) << "Unsupported instrumentation event: " << event;
         }
     }
-
-    return OK;
 }
 
-status_t AST::generateCppInstrumentationCall(
+void AST::generateCppInstrumentationCall(
         Formatter &out,
         InstrumentationEvent event,
         const Method *method) const {
-    status_t err = generateCppAtraceCall(out, event, method);
-    if (err != OK) {
-        return err;
-    }
+    generateCppAtraceCall(out, event, method);
 
     out << "#ifdef __ANDROID_DEBUGGABLE__\n";
     out << "if (UNLIKELY(mEnableInstrumentation)) {\n";
@@ -2159,8 +2129,7 @@ status_t AST::generateCppInstrumentationCall(
         }
         default:
         {
-            LOG(ERROR) << "Unsupported instrumentation event: " << event;
-            return UNKNOWN_ERROR;
+            LOG(FATAL) << "Unsupported instrumentation event: " << event;
         }
     }
 
@@ -2184,8 +2153,6 @@ status_t AST::generateCppInstrumentationCall(
     out.unindent();
     out << "}\n";
     out << "#endif // __ANDROID_DEBUGGABLE__\n\n";
-
-    return OK;
 }
 
 }  // namespace android
