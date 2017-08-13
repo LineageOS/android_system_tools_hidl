@@ -296,12 +296,12 @@ bool isValidTypeName(const std::string& identifier, std::string *errorMsg) {
     android::TemplatedType *templatedType;
     android::FQName *fqName;
     android::CompoundType *compoundType;
-    android::CompoundField *field;
-    std::vector<android::CompoundField *> *fields;
+    android::NamedReference<android::Type>* field;
+    std::vector<android::NamedReference<android::Type>*>* fields;
     android::EnumValue *enumValue;
     android::ConstantExpression *constantExpression;
     std::vector<android::EnumValue *> *enumValues;
-    android::TypedVar *typedVar;
+    android::NamedReference<android::Type>* typedVar;
     android::TypedVarVector *typedVars;
     android::Method *method;
     android::CompoundType::Style compoundStyle;
@@ -391,11 +391,11 @@ annotation_params
 annotation_param
     : IDENTIFIER '=' annotation_string_value
       {
-          $$ = new AnnotationParam($1, $3);
+          $$ = new StringAnnotationParam($1, $3);
       }
     | IDENTIFIER '=' annotation_const_expr_value
       {
-          $$ = new AnnotationParam($1, $3);
+          $$ = new ConstantExpressionAnnotationParam($1, $3);
       }
     ;
 
@@ -425,6 +425,7 @@ annotation_const_expr_value
     : const_expr
       {
           $$ = new std::vector<ConstantExpression *>;
+          $1->evaluate();
           $$->push_back($1);
       }
     | '{' annotation_const_expr_values '}' { $$ = $2; }
@@ -434,11 +435,13 @@ annotation_const_expr_values
     : const_expr
       {
           $$ = new std::vector<ConstantExpression *>;
+          $1->evaluate();
           $$->push_back($1);
       }
     | annotation_const_expr_values ',' const_expr
       {
           $$ = $1;
+          $3->evaluate();
           $$->push_back($3);
       }
     ;
@@ -590,6 +593,8 @@ interface_declarations
     : /* empty */
     | interface_declarations type_declaration
       {
+          CHECK((*scope)->isInterface());
+
           std::string errorMsg;
           if ($2 != nullptr && $2->isNamedType() &&
               !isValidInterfaceField(static_cast<NamedType*>($2)->localName().c_str(),
@@ -601,6 +606,8 @@ interface_declarations
       }
     | interface_declarations method_declaration
       {
+          CHECK((*scope)->isInterface());
+
           std::string errorMsg;
           if ($2 != nullptr &&
               !isValidInterfaceField($2->name().c_str(), &errorMsg)) {
@@ -610,12 +617,6 @@ interface_declarations
           }
 
           if ($2 != nullptr) {
-            if (!(*scope)->isInterface()) {
-                std::cerr << "ERROR: unknown error in interface declaration at "
-                    << @2 << "\n";
-                YYERROR;
-            }
-
             Interface *iface = static_cast<Interface*>(*scope);
             if (!iface->addMethod($2)) {
                 std::cerr << "ERROR: Unable to add method '" << $2->name()
@@ -719,18 +720,10 @@ interface_declaration
       }
       '{' interface_declarations '}'
       {
-          if (!(*scope)->isInterface()) {
-              std::cerr << "ERROR: unknown error in interface declaration at "
-                  << @5 << "\n";
-              YYERROR;
-          }
+          CHECK((*scope)->isInterface());
 
           Interface *iface = static_cast<Interface *>(*scope);
-          if (!iface->addAllReservedMethods()) {
-              std::cerr << "ERROR: unknown error in adding reserved methods at "
-                  << @5 << "\n";
-              YYERROR;
-          }
+          CHECK(iface->addAllReservedMethods());
 
           leaveScope(ast, scope);
 
@@ -757,7 +750,7 @@ typedef_declaration
     ;
 
 const_expr
-    : INTEGER                   { $$ = new ConstantExpression($1); }
+    : INTEGER                   { $$ = new LiteralConstantExpression($1); }
     | fqname
       {
           if(!$1->isValidValueName()) {
@@ -766,6 +759,7 @@ const_expr
                         << @1 << ".\n";
               YYERROR;
           }
+
           if($1->isIdentifier()) {
               std::string identifier = $1->name();
               LocalIdentifier *iden = (*scope)->lookupIdentifier(identifier);
@@ -779,8 +773,8 @@ const_expr
                             << " is not an enum value at " << @1 << ".\n";
                   YYERROR;
               }
-              $$ = new ConstantExpression(
-                      *(static_cast<EnumValue *>(iden)->constExpr()), $1->string());
+              $$ = new ReferenceConstantExpression(
+                  Reference<LocalIdentifier>(iden, convertYYLoc(@1)), $1->string());
           } else {
               std::string errorMsg;
               EnumValue* v = ast->lookupEnumValue(*$1, &errorMsg, *scope);
@@ -789,42 +783,42 @@ const_expr
                   YYERROR;
               }
 
-              // TODO: Support Reference
-              $$ = new ConstantExpression(*(v->constExpr()), $1->string());
+              $$ = new ReferenceConstantExpression(
+                  Reference<LocalIdentifier>(v, convertYYLoc(@1)), $1->string());
           }
       }
     | const_expr '?' const_expr ':' const_expr
       {
-          $$ = new ConstantExpression($1, $3, $5);
+          $$ = new TernaryConstantExpression($1, $3, $5);
       }
-    | const_expr LOGICAL_OR const_expr  { $$ = new ConstantExpression($1, "||", $3); }
-    | const_expr LOGICAL_AND const_expr { $$ = new ConstantExpression($1, "&&", $3); }
-    | const_expr '|' const_expr { $$ = new ConstantExpression($1, "|" , $3); }
-    | const_expr '^' const_expr { $$ = new ConstantExpression($1, "^" , $3); }
-    | const_expr '&' const_expr { $$ = new ConstantExpression($1, "&" , $3); }
-    | const_expr EQUALITY const_expr { $$ = new ConstantExpression($1, "==", $3); }
-    | const_expr NEQ const_expr { $$ = new ConstantExpression($1, "!=", $3); }
-    | const_expr '<' const_expr { $$ = new ConstantExpression($1, "<" , $3); }
-    | const_expr '>' const_expr { $$ = new ConstantExpression($1, ">" , $3); }
-    | const_expr LEQ const_expr { $$ = new ConstantExpression($1, "<=", $3); }
-    | const_expr GEQ const_expr { $$ = new ConstantExpression($1, ">=", $3); }
-    | const_expr LSHIFT const_expr { $$ = new ConstantExpression($1, "<<", $3); }
-    | const_expr RSHIFT const_expr { $$ = new ConstantExpression($1, ">>", $3); }
-    | const_expr '+' const_expr { $$ = new ConstantExpression($1, "+" , $3); }
-    | const_expr '-' const_expr { $$ = new ConstantExpression($1, "-" , $3); }
-    | const_expr '*' const_expr { $$ = new ConstantExpression($1, "*" , $3); }
-    | const_expr '/' const_expr { $$ = new ConstantExpression($1, "/" , $3); }
-    | const_expr '%' const_expr { $$ = new ConstantExpression($1, "%" , $3); }
-    | '+' const_expr %prec UNARY_PLUS  { $$ = new ConstantExpression("+", $2); }
-    | '-' const_expr %prec UNARY_MINUS { $$ = new ConstantExpression("-", $2); }
-    | '!' const_expr { $$ = new ConstantExpression("!", $2); }
-    | '~' const_expr { $$ = new ConstantExpression("~", $2); }
+    | const_expr LOGICAL_OR const_expr  { $$ = new BinaryConstantExpression($1, "||", $3); }
+    | const_expr LOGICAL_AND const_expr { $$ = new BinaryConstantExpression($1, "&&", $3); }
+    | const_expr '|' const_expr { $$ = new BinaryConstantExpression($1, "|" , $3); }
+    | const_expr '^' const_expr { $$ = new BinaryConstantExpression($1, "^" , $3); }
+    | const_expr '&' const_expr { $$ = new BinaryConstantExpression($1, "&" , $3); }
+    | const_expr EQUALITY const_expr { $$ = new BinaryConstantExpression($1, "==", $3); }
+    | const_expr NEQ const_expr { $$ = new BinaryConstantExpression($1, "!=", $3); }
+    | const_expr '<' const_expr { $$ = new BinaryConstantExpression($1, "<" , $3); }
+    | const_expr '>' const_expr { $$ = new BinaryConstantExpression($1, ">" , $3); }
+    | const_expr LEQ const_expr { $$ = new BinaryConstantExpression($1, "<=", $3); }
+    | const_expr GEQ const_expr { $$ = new BinaryConstantExpression($1, ">=", $3); }
+    | const_expr LSHIFT const_expr { $$ = new BinaryConstantExpression($1, "<<", $3); }
+    | const_expr RSHIFT const_expr { $$ = new BinaryConstantExpression($1, ">>", $3); }
+    | const_expr '+' const_expr { $$ = new BinaryConstantExpression($1, "+" , $3); }
+    | const_expr '-' const_expr { $$ = new BinaryConstantExpression($1, "-" , $3); }
+    | const_expr '*' const_expr { $$ = new BinaryConstantExpression($1, "*" , $3); }
+    | const_expr '/' const_expr { $$ = new BinaryConstantExpression($1, "/" , $3); }
+    | const_expr '%' const_expr { $$ = new BinaryConstantExpression($1, "%" , $3); }
+    | '+' const_expr %prec UNARY_PLUS  { $$ = new UnaryConstantExpression("+", $2); }
+    | '-' const_expr %prec UNARY_MINUS { $$ = new UnaryConstantExpression("-", $2); }
+    | '!' const_expr { $$ = new UnaryConstantExpression("!", $2); }
+    | '~' const_expr { $$ = new UnaryConstantExpression("~", $2); }
     | '(' const_expr ')' { $$ = $2; }
     | '(' error ')'
       {
         ast->addSyntaxError();
         // to avoid segfaults
-        $$ = new ConstantExpression(ConstantExpression::Zero(ScalarType::KIND_INT32));
+        $$ = ConstantExpression::Zero(ScalarType::KIND_INT32).release();
       }
     ;
 
@@ -832,11 +826,11 @@ method_declaration
     : error_stmt { $$ = nullptr; }
     | opt_annotations valid_identifier '(' typed_vars ')' require_semicolon
       {
-          $$ = new Method($2, $4, new std::vector<TypedVar *>, false, $1);
+          $$ = new Method($2, $4, new std::vector<NamedReference<Type>*>, false, $1);
       }
     | opt_annotations ONEWAY valid_identifier '(' typed_vars ')' require_semicolon
       {
-          $$ = new Method($3, $5, new std::vector<TypedVar *>, true, $1);
+          $$ = new Method($3, $5, new std::vector<NamedReference<Type>*>, true, $1);
       }
     | opt_annotations valid_identifier '(' typed_vars ')' GENERATES '(' typed_vars ')' require_semicolon
       {
@@ -869,7 +863,7 @@ typed_vars
       }
     ;
 
-typed_var : type valid_identifier { $$ = new TypedVar($2, *$1); }
+typed_var : type valid_identifier { $$ = new NamedReference<Type>($2, *$1); }
     ;
 
 
@@ -886,11 +880,7 @@ named_struct_or_union_declaration
       }
       struct_or_union_body
       {
-          if (!(*scope)->isCompoundType()) {
-              std::cerr << "ERROR: unknown error in struct or union declaration at "
-                  << @4 << "\n";
-              YYERROR;
-          }
+          CHECK((*scope)->isCompoundType());
           CompoundType *container = static_cast<CompoundType *>(*scope);
 
           std::string errorMsg;
@@ -915,7 +905,7 @@ struct_or_union_body
     ;
 
 field_declarations
-    : /* empty */ { $$ = new std::vector<CompoundField *>; }
+    : /* empty */ { $$ = new std::vector<NamedReference<Type>*>; }
     | field_declarations field_declaration
       {
           $$ = $1;
@@ -931,29 +921,31 @@ field_declaration
     : error_stmt { $$ = nullptr; }
     | type valid_identifier require_semicolon
       {
-        std::string errorMsg;
-        if ((*scope)->isCompoundType() &&
-            static_cast<CompoundType *>(*scope)->style() == CompoundType::STYLE_STRUCT &&
-            !isValidStructField($2, &errorMsg)) {
-            std::cerr << "ERROR: " << errorMsg << " at "
-                      << @2 << "\n";
-            YYERROR;
-        }
-        $$ = new CompoundField($2, *$1);
+          CHECK((*scope)->isCompoundType());
+
+          std::string errorMsg;
+          if (static_cast<CompoundType *>(*scope)->style() == CompoundType::STYLE_STRUCT &&
+              !isValidStructField($2, &errorMsg)) {
+              std::cerr << "ERROR: " << errorMsg << " at "
+                        << @2 << "\n";
+              YYERROR;
+          }
+          $$ = new NamedReference<Type>($2, *$1);
       }
     | annotated_compound_declaration ';'
       {
-        std::string errorMsg;
-        if ((*scope)->isCompoundType() &&
-            static_cast<CompoundType *>(*scope)->style() == CompoundType::STYLE_STRUCT &&
-            $1 != nullptr && $1->isNamedType() &&
-            !isValidStructField(static_cast<NamedType*>($1)->localName().c_str(), &errorMsg)) {
-            std::cerr << "ERROR: " << errorMsg << " at "
-                      << @2 << "\n";
-            YYERROR;
-        }
-        // Returns fields only
-        $$ = nullptr;
+          CHECK((*scope)->isCompoundType());
+
+          std::string errorMsg;
+          if (static_cast<CompoundType *>(*scope)->style() == CompoundType::STYLE_STRUCT &&
+              $1 != nullptr && $1->isNamedType() &&
+              !isValidStructField(static_cast<NamedType*>($1)->localName().c_str(), &errorMsg)) {
+              std::cerr << "ERROR: " << errorMsg << " at "
+                        << @2 << "\n";
+              YYERROR;
+          }
+          // Returns fields only
+          $$ = nullptr;
       }
     ;
 
@@ -1020,7 +1012,7 @@ enum_declaration_body
 
 enum_value
     : valid_identifier { $$ = new EnumValue($1); }
-    | valid_identifier '=' const_expr { $$ = new EnumValue($1, $3); }
+    | valid_identifier '=' const_expr { $3->evaluate(); $$ = new EnumValue($1, $3); }
     ;
 
 enum_values
@@ -1096,6 +1088,8 @@ array_type
 
               YYERROR;
           }
+
+          $3->evaluate();
           if (type.isResolved() && type->isArray()) {
               $$ = new ArrayType(static_cast<ArrayType*>(type.get()), $3);
           } else {
@@ -1105,6 +1099,7 @@ array_type
     | array_type '[' const_expr ']'
       {
           $$ = $1;
+          $3->evaluate();
           $$->appendDimension($3);
       }
     ;
@@ -1133,8 +1128,6 @@ type
     ;
 
 %%
-
-#include <android-base/logging.h>
 
 void yy::parser::error(
         const yy::parser::location_type &where,

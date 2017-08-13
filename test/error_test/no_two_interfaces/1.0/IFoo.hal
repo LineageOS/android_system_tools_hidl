@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package test.error.error@1.0;
+package test.no_two_interfaces@1.0;
 
 interface IFoo {
-    foo() generates (int32_t bar)
+};
+
+interface IBar {
 };
