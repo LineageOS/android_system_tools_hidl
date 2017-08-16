@@ -43,7 +43,7 @@ struct Interface : public Scope {
 
     const Interface* superType() const;
 
-    Method *lookupMethod(std::string name) const;
+    Method* lookupMethod(const std::string& name) const;
     // Super type chain to root type.
     // First element is superType().
     std::vector<const Interface *> superTypeChain() const;
@@ -66,6 +66,9 @@ struct Interface : public Scope {
     // this->userDefinedMethods()
     // this->hidlReservedMethods()
     std::vector<InterfaceAndMethod> allMethodsFromRoot() const;
+
+    // allMethodsFromRoot for parent
+    std::vector<InterfaceAndMethod> allSuperMethodsFromRoot() const;
 
     // aliases for corresponding methods in this->fqName()
     std::string getBaseName() const;
@@ -93,8 +96,7 @@ struct Interface : public Scope {
             ErrorMode mode) const override;
 
     status_t emitGlobalTypeDeclarations(Formatter &out) const override;
-    status_t emitTypeDefinitions(
-            Formatter &out, const std::string prefix) const override;
+    status_t emitTypeDefinitions(Formatter& out, const std::string& prefix) const override;
 
     void emitJavaReaderWriter(
             Formatter &out,

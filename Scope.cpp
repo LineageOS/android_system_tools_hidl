@@ -16,6 +16,7 @@
 
 #include "Scope.h"
 
+#include "Annotation.h"
 #include "Interface.h"
 
 #include <android-base/logging.h>
@@ -103,7 +104,17 @@ bool Scope::containsInterfaces() const {
     return false;
 }
 
-status_t Scope::forEachType(std::function<status_t(Type *)> func) const {
+const std::vector<Annotation*>& Scope::annotations() const {
+    return mAnnotations;
+}
+
+void Scope::setAnnotations(std::vector<Annotation*>* annotations) {
+    CHECK(mAnnotations.empty());
+    CHECK(annotations != nullptr);
+    mAnnotations = *annotations;
+}
+
+status_t Scope::forEachType(const std::function<status_t(Type *)> &func) const {
     for (size_t i = 0; i < mTypes.size(); ++i) {
         status_t err = func(mTypes[i]);
 
@@ -140,8 +151,7 @@ status_t Scope::emitJavaTypeDeclarations(
     });
 }
 
-status_t Scope::emitTypeDefinitions(
-        Formatter &out, const std::string prefix) const {
+status_t Scope::emitTypeDefinitions(Formatter& out, const std::string& prefix) const {
     return forEachType([&](Type *type) {
         return type->emitTypeDefinitions(out, prefix);
     });

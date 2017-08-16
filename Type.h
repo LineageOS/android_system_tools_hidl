@@ -28,7 +28,6 @@
 
 namespace android {
 
-struct Annotation;
 struct Formatter;
 struct ScalarType;
 struct FQName;
@@ -188,8 +187,7 @@ struct Type {
     // at global scope for transport, e.g. read/writeEmbeddedTo/FromParcel
     virtual status_t emitGlobalHwDeclarations(Formatter &out) const;
 
-    virtual status_t emitTypeDefinitions(
-            Formatter &out, const std::string prefix) const;
+    virtual status_t emitTypeDefinitions(Formatter& out, const std::string& prefix) const;
 
     virtual status_t emitJavaTypeDeclarations(
             Formatter &out, bool atTopLevel) const;
@@ -209,9 +207,6 @@ struct Type {
     virtual bool isJavaCompatible() const;
     virtual bool containsPointer() const;
     virtual void getAlignmentAndSize(size_t *align, size_t *size) const;
-
-    void setAnnotations(std::vector<Annotation *> *annotations);
-    const std::vector<Annotation *> &annotations() const;
 
     virtual void appendToExportedTypesVector(
             std::vector<const Type *> *exportedTypes) const;
@@ -250,8 +245,6 @@ protected:
             const std::string &name) const;
 
 private:
-    std::vector<Annotation *> *mAnnotations;
-
     DISALLOW_COPY_AND_ASSIGN(Type);
 };
 
