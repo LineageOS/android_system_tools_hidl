@@ -30,7 +30,7 @@ struct InterfaceAndMethod;
 
 struct Interface : public Scope {
     Interface(const char* localName, const Location& location, Scope* parent,
-              const Reference<Interface>& superType);
+              const Reference<Type>& superType);
 
     bool addMethod(Method *method);
     bool addAllReservedMethods();
@@ -43,7 +43,6 @@ struct Interface : public Scope {
 
     const Interface* superType() const;
 
-    Method* lookupMethod(const std::string& name) const;
     // Super type chain to root type.
     // First element is superType().
     std::vector<const Interface *> superTypeChain() const;
@@ -87,6 +86,8 @@ struct Interface : public Scope {
     std::string getJavaType(bool forInitializer) const override;
     std::string getVtsType() const override;
 
+    std::vector<Reference<Type>> getReferences() const override;
+
     status_t resolveInheritance() override;
     status_t evaluate() override;
     status_t validate() const override;
@@ -119,7 +120,7 @@ struct Interface : public Scope {
     bool isJavaCompatible() const override;
 
    private:
-    Reference<Interface> mSuperType;
+    Reference<Type> mSuperType;
 
     std::vector<Method*> mUserMethods;
     std::vector<Method*> mReservedMethods;

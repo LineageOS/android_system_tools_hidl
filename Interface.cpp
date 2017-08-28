@@ -70,7 +70,7 @@ enum {
 };
 
 Interface::Interface(const char* localName, const Location& location, Scope* parent,
-                     const Reference<Interface>& superType)
+                     const Reference<Type>& superType)
     : Scope(localName, location, parent),
       mSuperType(superType),
       mIsJavaCompatibleInProgress(false) {}
@@ -460,6 +460,21 @@ bool Interface::addMethod(Method *method) {
     return true;
 }
 
+std::vector<Reference<Type>> Interface::getReferences() const {
+    std::vector<Reference<Type>> ret;
+
+    if (superType() != nullptr) {
+        ret.push_back(mSuperType);
+    }
+
+    for (const auto* method : methods()) {
+        const auto& references = method->getReferences();
+        ret.insert(ret.end(), references.begin(), references.end());
+    }
+
+    return ret;
+}
+
 status_t Interface::resolveInheritance() {
     size_t serial = FIRST_CALL_TRANSACTION;
     for (const auto* ancestor : superTypeChain()) {
@@ -492,6 +507,11 @@ status_t Interface::evaluate() {
 
 status_t Interface::validate() const {
     CHECK(isIBase() == mSuperType.isEmptyReference());
+
+    if (!isIBase() && !mSuperType->isInterface()) {
+        std::cerr << "ERROR: You can only extend interfaces at " << mSuperType.location() << "\n";
+        return UNKNOWN_ERROR;
+    }
 
     for (const auto* method : methods()) {
         status_t err = method->validate();
@@ -574,7 +594,13 @@ bool Interface::addAllReservedMethods() {
 }
 
 const Interface* Interface::superType() const {
-    return isIBase() ? nullptr : mSuperType;
+    if (isIBase()) return nullptr;
+    if (!mSuperType->isInterface()) {
+        // This is actually an error
+        // that would be caught in validate
+        return nullptr;
+    }
+    return static_cast<Interface*>(mSuperType.get());
 }
 
 std::vector<const Interface *> Interface::typeChain() const {
@@ -636,17 +662,6 @@ std::vector<InterfaceAndMethod> Interface::allMethodsFromRoot() const {
 
 std::vector<InterfaceAndMethod> Interface::allSuperMethodsFromRoot() const {
     return isIBase() ? std::vector<InterfaceAndMethod>() : superType()->allMethodsFromRoot();
-}
-
-Method *Interface::lookupMethod(const std::string& name) const {
-    for (const auto &tuple : allMethodsFromRoot()) {
-        Method *method = tuple.method();
-        if (method->name() == name) {
-            return method;
-        }
-    }
-
-    return nullptr;
 }
 
 std::string Interface::getBaseName() const {

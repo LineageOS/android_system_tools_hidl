@@ -68,12 +68,13 @@ status_t EnumType::resolveInheritance() {
     return Scope::resolveInheritance();
 }
 
-status_t EnumType::evaluate() {
-    status_t err = mStorageType->callForReference(&Type::evaluate);
-    if (err != OK) return err;
+std::vector<Reference<Type>> EnumType::getReferences() const {
+    return {mStorageType};
+}
 
+status_t EnumType::evaluate() {
     for (auto* value : mValues) {
-        err = value->evaluate();
+        status_t err = value->evaluate();
         if (err != OK) return err;
     }
     return Scope::evaluate();
@@ -82,11 +83,8 @@ status_t EnumType::evaluate() {
 status_t EnumType::validate() const {
     CHECK(getSubTypes().empty());
 
-    status_t err = mStorageType->callForReference(&Type::validate);
-    if (err != OK) return err;
-
     for (auto* value : mValues) {
-        err = value->validate();
+        status_t err = value->validate();
         if (err != OK) return err;
     }
 
@@ -96,7 +94,7 @@ status_t EnumType::validate() const {
         return UNKNOWN_ERROR;
     }
 
-    err = validateUniqueNames();
+    status_t err = validateUniqueNames();
     if (err != OK) return err;
 
     return Scope::validate();
@@ -122,8 +120,8 @@ status_t EnumType::validateUniqueNames() const {
                 std::cerr << "ERROR: Redefinition of value '" << value->name() << "'";
             } else {
                 // Defined in super enum
-                std::cerr << "ERROR: Redefinition of value '" << value->name() << "define in enum '"
-                          << definedInType->fullName() << "'";
+                std::cerr << "ERROR: Redefinition of value '" << value->name()
+                          << "' defined in enum '" << definedInType->fullName() << "'";
             }
             std::cerr << " at " << value->location() << "\n";
             return UNKNOWN_ERROR;

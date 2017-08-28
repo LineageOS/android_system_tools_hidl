@@ -264,7 +264,7 @@ bool isValidTypeName(const std::string& identifier, std::string *errorMsg) {
 %type<referenceToType> type enum_storage_type
 %type<referenceToType> array_type_base
 %type<arrayType> array_type
-%type<referenceToInterface> opt_extends
+%type<referenceToType> opt_extends
 %type<type> type_declaration type_declaration_body interface_declaration typedef_declaration
 %type<type> named_struct_or_union_declaration named_enum_declaration
 %type<type> compound_declaration annotated_compound_declaration
@@ -291,7 +291,6 @@ bool isValidTypeName(const std::string& identifier, std::string *errorMsg) {
     const char *str;
     android::Type* type;
     android::Reference<android::Type>* referenceToType;
-    android::Reference<android::Interface>* referenceToInterface;
     android::ArrayType *arrayType;
     android::TemplatedType *templatedType;
     android::FQName *fqName;
@@ -489,7 +488,7 @@ fqtype
           $$ = new Reference<Type>(*$1, convertYYLoc(@1));
 
           Type* type = ast->lookupType($$->getLookupFqName(), *scope);
-          if ($$ == NULL) {
+          if (type == nullptr) {
               std::cerr << "ERROR: Failed to lookup type '" << $1->string() << "' at "
                         << @1
                         << "\n";
@@ -553,24 +552,8 @@ imports
     ;
 
 opt_extends
-    : /* empty */
-      {
-          $$ = nullptr;
-      }
-    | EXTENDS fqtype
-      {
-          // TODO(b/31827278)
-          // While deleting lookup calls, move this check
-          if (!(*$2)->isInterface()) {
-              std::cerr << "ERROR: You can only extend interfaces. at " << @2
-                        << "\n";
-
-              YYERROR;
-          }
-
-          $$ = new Reference<Interface>(
-              static_cast<Interface*>($2->get()), $2->location());
-      }
+    : /* empty */ { $$ = nullptr; }
+    | EXTENDS fqtype { $$ = $2; }
     ;
 
 interface_declarations
@@ -629,7 +612,7 @@ type_declaration
               // Since typedefs are always resolved to their target it makes
               // little sense to annotate them and have their annotations
               // impose semantics other than their target type.
-              std::cerr << "ERROR: typedefs cannot be annotated. at " << @2
+              std::cerr << "ERROR: typedefs cannot be annotated at " << @2
                         << "\n";
 
               YYERROR;
@@ -648,17 +631,17 @@ type_declaration_body
 interface_declaration
     : INTERFACE valid_type_name opt_extends
       {
-          Reference<Interface>* superType = $3;
+          Reference<Type>* superType = $3;
           bool isIBase = ast->package().package() == gIBasePackageFqName.string();
 
           if (isIBase) {
               if (superType != nullptr) {
-                  std::cerr << "ERROR: IBase must not extend any interface. at " << @3
+                  std::cerr << "ERROR: IBase must not extend any interface at " << @3
                         << "\n";
 
                   YYERROR;
               }
-              superType = new Reference<Interface>();
+              superType = new Reference<Type>();
           } else {
               if (!ast->addImport(gIBaseFqName.string().c_str())) {
                   std::cerr << "ERROR: Unable to automatically import '"
@@ -669,23 +652,23 @@ interface_declaration
               }
 
               if (superType == nullptr) {
-                  superType = new Reference<Interface>(gIBaseFqName, convertYYLoc(@$));
+                  superType = new Reference<Type>(gIBaseFqName, convertYYLoc(@$));
                   Type* type = ast->lookupType(superType->getLookupFqName(), *scope);
                   CHECK(type != nullptr && type->isInterface());
-                  superType->set(static_cast<Interface*>(type));
+                  superType->set(type);
               }
           }
 
           if ($2[0] != 'I') {
               std::cerr << "ERROR: All interface names must start with an 'I' "
-                        << "prefix. at " << @2 << "\n";
+                        << "prefix at " << @2 << "\n";
 
               YYERROR;
           }
 
           if (*scope != ast->getRootScope()) {
               std::cerr << "ERROR: All interface must declared in "
-                        << "global scope. at " << @2 << "\n";
+                        << "global scope at " << @2 << "\n";
 
               YYERROR;
           }
