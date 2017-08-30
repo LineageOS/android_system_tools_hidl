@@ -16,6 +16,7 @@
 
 #include "Type.h"
 
+#include "ConstantExpression.h"
 #include "ScalarType.h"
 
 #include <hidl-util/Formatter.h>
@@ -99,8 +100,14 @@ std::vector<Reference<Type>> Type::getReferences() const {
     return {};
 }
 
+std::vector<ConstantExpression*> Type::getConstantExpressions() const {
+    return {};
+}
+
 status_t Type::recursivePass(const std::function<status_t(Type*)>& func,
                              std::unordered_set<const Type*>* visited) {
+    if (mIsPostParseCompleted) return OK;
+
     if (visited->find(this) != visited->end()) return OK;
     visited->insert(this);
 
@@ -122,6 +129,8 @@ status_t Type::recursivePass(const std::function<status_t(Type*)>& func,
 
 status_t Type::recursivePass(const std::function<status_t(const Type*)>& func,
                              std::unordered_set<const Type*>* visited) const {
+    if (mIsPostParseCompleted) return OK;
+
     if (visited->find(this) != visited->end()) return OK;
     visited->insert(this);
 
@@ -143,10 +152,6 @@ status_t Type::recursivePass(const std::function<status_t(const Type*)>& func,
 }
 
 status_t Type::resolveInheritance() {
-    return OK;
-}
-
-status_t Type::evaluate() {
     return OK;
 }
 
@@ -174,6 +179,11 @@ bool Type::isElidableType() const {
 
 bool Type::canCheckEquality() const {
     return false;
+}
+
+void Type::setPostParseCompleted() {
+    CHECK(!mIsPostParseCompleted);
+    mIsPostParseCompleted = true;
 }
 
 std::string Type::getCppType(StorageMode, bool) const {
