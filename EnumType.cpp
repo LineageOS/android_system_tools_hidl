@@ -35,7 +35,7 @@ EnumType::EnumType(const char* localName, const Location& location,
 }
 
 const Type *EnumType::storageType() const {
-    return mStorageType;
+    return mStorageType.get();
 }
 
 const std::vector<EnumValue *> &EnumType::values() const {
@@ -68,12 +68,12 @@ status_t EnumType::resolveInheritance() {
     return Scope::resolveInheritance();
 }
 
-std::vector<Reference<Type>> EnumType::getReferences() const {
-    return {mStorageType};
+std::vector<const Reference<Type>*> EnumType::getReferences() const {
+    return {&mStorageType};
 }
 
-std::vector<ConstantExpression*> EnumType::getConstantExpressions() const {
-    std::vector<ConstantExpression*> ret;
+std::vector<const ConstantExpression*> EnumType::getConstantExpressions() const {
+    std::vector<const ConstantExpression*> ret;
     for (const auto* value : mValues) {
         ret.push_back(value->constExpr());
     }
@@ -170,7 +170,7 @@ std::string EnumType::getVtsType() const {
 }
 
 BitFieldType* EnumType::getBitfieldType() const {
-    return mBitfieldType;
+    return mBitfieldType.get();
 }
 
 LocalIdentifier *EnumType::lookupIdentifier(const std::string &name) const {
@@ -798,7 +798,7 @@ bool BitFieldType::isBitField() const {
 }
 
 std::string BitFieldType::typeName() const {
-    return "mask" + (mElementType == nullptr ? "" : (" of " + mElementType->typeName()));
+    return "mask of " + mElementType->typeName();
 }
 
 bool BitFieldType::isCompatibleElementType(Type* elementType) const {

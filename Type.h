@@ -56,13 +56,21 @@ struct Type {
     virtual bool isVector() const;
 
     // All types defined in this type.
-    virtual std::vector<Type*> getDefinedTypes() const;
+    std::vector<Type*> getDefinedTypes();
+    virtual std::vector<const Type*> getDefinedTypes() const;
 
     // All types referenced in this type.
-    virtual std::vector<Reference<Type>> getReferences() const;
+    std::vector<Reference<Type>*> getReferences();
+    virtual std::vector<const Reference<Type>*> getReferences() const;
 
     // All constant expressions referenced in this type.
-    virtual std::vector<ConstantExpression*> getConstantExpressions() const;
+    std::vector<ConstantExpression*> getConstantExpressions();
+    virtual std::vector<const ConstantExpression*> getConstantExpressions() const;
+
+    // All types referenced in this type that must have completed
+    // definiton before being referenced.
+    std::vector<Reference<Type>*> getStrongReferences();
+    virtual std::vector<const Reference<Type>*> getStrongReferences() const;
 
     // Proceeds recursive pass
     // Makes sure to visit each node only once.
@@ -78,6 +86,25 @@ struct Type {
     // Recursive tree pass that validates all type-related
     // syntax restrictions
     virtual status_t validate() const;
+
+    // Recursive tree pass checkAcyclic return type.
+    // Stores cycle end for nice error messages.
+    struct CheckAcyclicStatus {
+        CheckAcyclicStatus(status_t status, const Type* cycleEnd = nullptr);
+
+        status_t status;
+
+        // If a cycle is found, stores the end of cycle.
+        // While going back in recursion, this is used to stop printing the cycle.
+        const Type* cycleEnd;
+    };
+
+    // Recursive tree pass that ensures that type definitions and references
+    // are acyclic.
+    // If some cases allow using of incomplete types, these cases are to be
+    // declared in Type::getStrongReferences.
+    CheckAcyclicStatus checkAcyclic(std::unordered_set<const Type*>* visited,
+                                    std::unordered_set<const Type*>* stack) const;
 
     virtual const ScalarType *resolveToScalarType() const;
 
@@ -289,7 +316,7 @@ struct TemplatedType : public Type {
 
     virtual bool isCompatibleElementType(Type* elementType) const = 0;
 
-    std::vector<Reference<Type>> getReferences() const override;
+    std::vector<const Reference<Type>*> getReferences() const override;
 
     virtual status_t validate() const override;
 

@@ -29,7 +29,7 @@ VectorType::VectorType() {
 }
 
 std::string VectorType::typeName() const {
-    return "vector" + (mElementType == nullptr ? "" : (" of " + mElementType->typeName()));
+    return "vector of " + mElementType->typeName();
 }
 
 bool VectorType::isCompatibleElementType(Type *elementType) const {
@@ -79,6 +79,10 @@ bool VectorType::isVectorOfBinders() const {
 
 bool VectorType::canCheckEquality() const {
     return mElementType->canCheckEquality();
+}
+
+std::vector<const Reference<Type>*> VectorType::getStrongReferences() const {
+    return {};
 }
 
 std::string VectorType::getCppType(StorageMode mode,
@@ -564,7 +568,7 @@ void VectorType::emitJavaFieldReaderWriter(
     VectorType::EmitJavaFieldReaderWriterForElementType(
             out,
             depth,
-            mElementType,
+            mElementType.get(),
             parcelName,
             blobName,
             fieldName,
