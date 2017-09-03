@@ -24,11 +24,10 @@
 
 namespace android {
 
-RefType::RefType() {
-}
+RefType::RefType(Scope* parent) : TemplatedType(parent) {}
 
-std::string RefType::typeName() const {
-    return "ref of " + mElementType->typeName();
+std::string RefType::templatedTypeName() const {
+    return "ref";
 }
 
 std::vector<const Reference<Type>*> RefType::getStrongReferences() const {
@@ -43,7 +42,7 @@ std::string RefType::getVtsValueName() const {
     return "ref_value";
 }
 
-bool RefType::isCompatibleElementType(Type *elementType) const {
+bool RefType::isCompatibleElementType(const Type* elementType) const {
     if (elementType->isScalar()) {
         return true;
     }
@@ -56,15 +55,17 @@ bool RefType::isCompatibleElementType(Type *elementType) const {
     if (elementType->isBitField()) {
         return true;
     }
-    if (elementType->isCompoundType()
-            && static_cast<CompoundType *>(elementType)->style() == CompoundType::STYLE_STRUCT) {
+    if (elementType->isCompoundType() &&
+        static_cast<const CompoundType*>(elementType)->style() == CompoundType::STYLE_STRUCT) {
         return true;
     }
     if (elementType->isTemplatedType()) {
-        return this->isCompatibleElementType(static_cast<TemplatedType *>(elementType)->getElementType());
+        return this->isCompatibleElementType(
+            static_cast<const TemplatedType*>(elementType)->getElementType());
     }
     if (elementType->isArray()) {
-        return this->isCompatibleElementType(static_cast<ArrayType *>(elementType)->getElementType());
+        return this->isCompatibleElementType(
+            static_cast<const ArrayType*>(elementType)->getElementType());
     }
     return false;
 }

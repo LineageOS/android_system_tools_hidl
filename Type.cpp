@@ -19,6 +19,7 @@
 #include "ConstantExpression.h"
 #include "NamedType.h"
 #include "ScalarType.h"
+#include "Scope.h"
 
 #include <android-base/logging.h>
 #include <hidl-util/Formatter.h>
@@ -26,7 +27,7 @@
 
 namespace android {
 
-Type::Type() {}
+Type::Type(Scope* parent) : mParent(parent) {}
 
 Type::~Type() {}
 
@@ -181,8 +182,7 @@ status_t Type::recursivePass(const std::function<status_t(const Type*)>& func,
     }
 
     for (const auto* nextRef : getReferences()) {
-        const auto* nextType = nextRef->get();
-        err = nextType->recursivePass(func, visited);
+        err = (*nextRef)->recursivePass(func, visited);
         if (err != OK) return err;
     }
 
@@ -219,13 +219,13 @@ Type::CheckAcyclicStatus Type::checkAcyclic(std::unordered_set<const Type*>* vis
         if (err.status != OK) {
             if (err.cycleEnd == nullptr) return err;
 
-            std::cerr << "  '" << typeName() << "'";
+            std::cerr << "  '" << nextType->typeName() << "' in '" << typeName() << "'";
             if (nextType->isNamedType()) {
                 std::cerr << " at " << static_cast<const NamedType*>(nextType)->location();
             }
             std::cerr << "\n";
 
-            if (err.cycleEnd == nextType) {
+            if (err.cycleEnd == this) {
                 return CheckAcyclicStatus(err.status);
             }
             return err;
@@ -239,9 +239,10 @@ Type::CheckAcyclicStatus Type::checkAcyclic(std::unordered_set<const Type*>* vis
         if (err.status != OK) {
             if (err.cycleEnd == nullptr) return err;
 
-            std::cerr << "  '" << nextType->typeName() << "' at " << nextRef->location() << "\n";
+            std::cerr << "  '" << nextType->typeName() << "' in '" << typeName() << "' at "
+                      << nextRef->location() << "\n";
 
-            if (err.cycleEnd == nextType) {
+            if (err.cycleEnd == this) {
                 return CheckAcyclicStatus(err.status);
             }
             return err;
@@ -278,6 +279,10 @@ bool Type::canCheckEquality() const {
 void Type::setPostParseCompleted() {
     CHECK(!mIsPostParseCompleted);
     mIsPostParseCompleted = true;
+}
+
+Scope* Type::parent() {
+    return mParent;
 }
 
 std::string Type::getCppType(StorageMode, bool) const {
@@ -625,7 +630,11 @@ status_t Type::emitExportedHeader(
 
 ////////////////////////////////////////
 
-TemplatedType::TemplatedType() {}
+TemplatedType::TemplatedType(Scope* parent) : Type(parent) {}
+
+std::string TemplatedType::typeName() const {
+    return templatedTypeName() + " of " + mElementType->typeName();
+}
 
 void TemplatedType::setElementType(const Reference<Type>& elementType) {
     // can only be set once.
@@ -635,7 +644,7 @@ void TemplatedType::setElementType(const Reference<Type>& elementType) {
     mElementType = elementType;
 }
 
-Type* TemplatedType::getElementType() const {
+const Type* TemplatedType::getElementType() const {
     return mElementType.get();
 }
 

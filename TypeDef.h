@@ -30,13 +30,17 @@ struct TypeDef : public NamedType {
 
     std::string typeName() const override;
 
-    Type* referencedType() const;
+    Type* referencedType();
+    const Type* referencedType() const;
 
     bool isInterface() const override;
     bool isEnum() const override;
     bool isTypeDef() const override;
     bool needsEmbeddedReadWrite() const override;
     bool resultNeedsDeref() const override;
+
+    std::vector<const Reference<Type>*> getReferences() const override;
+    std::vector<const Reference<Type>*> getStrongReferences() const override;
 
     status_t emitTypeDeclarations(Formatter &out) const override;
 

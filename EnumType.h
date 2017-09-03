@@ -58,7 +58,7 @@ struct EnumType : public Scope {
     std::string getVtsType() const override;
 
     // Return the type that corresponds to bitfield<T>.
-    BitFieldType *getBitfieldType() const;
+    const BitFieldType* getBitfieldType() const;
 
     std::vector<const Reference<Type>*> getReferences() const override;
     std::vector<const ConstantExpression*> getConstantExpressions() const override;
@@ -157,12 +157,13 @@ struct EnumValue : public LocalIdentifier {
 };
 
 struct BitFieldType : public TemplatedType {
+    BitFieldType(Scope* parent);
 
-    std::string typeName() const override;
+    std::string templatedTypeName() const override;
 
     bool isBitField() const override;
 
-    bool isCompatibleElementType(Type *elementType) const override;
+    bool isCompatibleElementType(const Type* elementType) const override;
 
     bool isElidableType() const override;
 
@@ -181,7 +182,7 @@ struct BitFieldType : public TemplatedType {
 
     std::string getVtsType() const override;
 
-    EnumType *getEnumType() const;
+    const EnumType* getEnumType() const;
 
     status_t emitVtsAttributeType(Formatter &out) const override;
 

@@ -23,11 +23,11 @@
 namespace android {
 
 struct FmqType : public TemplatedType {
-    FmqType(const char *nsp, const char *name);
+    FmqType(const char* nsp, const char* name, Scope* parent);
 
     std::string fullName() const;
 
-    std::string typeName() const;
+    std::string templatedTypeName() const;
 
     std::string getCppType(
             StorageMode mode,
@@ -60,7 +60,7 @@ struct FmqType : public TemplatedType {
 
     bool needsEmbeddedReadWrite() const override;
     bool resultNeedsDeref() const override;
-    bool isCompatibleElementType(Type *elementType) const override;
+    bool isCompatibleElementType(const Type* elementType) const override;
 
     std::string getVtsType() const override;
     std::string getVtsValueName() const override;

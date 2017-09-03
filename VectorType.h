@@ -26,12 +26,13 @@
 namespace android {
 
 struct VectorType : public TemplatedType {
-    VectorType();
+    VectorType(Scope* parent);
 
     bool isVector() const override;
     bool isVectorOfBinders() const;
-    std::string typeName() const override;
-    bool isCompatibleElementType(Type *elementType) const override;
+
+    std::string templatedTypeName() const override;
+    bool isCompatibleElementType(const Type* elementType) const override;
 
     std::vector<const Reference<Type>*> getStrongReferences() const override;
 

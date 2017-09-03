@@ -30,7 +30,11 @@ const ScalarType *TypeDef::resolveToScalarType() const {
     return NULL;
 }
 
-Type* TypeDef::referencedType() const {
+Type* TypeDef::referencedType() {
+    return mReferencedType.get();
+}
+
+const Type* TypeDef::referencedType() const {
     return mReferencedType.get();
 }
 
@@ -49,6 +53,14 @@ std::string TypeDef::typeName() const {
 
 bool TypeDef::isTypeDef() const {
     return true;
+}
+
+std::vector<const Reference<Type>*> TypeDef::getReferences() const {
+    return {&mReferencedType};
+}
+
+std::vector<const Reference<Type>*> TypeDef::getStrongReferences() const {
+    return {};
 }
 
 bool TypeDef::needsEmbeddedReadWrite() const {
