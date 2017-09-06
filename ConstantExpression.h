@@ -48,6 +48,8 @@ struct ConstantExpression {
 
     virtual ~ConstantExpression() {}
 
+    virtual bool isReferenceConstantExpression() const;
+
     // Proceeds recursive pass
     // Makes sure to visit each node only once
     // Used to provide lookup and lazy evaluation
@@ -62,6 +64,30 @@ struct ConstantExpression {
 
     std::vector<ConstantExpression*> getConstantExpressions();
     virtual std::vector<const ConstantExpression*> getConstantExpressions() const = 0;
+
+    std::vector<Reference<LocalIdentifier>*> getReferences();
+    virtual std::vector<const Reference<LocalIdentifier>*> getReferences() const;
+
+    // Recursive tree pass checkAcyclic return type.
+    // Stores cycle end for nice error messages.
+    struct CheckAcyclicStatus {
+        CheckAcyclicStatus(status_t status, const ConstantExpression* cycleEnd = nullptr,
+                           const ReferenceConstantExpression* lastReferenceExpression = nullptr);
+
+        status_t status;
+
+        // If a cycle is found, stores the end of cycle.
+        // While going back in recursion, this is used to stop printing the cycle.
+        const ConstantExpression* cycleEnd;
+
+        // The last ReferenceConstantExpression visited on the cycle.
+        const ReferenceConstantExpression* lastReference;
+    };
+
+    // Recursive tree pass that ensures that constant expressions definitions
+    // are acyclic.
+    CheckAcyclicStatus checkAcyclic(std::unordered_set<const ConstantExpression*>* visited,
+                                    std::unordered_set<const ConstantExpression*>* stack) const;
 
     /* Returns true iff the value has already been evaluated. */
     bool isEvaluated() const;
@@ -169,8 +195,11 @@ struct TernaryConstantExpression : public ConstantExpression {
 
 struct ReferenceConstantExpression : public ConstantExpression {
     ReferenceConstantExpression(const Reference<LocalIdentifier>& value, const std::string& expr);
+
+    bool isReferenceConstantExpression() const override;
     void evaluate() override;
     std::vector<const ConstantExpression*> getConstantExpressions() const override;
+    std::vector<const Reference<LocalIdentifier>*> getReferences() const override;
 
    private:
     Reference<LocalIdentifier> mReference;
