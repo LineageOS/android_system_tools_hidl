@@ -18,6 +18,7 @@
 
 #include <hidl-util/Formatter.h>
 #include <inttypes.h>
+#include <iostream>
 #include <unordered_map>
 
 #include "Annotation.h"
@@ -262,6 +263,13 @@ status_t EnumType::emitTypeDeclarations(Formatter &out) const {
     out << "};\n\n";
 
     return OK;
+}
+
+void EnumType::emitTypeForwardDeclaration(Formatter& out) const {
+    const ScalarType* scalarType = mStorageType->resolveToScalarType();
+    const std::string storageType = scalarType->getCppStackType();
+
+    out << "enum class " << localName() << " : " << storageType << ";\n";
 }
 
 void EnumType::emitEnumBitwiseOperator(

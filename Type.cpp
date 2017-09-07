@@ -24,6 +24,7 @@
 #include <android-base/logging.h>
 #include <hidl-util/Formatter.h>
 #include <algorithm>
+#include <iostream>
 
 namespace android {
 
@@ -542,6 +543,8 @@ void Type::emitReaderWriterEmbeddedForTypeName(
 status_t Type::emitTypeDeclarations(Formatter &) const {
     return OK;
 }
+
+void Type::emitTypeForwardDeclaration(Formatter&) const {}
 
 status_t Type::emitGlobalTypeDeclarations(Formatter &) const {
     return OK;

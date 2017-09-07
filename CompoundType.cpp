@@ -21,6 +21,7 @@
 
 #include <android-base/logging.h>
 #include <hidl-util/Formatter.h>
+#include <iostream>
 #include <unordered_set>
 
 namespace android {
@@ -451,6 +452,9 @@ status_t CompoundType::emitTypeDeclarations(Formatter &out) const {
     return OK;
 }
 
+void CompoundType::emitTypeForwardDeclaration(Formatter& out) const {
+    out << ((mStyle == STYLE_STRUCT) ? "struct" : "union") << " " << localName() << ";\n";
+}
 
 status_t CompoundType::emitGlobalTypeDeclarations(Formatter &out) const {
     Scope::emitGlobalTypeDeclarations(out);
