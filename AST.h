@@ -54,8 +54,10 @@ struct AST {
     bool isInterface() const;
     bool containsInterfaces() const;
 
-    // Returns true iff successful.
-    bool addScopedType(NamedType* type, std::string* errorMsg, Scope* scope);
+    // Adds package, version and scope stack to local name
+    FQName makeFullName(const char* localName, Scope* scope) const;
+
+    void addScopedType(NamedType* type, Scope* scope);
 
     const std::string &getFilename() const;
 
@@ -77,6 +79,10 @@ struct AST {
     status_t constantExpressionRecursivePass(
         const std::function<status_t(ConstantExpression*)>& func);
 
+    // Recursive tree pass that validates that all defined types
+    // have unique names in their scopes.
+    status_t validateDefinedTypesUniqueNames() const;
+
     // Recursive tree pass that completes type declarations
     // that depend on super types
     status_t resolveInheritance();
@@ -95,6 +101,9 @@ struct AST {
     // Recursive tree pass that ensures that constant expressions
     // are acyclic.
     status_t checkAcyclicConstantExpressions() const;
+
+    // Recursive tree pass that checks C++ forward declaration restrictions.
+    status_t checkForwardReferenceRestrictions() const;
 
     status_t generateCpp(const std::string &outputPath) const;
     status_t generateCppHeaders(const std::string &outputPath) const;
