@@ -113,7 +113,7 @@ struct Type {
 
     // Checks following C++ restriction on forward declaration:
     // inner struct could be forward declared only inside its parent.
-    status_t checkForwardReferenceRestrictions(const Reference<Type>& ref) const;
+    status_t checkForwardReferenceRestrictions(const Reference<Type>& ref, bool isStrongRef) const;
 
     virtual const ScalarType *resolveToScalarType() const;
 
@@ -300,7 +300,9 @@ struct Type {
 
     virtual status_t emitExportedHeader(Formatter &out, bool forJava) const;
 
-protected:
+    virtual bool isNeverStrongReference() const;
+
+   protected:
     void handleError(Formatter &out, ErrorMode mode) const;
 
     void emitReaderWriterEmbeddedForTypeName(
