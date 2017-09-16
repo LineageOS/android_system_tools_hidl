@@ -263,7 +263,7 @@ bool isValidTypeName(const std::string& identifier, std::string *errorMsg) {
 %type<referenceToType> fqtype
 %type<str> valid_identifier valid_type_name
 
-%type<referenceToType> type enum_storage_type
+%type<referenceToType> type enum_storage_type type_or_inplace_compound_declaration
 %type<referenceToType> array_type_base
 %type<arrayType> array_type
 %type<referenceToType> opt_extends
@@ -664,10 +664,6 @@ interface_declaration
           Interface* iface = new Interface(
               $2, ast->makeFullName($2, *scope), convertYYLoc(@2), *scope, *superType);
 
-          // Register interface immediately so it can be referenced inside
-          // definition.
-          ast->addScopedType(iface, *scope);
-
           enterScope(ast, scope, iface);
       }
       '{' interface_declarations '}'
@@ -678,7 +674,7 @@ interface_declaration
           CHECK(iface->addAllReservedMethods());
 
           leaveScope(ast, scope);
-
+          ast->addScopedType(iface, *scope);
           $$ = iface;
       }
     ;
@@ -852,7 +848,7 @@ field_declarations
 
 field_declaration
     : error_stmt { $$ = nullptr; }
-    | type valid_identifier require_semicolon
+    | type_or_inplace_compound_declaration valid_identifier require_semicolon
       {
           CHECK((*scope)->isCompoundType());
 
@@ -997,14 +993,18 @@ array_type
 type
     : array_type_base { $$ = $1; }
     | array_type { $$ = new Reference<Type>($1, convertYYLoc(@1)); }
-    | annotated_compound_declaration
-      {
-          $$ = new Reference<Type>($1, convertYYLoc(@1));
-      }
     | INTERFACE
       {
           // "interface" is a synonym of android.hidl.base@1.0::IBase
           $$ = new Reference<Type>(gIBaseFqName, convertYYLoc(@1));
+      }
+    ;
+
+type_or_inplace_compound_declaration
+    : type { $$ = $1; }
+    | annotated_compound_declaration
+      {
+          $$ = new Reference<Type>($1, convertYYLoc(@1));
       }
     ;
 
