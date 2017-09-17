@@ -742,11 +742,7 @@ static void generateAndroidBpLibSection(
         const std::set<FQName> &importedPackagesHierarchy) {
 
     // C++ library definition
-    if (!generateForTest) {
-        out << "cc_library {\n";
-    } else {
-        out << "cc_test_library {\n";
-    }
+    out << "cc_library {\n";
     out.indent();
     out << "name: \"" << libraryName << (generateVendor ? "_vendor" : "") << "\",\n"
         << "defaults: [\"hidl-module-defaults\"],\n"
@@ -758,13 +754,15 @@ static void generateAndroidBpLibSection(
         out << "vendor: true,\n";
     } else {
         out << "vendor_available: true,\n";
-        out << "vndk: ";
-        out.block([&]() {
-            out << "enabled: true,\n";
-            if (isSystemProcessSupportedPackage(packageFQName)) {
-                out << "support_system_process: true,\n";
-            }
-        }) << ",\n";
+        if (!generateForTest) {
+            out << "vndk: ";
+            out.block([&]() {
+                out << "enabled: true,\n";
+                if (isSystemProcessSupportedPackage(packageFQName)) {
+                    out << "support_system_process: true,\n";
+                }
+            }) << ",\n";
+        }
     }
     out << "shared_libs: [\n";
 

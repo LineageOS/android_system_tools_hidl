@@ -35,16 +35,13 @@ genrule {
     ],
 }
 
-cc_test_library {
+cc_library {
     name: "tests.vendor@1.1",
     defaults: ["hidl-module-defaults"],
     generated_sources: ["tests.vendor@1.1_genc++"],
     generated_headers: ["tests.vendor@1.1_genc++_headers"],
     export_generated_headers: ["tests.vendor@1.1_genc++_headers"],
     vendor_available: true,
-    vndk: {
-        enabled: true,
-    },
     shared_libs: [
         "libhidlbase",
         "libhidltransport",
@@ -65,7 +62,7 @@ cc_test_library {
     ],
 }
 
-cc_test_library {
+cc_library {
     name: "tests.vendor@1.1_vendor",
     defaults: ["hidl-module-defaults"],
     generated_sources: ["tests.vendor@1.1_genc++"],
