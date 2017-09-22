@@ -693,7 +693,15 @@ typedef_declaration
     ;
 
 const_expr
-    : INTEGER                   { $$ = new LiteralConstantExpression($1); }
+    : INTEGER                   {
+          $$ = LiteralConstantExpression::tryParse($1);
+
+          if ($$ == nullptr) {
+              std::cerr << "ERROR: Could not parse literal: "
+                        << $1 << " at " << @1 << ".\n";
+              YYERROR;
+          }
+      }
     | fqname
       {
           if(!$1->isValidValueName()) {
@@ -894,6 +902,7 @@ compound_declaration
 
 enum_storage_type
     : ':' fqtype { $$ = $2; }
+    | /* empty */ { $$ = nullptr; }
     ;
 
 opt_comma
@@ -904,8 +913,18 @@ opt_comma
 named_enum_declaration
     : ENUM valid_type_name enum_storage_type
       {
+          auto storageType = $3;
+
+          if (storageType == nullptr) {
+              std::cerr << "ERROR: Must explicitly specify enum storage type for "
+                        << $2 << " at " << @2 << "\n";
+              ast->addSyntaxError();
+              storageType = new Reference<Type>(
+                  new ScalarType(ScalarType::KIND_INT64, *scope), convertYYLoc(@2));
+          }
+
           EnumType* enumType = new EnumType(
-              $2, ast->makeFullName($2, *scope), convertYYLoc(@2), *$3, *scope);
+              $2, ast->makeFullName($2, *scope), convertYYLoc(@2), *storageType, *scope);
           enterScope(ast, scope, enumType);
       }
       enum_declaration_body
