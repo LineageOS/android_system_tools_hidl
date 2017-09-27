@@ -608,6 +608,33 @@ TEST_F(HidlTest, ServiceListByInterfaceTest) {
     }
 }
 
+TEST_F(HidlTest, SubInterfaceServiceRegistrationTest) {
+    using ::android::hardware::interfacesEqual;
+
+    const std::string kInstanceName = "no-matter-what-it-is";
+    const std::string kOtherName = "something-different";
+
+    sp<IChild> child = new SimpleChild();
+    sp<IParent> parent = new SimpleParent();
+
+    EXPECT_EQ(::android::OK, child->registerAsService(kInstanceName));
+    EXPECT_EQ(::android::OK, child->registerAsService(kOtherName));
+
+    EXPECT_TRUE(interfacesEqual(child, IChild::getService(kInstanceName)));
+    EXPECT_TRUE(interfacesEqual(child, IParent::getService(kInstanceName)));
+
+    EXPECT_EQ(::android::OK, parent->registerAsService(kInstanceName));
+
+    // FALSE since passthrough HAL will return an instance
+    // since binderized instance is nullptr
+    EXPECT_FALSE(interfacesEqual(parent, IChild::getService(kInstanceName)));
+    EXPECT_TRUE(interfacesEqual(parent, IParent::getService(kInstanceName)));
+
+    // other instance name is unchanged
+    EXPECT_TRUE(interfacesEqual(child, IChild::getService(kOtherName)));
+    EXPECT_TRUE(interfacesEqual(child, IParent::getService(kOtherName)));
+}
+
 // passthrough TODO(b/31959402)
 TEST_F(HidlTest, ServiceParentTest) {
     if (mode == BINDERIZED) {

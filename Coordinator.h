@@ -20,10 +20,11 @@
 
 #include <android-base/macros.h>
 #include <hidl-util/FQName.h>
+#include <hidl-util/Formatter.h>
+#include <utils/Errors.h>
 #include <map>
 #include <set>
 #include <string>
-#include <utils/Errors.h>
 #include <vector>
 
 namespace android {
@@ -37,10 +38,28 @@ struct Coordinator {
     const std::string &getRootPath() const;
     void setRootPath(const std::string &rootPath);
 
+    void setVerbose(bool value);
+
     // adds path only if it doesn't exist
     status_t addPackagePath(const std::string& root, const std::string& path, std::string* error);
     // adds path if it hasn't already been added
     void addDefaultPackagePath(const std::string& root, const std::string& path);
+
+    enum class Location {
+        DIRECT,         // outputPath + file name
+        PACKAGE_ROOT,   // e.x. hal or other files within package root
+        GEN_OUTPUT,     // e.x. android/hardware/foo/1.0/*.cpp
+        GEN_SANITIZED,  // e.x. android/hardware/foo/V1_0/*.cpp
+    };
+
+    std::string getFilepath(const std::string& outputPath, const FQName& fqName, Location location,
+                            const std::string& fileName) const;
+
+    Formatter getFormatter(const std::string& outputPath, const FQName& fqName, Location location,
+                           const std::string& fileName) const;
+
+    // must be called before file access
+    void onFileAccess(const std::string& path, const std::string& mode) const;
 
     enum class Enforce {
         FULL,     // default
@@ -102,9 +121,9 @@ struct Coordinator {
     status_t enforceRestrictionsOnPackage(const FQName& fqName,
                                           Enforce enforcement = Enforce::FULL) const;
 
+private:
     static bool MakeParentHierarchy(const std::string &path);
 
-private:
     // indicates that packages in "android.hardware" will be looked up in hardware/interfaces
     struct PackageRoot {
         std::string path; // e.x. hardware/interfaces
@@ -113,6 +132,8 @@ private:
     std::vector<PackageRoot> mPackageRoots;
 
     std::string mRootPath;
+
+    bool mVerbose;
 
     // cache to parse().
     mutable std::map<FQName, AST *> mCache;

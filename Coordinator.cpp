@@ -54,6 +54,10 @@ void Coordinator::setRootPath(const std::string &rootPath) {
     }
 }
 
+void Coordinator::setVerbose(bool verbose) {
+    mVerbose = verbose;
+}
+
 status_t Coordinator::addPackagePath(const std::string& root, const std::string& path, std::string* error) {
     FQName package = FQName(root, "0.0", "");
     for (const PackageRoot &packageRoot : mPackageRoots) {
@@ -75,6 +79,62 @@ status_t Coordinator::addPackagePath(const std::string& root, const std::string&
 void Coordinator::addDefaultPackagePath(const std::string& root, const std::string& path) {
     addPackagePath(root, path, nullptr /* error */);
 }
+
+Formatter Coordinator::getFormatter(const std::string& outputPath, const FQName& fqName,
+                                    Location location, const std::string& fileName) const {
+    std::string filepath = getFilepath(outputPath, fqName, location, fileName);
+
+    onFileAccess(filepath, "w");
+
+    if (!Coordinator::MakeParentHierarchy(filepath)) {
+        fprintf(stderr, "ERROR: could not make directories for %s.\n", filepath.c_str());
+        return Formatter::invalid();
+    }
+
+    FILE* file = fopen(filepath.c_str(), "w");
+
+    if (file == nullptr) {
+        fprintf(stderr, "ERROR: could not open file %s: %d\n", filepath.c_str(), errno);
+        return Formatter::invalid();
+    }
+
+    return Formatter(file);
+}
+
+std::string Coordinator::getFilepath(const std::string& outputPath, const FQName& fqName,
+                                     Location location, const std::string& fileName) const {
+    std::string path = outputPath;
+
+    switch (location) {
+        case Location::DIRECT: { /* nothing */
+        } break;
+        case Location::PACKAGE_ROOT: {
+            path.append(getPackagePath(fqName, false /* relative */));
+        } break;
+        case Location::GEN_OUTPUT: {
+            path.append(convertPackageRootToPath(fqName));
+            path.append(getPackagePath(fqName, true /* relative */, false /* sanitized */));
+        } break;
+        case Location::GEN_SANITIZED: {
+            path.append(convertPackageRootToPath(fqName));
+            path.append(getPackagePath(fqName, true /* relative */, true /* sanitized */));
+        } break;
+        default: { CHECK(false) << "Invalid location: " << static_cast<size_t>(location); }
+    }
+
+    path.append(fileName);
+    return path;
+}
+
+void Coordinator::onFileAccess(const std::string& path, const std::string& mode) const {
+    if (!mVerbose) {
+        return;
+    }
+
+    fprintf(stderr,
+            "VERBOSE: file access %s %s\n", path.c_str(), mode.c_str());
+}
+
 
 AST* Coordinator::parse(const FQName& fqName, std::set<AST*>* parsedASTs,
                         Enforce enforcement) const {
@@ -118,6 +178,7 @@ AST* Coordinator::parse(const FQName& fqName, std::set<AST*>* parsedASTs,
         ast->addImportedAST(typesAST);
     }
 
+    onFileAccess(ast->getFilename(), "r");
     if (parseFile(ast) != OK || ast->postParse() != OK) {
         delete ast;
         ast = nullptr;
@@ -252,8 +313,9 @@ std::string Coordinator::getPackagePath(
 
     // Given FQName of "android.hardware.nfc.test@1.0::IFoo" and a prefix
     // "android.hardware", the suffix is "nfc.test".
-    const std::string suffix = StringHelper::LTrim(
-        fqName.package(), packageRoot.root.package() + ".");
+    std::string suffix = StringHelper::LTrim(fqName.package(), packageRoot.root.package());
+    suffix = StringHelper::LTrim(suffix, ".");
+
     std::vector<std::string> suffixComponents;
     StringHelper::SplitString(suffix, '.', &suffixComponents);
 
