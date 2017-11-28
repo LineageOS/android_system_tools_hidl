@@ -174,16 +174,19 @@ status_t Scope::emitTypeDeclarations(Formatter &out) const {
     });
 }
 
-status_t Scope::emitGlobalTypeDeclarations(Formatter &out) const {
-    return forEachType([&](Type *type) {
-        return type->emitGlobalTypeDeclarations(out);
+void Scope::emitGlobalTypeDeclarations(Formatter& out) const {
+    forEachType([&](Type* type) {
+        type->emitGlobalTypeDeclarations(out);
+        return OK;
     });
 }
 
-status_t Scope::emitGlobalHwDeclarations(Formatter &out) const {
-    return forEachType([&](Type *type) {
-        return type->emitGlobalHwDeclarations(out);
-    });
+status_t Scope::emitPackageTypeDeclarations(Formatter& out) const {
+    return forEachType([&](Type* type) { return type->emitPackageTypeDeclarations(out); });
+}
+
+status_t Scope::emitPackageHwDeclarations(Formatter& out) const {
+    return forEachType([&](Type* type) { return type->emitPackageHwDeclarations(out); });
 }
 
 status_t Scope::emitJavaTypeDeclarations(
