@@ -612,13 +612,26 @@ static status_t generateAndroidBpImplForPackage(const FQName& packageFQName, con
 
     out << "cc_library_shared {\n";
     out.indent([&] {
+        out << "// FIXME: this should only be -impl for a passthrough hal.\n"
+            << "// In most cases, to convert this to a binderized implementation, you should:\n"
+            << "// - change '-impl' to '-service' here and make it a cc_binary instead of a\n"
+            << "//   cc_library_shared.\n"
+            << "// - add a *.rc file for this module.\n"
+            << "// - delete HIDL_FETCH_I* functions.\n"
+            << "// - call configureRpcThreadpool and registerAsService on the instance.\n"
+            << "// You may also want to append '-impl/-service' with a specific identifier like\n"
+            << "// '-vendor' or '-<hardware identifier>' etc to distinguish it.\n";
         out << "name: \"" << libraryName << "\",\n";
         if (!coordinator->getOwner().empty()) {
             out << "owner: \"" << coordinator->getOwner() << "\",\n";
         }
-        out << "relative_install_path: \"hw\",\n"
-            << "proprietary: true,\n"
-            << "srcs: [\n";
+        out << "relative_install_path: \"hw\",\n";
+        if (coordinator->getOwner().empty()) {
+            out << "// FIXME: this should be 'vendor: true' for modules that will eventually be\n"
+                   "// on AOSP.\n";
+        }
+        out << "proprietary: true,\n";
+        out << "srcs: [\n";
         out.indent([&] {
             for (const auto &fqName : packageInterfaces) {
                 if (fqName.name() == "types") {
@@ -978,16 +991,15 @@ int main(int argc, char **argv) {
     Coordinator coordinator;
     std::string outputPath;
 
-    const char *ANDROID_BUILD_TOP = getenv("ANDROID_BUILD_TOP");
-    if (ANDROID_BUILD_TOP != nullptr) {
-        coordinator.setRootPath(ANDROID_BUILD_TOP);
-    }
-
     int res;
     while ((res = getopt(argc, argv, "hp:o:O:r:L:v")) >= 0) {
         switch (res) {
             case 'p':
             {
+                if (!coordinator.getRootPath().empty()) {
+                    fprintf(stderr, "ERROR: -p <root path> can only be specified once.\n");
+                    exit(1);
+                }
                 coordinator.setRootPath(optarg);
                 break;
             }
@@ -1000,6 +1012,10 @@ int main(int argc, char **argv) {
 
             case 'o':
             {
+                if (!outputPath.empty()) {
+                    fprintf(stderr, "ERROR: -o <output path> can only be specified once.\n");
+                    exit(1);
+                }
                 outputPath = optarg;
                 break;
             }
@@ -1066,6 +1082,13 @@ int main(int argc, char **argv) {
                 exit(1);
                 break;
             }
+        }
+    }
+
+    if (coordinator.getRootPath().empty()) {
+        const char* ANDROID_BUILD_TOP = getenv("ANDROID_BUILD_TOP");
+        if (ANDROID_BUILD_TOP != nullptr) {
+            coordinator.setRootPath(ANDROID_BUILD_TOP);
         }
     }
 
