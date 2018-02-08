@@ -182,7 +182,8 @@ AST* Coordinator::parse(const FQName& fqName, std::set<AST*>* parsedASTs,
     path.append(fqName.name());
     path.append(".hal");
 
-    AST *ast = new AST(this, path);
+    onFileAccess(path, "r");
+    AST* ast = new AST(this, &Hash::getHash(path));
 
     if (typesAST != NULL) {
         // If types.hal for this AST's package existed, make it's defined
@@ -190,7 +191,6 @@ AST* Coordinator::parse(const FQName& fqName, std::set<AST*>* parsedASTs,
         ast->addImportedAST(typesAST);
     }
 
-    onFileAccess(ast->getFilename(), "r");
     if (parseFile(ast) != OK || ast->postParse() != OK) {
         delete ast;
         ast = nullptr;
@@ -693,6 +693,7 @@ Coordinator::HashStatus Coordinator::checkHash(const FQName& fqName) const {
 
     std::string hashPath = makeAbsolute(getPackageRootPath(fqName)) + "/current.txt";
     std::string error;
+    onFileAccess(hashPath, "r");
     std::vector<std::string> frozen = Hash::lookupHash(hashPath, fqName.string(), &error);
 
     if (error.size() > 0) {
@@ -708,7 +709,7 @@ Coordinator::HashStatus Coordinator::checkHash(const FQName& fqName) const {
         return HashStatus::UNFROZEN;
     }
 
-    std::string currentHash = Hash::getHash(ast->getFilename()).hexString();
+    std::string currentHash = ast->getFileHash()->hexString();
 
     if (std::find(frozen.begin(), frozen.end(), currentHash) == frozen.end()) {
         std::cerr << "ERROR: " << fqName.string() << " has hash " << currentHash
