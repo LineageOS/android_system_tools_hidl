@@ -224,7 +224,6 @@ AST* Coordinator::parse(const FQName& fqName, std::set<AST*>* parsedASTs,
     path.append(fqName.name());
     path.append(".hal");
 
-    onFileAccess(path, "r");
     AST* ast = new AST(this, &Hash::getHash(path));
 
     if (typesAST != NULL) {
@@ -239,6 +238,8 @@ AST* Coordinator::parse(const FQName& fqName, std::set<AST*>* parsedASTs,
 
         return nullptr;
     }
+
+    onFileAccess(path, "r");
 
     status_t err = OK;
     if (ast->package().package() != fqName.package()
@@ -735,8 +736,10 @@ Coordinator::HashStatus Coordinator::checkHash(const FQName& fqName) const {
 
     std::string hashPath = makeAbsolute(getPackageRootPath(fqName)) + "/current.txt";
     std::string error;
-    onFileAccess(hashPath, "r");
-    std::vector<std::string> frozen = Hash::lookupHash(hashPath, fqName.string(), &error);
+    bool fileExists;
+    std::vector<std::string> frozen =
+        Hash::lookupHash(hashPath, fqName.string(), &error, &fileExists);
+    if (fileExists) onFileAccess(hashPath, "r");
 
     if (error.size() > 0) {
         std::cerr << "ERROR: " << error << std::endl;
