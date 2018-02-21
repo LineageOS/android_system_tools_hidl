@@ -68,6 +68,7 @@ using token = yy::parser::token;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-parameter"
 #pragma clang diagnostic ignored "-Wdeprecated-register"
+#pragma clang diagnostic ignored "-Wregister"
 
 %}
 
@@ -180,13 +181,9 @@ L?\"(\\.|[^\\"])*\" { yylval->str = strdup(yytext); return token::STRING_LITERAL
 
 #pragma clang diagnostic pop
 
-status_t parseFile(AST *ast) {
-    FILE *file = fopen(ast->getFilename().c_str(), "rb");
+namespace android {
 
-    if (file == nullptr) {
-        return -errno;
-    }
-
+status_t parseFile(AST* ast, FILE* file) {
     yyscan_t scanner;
     yylex_init(&scanner);
 
@@ -206,3 +203,5 @@ status_t parseFile(AST *ast) {
 
     return OK;
 }
+
+}  // namespace android
