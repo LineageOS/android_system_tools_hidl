@@ -31,32 +31,15 @@
 
 namespace android {
 
-FQName::FQName()
-    : mValid(false),
-      mIsIdentifier(false) {
-}
-
-// TODO(b/73774955): delete
-FQName::FQName(const std::string &s)
-    : mValid(false),
-      mIsIdentifier(false) {
-    (void)setTo(s);
-}
+FQName::FQName() : mIsIdentifier(false) {}
 
 bool FQName::parse(const std::string& s, FQName* into) {
     return into->setTo(s);
 }
 
-FQName::FQName(
-        const std::string &package,
-        const std::string &version,
-        const std::string &name,
-        const std::string &valueName)
-    : mValid(true),
-      mIsIdentifier(false),
-      mPackage(package),
-      mName(name),
-      mValueName(valueName) {
+FQName::FQName(const std::string& package, const std::string& version, const std::string& name,
+               const std::string& valueName)
+    : mIsIdentifier(false), mPackage(package), mName(name), mValueName(valueName) {
     CHECK(setVersion(version)) << version;
 
     // Check if this is actually a valid fqName
@@ -66,18 +49,12 @@ FQName::FQName(
 }
 
 FQName::FQName(const FQName& other)
-    : mValid(other.mValid),
-      mIsIdentifier(other.mIsIdentifier),
+    : mIsIdentifier(other.mIsIdentifier),
       mPackage(other.mPackage),
       mMajor(other.mMajor),
       mMinor(other.mMinor),
       mName(other.mName),
-      mValueName(other.mValueName) {
-}
-
-bool FQName::isValid() const {
-    return mValid;
-}
+      mValueName(other.mValueName) {}
 
 bool FQName::isIdentifier() const {
     return mIsIdentifier;
@@ -170,9 +147,7 @@ bool FQName::setTo(const std::string &s) {
     // package without version is not allowed.
     CHECK(invalid || mPackage.empty() || !version().empty());
 
-    // TODO(b/73774955): remove isValid and users
-    // of old FQName constructors
-    return mValid = !invalid;
+    return !invalid;
 }
 
 const std::string& FQName::package() const {
@@ -199,7 +174,6 @@ std::string FQName::atVersion() const {
 }
 
 void FQName::clear() {
-    mValid = true;
     mIsIdentifier = false;
     mPackage.clear();
     clearVersion();
@@ -217,7 +191,7 @@ bool FQName::setVersion(const std::string& v) {
 
     std::smatch match;
     if (!std::regex_match(v, match, kREVer)) {
-        return mValid = false;
+        return false;
     }
     CHECK_EQ(match.size(), 3u);
 
@@ -234,7 +208,6 @@ bool FQName::parseVersion(const std::string& majorStr, const std::string& minorS
         ::android::base::ParseUint(minorStr, &mMinor);
     if (!versionParseSuccess) {
         LOG(ERROR) << "numbers in " << majorStr << "." << minorStr << " are out of range.";
-        mValid = false;
     }
     return versionParseSuccess;
 }
@@ -278,8 +251,6 @@ void FQName::applyDefaults(
 }
 
 std::string FQName::string() const {
-    CHECK(mValid) << mPackage << atVersion() << mName;
-
     std::string out;
     out.append(mPackage);
     out.append(atVersion());
