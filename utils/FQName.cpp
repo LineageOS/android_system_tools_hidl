@@ -38,14 +38,25 @@ bool FQName::parse(const std::string& s, FQName* into) {
 }
 
 FQName::FQName(const std::string& package, const std::string& version, const std::string& name,
-               const std::string& valueName)
-    : mIsIdentifier(false), mPackage(package), mName(name), mValueName(valueName) {
-    CHECK(setVersion(version)) << version;
+               const std::string& valueName) {
+    size_t majorVer, minorVer;
+    CHECK(parseVersion(version, &majorVer, &minorVer));
+    CHECK(setTo(package, majorVer, minorVer, name, valueName)) << string();
+}
 
-    // Check if this is actually a valid fqName
+bool FQName::setTo(const std::string& package, size_t majorVer, size_t minorVer,
+                   const std::string& name, const std::string& valueName) {
+    mPackage = package;
+    mMajor = majorVer;
+    mMinor = minorVer;
+    mName = name;
+    mValueName = valueName;
+
     FQName other;
-    CHECK(parse(this->string(), &other)) << this->string();
-    CHECK((*this) == other) << this->string() << " " << other.string();
+    if (!parse(string(), &other)) return false;
+    if ((*this) != other) return false;
+    mIsIdentifier = other.isIdentifier();
+    return true;
 }
 
 FQName::FQName(const FQName& other)
@@ -181,11 +192,25 @@ void FQName::clear() {
     mValueName.clear();
 }
 
-bool FQName::setVersion(const std::string& v) {
+void FQName::clearVersion(size_t* majorVer, size_t* minorVer) {
+    *majorVer = *minorVer = 0;
+}
+
+bool FQName::parseVersion(const std::string& majorStr, const std::string& minorStr,
+                          size_t* majorVer, size_t* minorVer) {
+    bool versionParseSuccess = ::android::base::ParseUint(majorStr, majorVer) &&
+                               ::android::base::ParseUint(minorStr, minorVer);
+    if (!versionParseSuccess) {
+        LOG(ERROR) << "numbers in " << majorStr << "." << minorStr << " are out of range.";
+    }
+    return versionParseSuccess;
+}
+
+bool FQName::parseVersion(const std::string& v, size_t* majorVer, size_t* minorVer) {
     static const std::regex kREVer("(" RE_MAJOR ")[.](" RE_MINOR ")");
 
     if (v.empty()) {
-        clearVersion();
+        clearVersion(majorVer, minorVer);
         return true;
     }
 
@@ -195,21 +220,19 @@ bool FQName::setVersion(const std::string& v) {
     }
     CHECK_EQ(match.size(), 3u);
 
-    return parseVersion(match.str(1), match.str(2));
+    return parseVersion(match.str(1), match.str(2), majorVer, minorVer);
+}
+
+bool FQName::setVersion(const std::string& v) {
+    return parseVersion(v, &mMajor, &mMinor);
 }
 
 void FQName::clearVersion() {
-    mMajor = mMinor = 0;
+    clearVersion(&mMajor, &mMinor);
 }
 
 bool FQName::parseVersion(const std::string& majorStr, const std::string& minorStr) {
-    bool versionParseSuccess =
-        ::android::base::ParseUint(majorStr, &mMajor) &&
-        ::android::base::ParseUint(minorStr, &mMinor);
-    if (!versionParseSuccess) {
-        LOG(ERROR) << "numbers in " << majorStr << "." << minorStr << " are out of range.";
-    }
-    return versionParseSuccess;
+    return parseVersion(majorStr, minorStr, &mMajor, &mMinor);
 }
 
 const std::string& FQName::name() const {
