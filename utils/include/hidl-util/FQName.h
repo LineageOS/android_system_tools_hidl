@@ -28,15 +28,11 @@ struct FQName {
 
     explicit FQName();
 
-    // TODO(b/73774955): delete
-    explicit FQName(const std::string &s);
-
     FQName(const std::string& package, const std::string& version, const std::string& name = "",
            const std::string& valueName = "");
 
     FQName(const FQName& other);
 
-    bool isValid() const;
     bool isIdentifier() const;
 
     // Returns false if string isn't a valid FQName object.
@@ -223,9 +219,6 @@ struct FQName {
     FQName downRev() const;
 
    private:
-    // TODO(b/73774955): remove
-    bool mValid;
-
     bool mIsIdentifier;
     std::string mPackage;
     // mMajor == 0 means empty.
