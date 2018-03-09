@@ -534,8 +534,7 @@ static status_t generateAdapterMainSource(Formatter& out, const FQName& packageF
 
 static status_t generateAndroidBpForPackage(Formatter& out, const FQName& packageFQName,
                                             const Coordinator* coordinator) {
-    CHECK(packageFQName.isValid() && !packageFQName.isFullyQualified() &&
-          packageFQName.name().empty());
+    CHECK(!packageFQName.isFullyQualified() && packageFQName.name().empty());
 
     std::vector<FQName> packageInterfaces;
 
@@ -785,10 +784,8 @@ bool validateForSource(const FQName& fqName, const Coordinator* coordinator,
 FileGenerator::GenerationFunction generateExportHeaderForPackage(bool forJava) {
     return [forJava](Formatter& out, const FQName& packageFQName,
                      const Coordinator* coordinator) -> status_t {
-        CHECK(packageFQName.isValid()
-                && !packageFQName.package().empty()
-                && !packageFQName.version().empty()
-                && packageFQName.name().empty());
+        CHECK(!packageFQName.package().empty() && !packageFQName.version().empty() &&
+              packageFQName.name().empty());
 
         std::vector<FQName> packageInterfaces;
 
