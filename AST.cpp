@@ -448,7 +448,6 @@ EnumValue* AST::lookupEnumValue(const FQName& fqName, std::string* errorMsg, Sco
     FQName enumTypeName = fqName.typeName();
     std::string enumValueName = fqName.valueName();
 
-    CHECK(enumTypeName.isValid());
     CHECK(!enumValueName.empty());
 
     Type* type = lookupType(enumTypeName, scope);
@@ -475,8 +474,6 @@ EnumValue* AST::lookupEnumValue(const FQName& fqName, std::string* errorMsg, Sco
 }
 
 Type* AST::lookupType(const FQName& fqName, Scope* scope) {
-    CHECK(fqName.isValid());
-
     if (fqName.name().empty()) {
         // Given a package and version???
         return nullptr;

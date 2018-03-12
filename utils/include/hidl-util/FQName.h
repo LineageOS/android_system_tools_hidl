@@ -28,15 +28,11 @@ struct FQName {
 
     explicit FQName();
 
-    // TODO(b/73774955): delete
-    explicit FQName(const std::string &s);
-
     FQName(const std::string& package, const std::string& version, const std::string& name = "",
            const std::string& valueName = "");
 
     FQName(const FQName& other);
 
-    bool isValid() const;
     bool isIdentifier() const;
 
     // Returns false if string isn't a valid FQName object.
@@ -46,7 +42,7 @@ struct FQName {
             const std::string &defaultPackage,
             const std::string &defaultVersion);
 
-    std::string package() const;
+    const std::string& package() const;
     // Return version in the form "@1.0" if it is present, otherwise empty string.
     std::string atVersion() const;
     // Return version in the form "1.0" if it is present, otherwise empty string.
@@ -80,13 +76,13 @@ struct FQName {
     // FQName::name() will return "IFoo.bar.baz". FQName::names() will return
     // std::vector<std::string>{"IFoo","bar","baz"}
 
-    std::string name() const;
+    const std::string& name() const;
     std::vector<std::string> names() const;
 
     // The next two methods returns two parts of the FQName, that is,
     // the first part package + version + name, the second part valueName.
     FQName typeName() const;
-    std::string valueName() const;
+    const std::string& valueName() const;
 
     // has package version and name
     bool isFullyQualified() const;
@@ -118,7 +114,7 @@ struct FQName {
     // Must be called on an interface
     // android.hardware.foo@1.0::IBar
     // -> IBar
-    std::string getInterfaceName() const;
+    const std::string& getInterfaceName() const;
 
     // Must be called on an interface
     // android.hardware.foo@1.0::IBar
@@ -223,9 +219,6 @@ struct FQName {
     FQName downRev() const;
 
    private:
-    // TODO(b/73774955): remove
-    bool mValid;
-
     bool mIsIdentifier;
     std::string mPackage;
     // mMajor == 0 means empty.
