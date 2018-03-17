@@ -66,15 +66,21 @@ class FqInstance {
     __attribute__((warn_unused_result)) bool setTo(const std::string& s);
 
     // Convenience method for the following formats:
+    // android.hardware.foo@1.0
+    // android.hardware.foo@1.0::IFoo
     // android.hardware.foo@1.0::IFoo/default
-    // @1.0::IFoo/default
-    // IFoo/default
     __attribute__((warn_unused_result)) bool setTo(const std::string& package, size_t majorVer,
-                                                   size_t minorVer, const std::string& interface,
-                                                   const std::string& instance);
+                                                   size_t minorVer,
+                                                   const std::string& interface = "",
+                                                   const std::string& instance = "");
+    // Convenience method for the following formats:
+    // @1.0::IFoo
+    // @1.0::IFoo/default
     __attribute__((warn_unused_result)) bool setTo(size_t majorVer, size_t minorVer,
                                                    const std::string& interface,
-                                                   const std::string& instance);
+                                                   const std::string& instance = "");
+    // Convenience method for the following formats:
+    // IFoo/default
     __attribute__((warn_unused_result)) bool setTo(const std::string& interface,
                                                    const std::string& instance);
 
@@ -90,6 +96,9 @@ class FqInstance {
    private:
     FQName mFqName;
     std::string mInstance;
+
+    // helper to setTo() to determine that the FqInstance is actually valid.
+    bool isValid() const;
 };
 
 }  // namespace android
