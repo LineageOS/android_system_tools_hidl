@@ -190,6 +190,22 @@ TEST_F(LibHidlGenUtilsTest, FqInstanceIdentifier) {
     ASSERT_FALSE(e.hasInstance());
 }
 
+TEST_F(LibHidlGenUtilsTest, FqInstanceSetToByComponent) {
+    FqInstance e;
+    ASSERT_TRUE(e.setTo("android.hardware.foo", 1, 0, "IFoo", "default"));
+    EXPECT_EQ("android.hardware.foo@1.0::IFoo/default", e.string());
+    ASSERT_TRUE(e.setTo("android.hardware.foo", 1, 0, "IFoo"));
+    EXPECT_EQ("android.hardware.foo@1.0::IFoo", e.string());
+    ASSERT_TRUE(e.setTo("android.hardware.foo", 1, 0));
+    EXPECT_EQ("android.hardware.foo@1.0", e.string());
+    ASSERT_TRUE(e.setTo(1, 0, "IFoo", "default"));
+    EXPECT_EQ("@1.0::IFoo/default", e.string());
+    ASSERT_TRUE(e.setTo(1, 0, "IFoo"));
+    EXPECT_EQ("@1.0::IFoo", e.string());
+    ASSERT_TRUE(e.setTo("IFoo", "default"));
+    EXPECT_EQ("IFoo/default", e.string());
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
