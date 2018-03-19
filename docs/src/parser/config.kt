@@ -35,7 +35,6 @@ Usage: hidl-doc [-i path]
  Error modes:
  -w       Warn on errors instead of exiting
  -l       Lint. Warn-only and do not generate files
- -s       Skip files that encounter parse errors
 """.trim())
 }
 
@@ -45,13 +44,11 @@ object config {
     var verbose = false
     var lintMode = false
     var warnOnly = false
-    var skipError = false
 
     override fun toString(): String {
         return """
 verbose: $verbose
 warnOnly: $warnOnly
-skipError: $skipError
 outDir: $outDir
 files: $files
 """
@@ -86,7 +83,6 @@ files: $files
                 "-v" -> verbose = true
                 "-l" -> { lintMode = true; warnOnly = true }
                 "-w" -> warnOnly = true
-                "-s" -> skipError = true
                 "-h" -> {
                     printUsage()
                     exitProcess(0)
