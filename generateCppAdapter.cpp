@@ -128,13 +128,6 @@ void AST::generateAdapterMethod(Formatter& out, const Method* method) const {
             return;
         }
 
-        // TODO(b/66900959): if we are creating the adapter for a 1.1 IFoo
-        // and we are using a method that takes/returns a 1.0 Callback, but
-        // there exists a 1.1 Callback (or other subclass that is depended
-        // on by this module), then wrap with the adapter subclass adapter
-        // IFF that callback is a subclass. However, if the callback
-        // is 1.0 ICallback, then wrap with a 1.0 adapter.
-
         const Interface* interface = static_cast<const Interface*>(type);
         out << "static_cast<::android::sp<" << interface->fqName().cppName() << ">>("
             << interface->fqName().cppName() << "::castFrom("
