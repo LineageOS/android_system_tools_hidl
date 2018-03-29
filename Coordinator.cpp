@@ -460,8 +460,19 @@ status_t Coordinator::getPackageInterfaceFiles(
 
     struct dirent *ent;
     while ((ent = readdir(dir)) != NULL) {
-        if (ent->d_type != DT_REG) {
-            continue;
+        // filesystems may not support d_type and return DT_UNKNOWN
+        if (ent->d_type == DT_UNKNOWN) {
+            struct stat sb;
+            const auto filename = packagePath + std::string(ent->d_name);
+            if (stat(filename.c_str(), &sb) == -1) {
+                fprintf(stderr, "ERROR: Could not stat %s\n", filename.c_str());
+                return -errno;
+            }
+            if ((sb.st_mode & S_IFMT) != S_IFREG) {
+                continue;
+            }
+        } else if (ent->d_type != DT_REG) {
+             continue;
         }
 
         const auto suffix = ".hal";
