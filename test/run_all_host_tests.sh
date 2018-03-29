@@ -8,6 +8,7 @@ function run() {
         hidl_export_test \
         hidl_hash_test \
         hidl_impl_test \
+        hidl_system_api_test \
         android.hardware.tests.foo@1.0-vts.driver \
         android.hardware.tests.foo@1.0-vts.profiler)
 
