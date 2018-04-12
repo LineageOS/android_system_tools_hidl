@@ -31,9 +31,10 @@ LOCAL_REQUIRED_MODULES := \
     hidl_test_helper \
     hidl_test_servers
 
-LOCAL_REQUIRED_MODULES_arm64 := hidl_test_servers_32 hidl_test_client_32
-LOCAL_REQUIRED_MODULES_mips64 := hidl_test_servers_32 hidl_test_client_32
-LOCAL_REQUIRED_MODULES_x86_64 := hidl_test_servers_32 hidl_test_client_32
+ifneq ($(TARGET_2ND_ARCH),)
+LOCAL_REQUIRED_MODULES += hidl_test_servers$(TARGET_2ND_ARCH_MODULE_SUFFIX)
+LOCAL_REQUIRED_MODULES += hidl_test_client$(TARGET_2ND_ARCH_MODULE_SUFFIX)
+endif
 
 include $(BUILD_PREBUILT)
 
