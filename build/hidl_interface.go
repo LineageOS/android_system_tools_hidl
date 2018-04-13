@@ -289,11 +289,17 @@ func hidlInterfaceMutator(mctx android.LoadHookContext, i *hidlInterface) {
 		mctx.CreateModule(android.ModuleFactoryAdaptor(java.LibraryFactory(true)), &javaProperties{
 			Name:              proptools.StringPtr(name.javaName()),
 			Owner:             i.properties.Owner,
-			Sdk_version:       proptools.StringPtr("system_current"),
 			Defaults:          []string{"hidl-java-module-defaults"},
 			No_framework_libs: proptools.BoolPtr(true),
 			Srcs:              []string{":" + name.javaSourcesName()},
 			Static_libs:       javaDependencies,
+
+			// This should ideally be system_current, but android.hidl.base-V1.0-java is used
+			// to build framework, which is used to build system_current.  Use core_current
+			// plus hwbinder.stubs, which together form a subset of system_current that does
+			// not depend on framework.
+			Sdk_version: proptools.StringPtr("core_current"),
+			Libs:        []string{"hwbinder.stubs"},
 		})
 	}
 
