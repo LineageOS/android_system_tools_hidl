@@ -217,7 +217,7 @@ func hidlInterfaceMutator(mctx android.LoadHookContext, i *hidlInterface) {
 	}
 
 	// TODO(b/69002743): remove filegroups
-	mctx.CreateModule(android.ModuleFactoryAdaptor(genrule.FileGroupFactory), &fileGroupProperties{
+	mctx.CreateModule(android.ModuleFactoryAdaptor(android.FileGroupFactory), &fileGroupProperties{
 		Name:  proptools.StringPtr(name.fileGroupName()),
 		Owner: i.properties.Owner,
 		Srcs:  i.properties.Srcs,
