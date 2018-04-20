@@ -217,7 +217,7 @@ func hidlInterfaceMutator(mctx android.LoadHookContext, i *hidlInterface) {
 	}
 
 	// TODO(b/69002743): remove filegroups
-	mctx.CreateModule(android.ModuleFactoryAdaptor(genrule.FileGroupFactory), &fileGroupProperties{
+	mctx.CreateModule(android.ModuleFactoryAdaptor(android.FileGroupFactory), &fileGroupProperties{
 		Name:  proptools.StringPtr(name.fileGroupName()),
 		Owner: i.properties.Owner,
 		Srcs:  i.properties.Srcs,
@@ -254,6 +254,7 @@ func hidlInterfaceMutator(mctx android.LoadHookContext, i *hidlInterface) {
 			Name:              proptools.StringPtr(name.string()),
 			Owner:             i.properties.Owner,
 			Vendor_available:  proptools.BoolPtr(true),
+			Double_loadable:   proptools.BoolPtr(isDoubleLoadable(name.string())),
 			Defaults:          []string{"hidl-module-defaults"},
 			Generated_sources: []string{name.sourcesName()},
 			Generated_headers: []string{name.headersName()},
@@ -431,4 +432,24 @@ func lookupInterface(name string) *hidlInterface {
 		}
 	}
 	return nil
+}
+
+var doubleLoadablePackageNames = []string {
+	"android.hardware.configstore@",
+	"android.hardware.graphics.allocator@",
+	"android.hardware.graphics.bufferqueue@",
+	"android.hardware.media.omx@",
+	"android.hardware.media@",
+	"android.hardware.neuralnetworks@",
+	"android.hidl.allocator@",
+	"android.hidl.token@",
+}
+
+func isDoubleLoadable(name string) bool {
+	for _, pkgname := range doubleLoadablePackageNames {
+		if strings.HasPrefix(name, pkgname) {
+			return true
+		}
+	}
+	return false
 }
