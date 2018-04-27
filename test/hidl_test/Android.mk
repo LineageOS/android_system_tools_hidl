@@ -41,5 +41,4 @@ include $(BUILD_PREBUILT)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := VtsHidlUnitTests
-VTS_CONFIG_SRC_DIR := system/tools/hidl/tests
 -include test/vts/tools/build/Android.host_config.mk
