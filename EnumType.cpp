@@ -288,7 +288,7 @@ void EnumType::emitIteratorDeclaration(Formatter& out) const {
         elementCount += type->mValues.size();
     }
 
-    out << "template<> struct hidl_enum_iterator<" << getCppStackType() << ">\n";
+    out << "template<> struct hidl_enum_range<" << getCppStackType() << ">\n";
     out.block([&] {
         out << "const " << getCppStackType() << "* begin() { return static_begin(); }\n";
         out << "const " << getCppStackType() << "* end() { return begin() + " << elementCount
