@@ -138,7 +138,7 @@ using ::android::ONEWAY_TOLERANCE_NS;
 using std::to_string;
 
 template <typename T>
-using hidl_enum_iterator = ::android::hardware::hidl_enum_iterator<T>;
+using hidl_enum_range = ::android::hardware::hidl_enum_range<T>;
 
 template <typename T>
 static inline ::testing::AssertionResult isOk(const ::android::hardware::Return<T> &ret) {
@@ -472,30 +472,30 @@ TEST_F(HidlTest, EnumIteratorTest) {
     using SkipsValues = ::android::hardware::tests::foo::V1_0::EnumIterators::SkipsValues;
     using MultipleValues = ::android::hardware::tests::foo::V1_0::EnumIterators::MultipleValues;
 
-    for (const auto value : hidl_enum_iterator<Empty>()) {
+    for (const auto value : hidl_enum_range<Empty>()) {
         (void)value;
         EXPECT_TRUE(false) << "Empty iterator should not iterate";
     }
 
-    auto it1 = hidl_enum_iterator<Grandchild>().begin();
+    auto it1 = hidl_enum_range<Grandchild>().begin();
     EXPECT_EQ(Grandchild::A, *it1++);
     EXPECT_EQ(Grandchild::B, *it1++);
-    EXPECT_EQ(hidl_enum_iterator<Grandchild>().end(), it1);
+    EXPECT_EQ(hidl_enum_range<Grandchild>().end(), it1);
 
-    auto it2 = hidl_enum_iterator<SkipsValues>().begin();
+    auto it2 = hidl_enum_range<SkipsValues>().begin();
     EXPECT_EQ(SkipsValues::A, *it2++);
     EXPECT_EQ(SkipsValues::B, *it2++);
     EXPECT_EQ(SkipsValues::C, *it2++);
     EXPECT_EQ(SkipsValues::D, *it2++);
     EXPECT_EQ(SkipsValues::E, *it2++);
-    EXPECT_EQ(hidl_enum_iterator<SkipsValues>().end(), it2);
+    EXPECT_EQ(hidl_enum_range<SkipsValues>().end(), it2);
 
-    auto it3 = hidl_enum_iterator<MultipleValues>().begin();
+    auto it3 = hidl_enum_range<MultipleValues>().begin();
     EXPECT_EQ(MultipleValues::A, *it3++);
     EXPECT_EQ(MultipleValues::B, *it3++);
     EXPECT_EQ(MultipleValues::C, *it3++);
     EXPECT_EQ(MultipleValues::D, *it3++);
-    EXPECT_EQ(hidl_enum_iterator<MultipleValues>().end(), it3);
+    EXPECT_EQ(hidl_enum_range<MultipleValues>().end(), it3);
 }
 
 TEST_F(HidlTest, EnumToStringTest) {
