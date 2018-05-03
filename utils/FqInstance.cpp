@@ -129,4 +129,8 @@ bool FqInstance::operator!=(const FqInstance& other) const {
     return !(*this == other);
 }
 
+bool FqInstance::inPackage(const std::string& package) const {
+    return mFqName.inPackage(package);
+}
+
 }  // namespace android
