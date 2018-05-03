@@ -48,6 +48,12 @@ class FqInstance {
     bool hasInterface() const;
     bool hasInstance() const;
 
+    // If this is android.hardware@1.0::IFoo
+    // package = "and" -> false
+    // package = "android" -> true
+    // package = "android.hardware@1.0" -> false
+    bool inPackage(const std::string& package) const;
+
     // Return true if valid:
     // android.hardware.foo@1.0::IFoo/instance
     // @1.0::IFoo/instance
