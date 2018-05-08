@@ -23,6 +23,7 @@ cc_defaults {
     // libs should be used on device.
     static_libs: [
         "libfootest",
+        "libhidl-gen-utils",
         "libpointertest",
         "android.hardware.tests.expression@1.0",
         "android.hardware.tests.foo@1.0",
