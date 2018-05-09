@@ -140,8 +140,7 @@ static void implementGetService(Formatter &out,
     const std::string interfaceName = fqName.getInterfaceName();
     const std::string functionName = isTry ? "tryGetService" : "getService";
 
-    out << "// static\n"
-        << "::android::sp<" << interfaceName << "> " << interfaceName << "::" << functionName << "("
+    out << "::android::sp<" << interfaceName << "> " << interfaceName << "::" << functionName << "("
         << "const std::string &serviceName, const bool getStub) ";
     out.block([&] {
         out << "return ::android::hardware::details::getServiceInternal<"
@@ -1716,7 +1715,7 @@ void AST::generateInterfaceSource(Formatter& out) const {
     });
 
     for (const Interface *superType : iface->typeChain()) {
-        out << "// static \n::android::hardware::Return<"
+        out << "::android::hardware::Return<"
             << childTypeResult
             << "> "
             << iface->localName()

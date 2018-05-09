@@ -141,7 +141,7 @@ bool Interface::fillLinkToDeathMethod(Method *method) const {
             {
                 {IMPL_INTERFACE,
                     [](auto &out) {
-                        out << "return true;";
+                        out << "return true;\n";
                     }
                 },
                 {IMPL_PROXY,
@@ -180,7 +180,7 @@ bool Interface::fillUnlinkToDeathMethod(Method *method) const {
                                     << "_hidl_mDeathRecipients.erase(it);\n"
                                     << "return status == ::android::OK;\n";
                                 });
-                            });
+                            }).endl();
                         out << "}\n";
                         out << "return false;\n";
                     }
@@ -212,10 +212,10 @@ bool Interface::fillSyspropsChangedMethod(Method *method) const {
             HIDL_SYSPROPS_CHANGED_TRANSACTION,
             { { IMPL_INTERFACE, [](auto &out) {
                 out << "::android::report_sysprop_change();\n";
-                out << "return ::android::hardware::Void();";
+                out << "return ::android::hardware::Void();\n";
             } } }, /*cppImpl */
             { { IMPL_INTERFACE, [](auto &out) { /* javaImpl */
-                out << "android.os.HwBinder.enableInstrumentation();";
+                out << "android.os.HwBinder.enableInstrumentation();\n";
             } } } /*javaImpl */
     );
     return true;
@@ -281,7 +281,7 @@ bool Interface::fillDescriptorChainMethod(Method *method) const {
                     out << ",\n";
                 out << chain[i]->fullJavaName() << ".kInterfaceName";
             }
-            out << "));";
+            out << "));\n";
             out.unindent(); out.unindent();
         } } } /* javaImpl */
     );
@@ -353,7 +353,7 @@ bool Interface::fillGetDescriptorMethod(Method *method) const {
             out << "_hidl_cb("
                 << fullName()
                 << "::descriptor);\n"
-                << "return ::android::hardware::Void();";
+                << "return ::android::hardware::Void();\n";
         } } }, /* cppImpl */
         { { IMPL_INTERFACE, [this](auto &out) {
             out << "return "
@@ -385,7 +385,7 @@ bool Interface::fillGetDebugInfoMethod(Method *method) const {
                     out << "_hidl_cb({ -1 /* pid */, 0 /* ptr */, \n"
                         << sArch
                         << "});\n"
-                        << "return ::android::hardware::Void();";
+                        << "return ::android::hardware::Void();\n";
                 }
             },
             {IMPL_STUB_IMPL,
@@ -398,7 +398,7 @@ bool Interface::fillGetDebugInfoMethod(Method *method) const {
                             << sArch << "\n";
                     });
                     out << ");\n"
-                        << "return ::android::hardware::Void();";
+                        << "return ::android::hardware::Void();\n";
                 }
             }
         }, /* cppImpl */
@@ -409,7 +409,7 @@ bool Interface::fillGetDebugInfoMethod(Method *method) const {
                 << "info.pid = android.os.HidlSupport.getPidIfSharable();\n"
                 << "info.ptr = 0;\n"
                 << "info.arch = android.hidl.base.V1_0.DebugInfo.Architecture.UNKNOWN;\n"
-                << "return info;";
+                << "return info;\n";
         } } } /* javaImpl */
     );
 
@@ -428,7 +428,7 @@ bool Interface::fillDebugMethod(Method *method) const {
                 [](auto &out) {
                     out << "(void)fd;\n"
                         << "(void)options;\n"
-                        << "return ::android::hardware::Void();";
+                        << "return ::android::hardware::Void();\n";
                 }
             },
         }, /* cppImpl */
