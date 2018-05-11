@@ -63,6 +63,7 @@
 
 #include <hidl-test/FooHelper.h>
 #include <hidl-test/PointerHelper.h>
+#include <hidl-util/FQName.h>
 
 #include <hidl/ServiceManagement.h>
 #include <hidl/Status.h>
@@ -90,6 +91,7 @@ enum TestMode {
 
 static HidlEnvironment *gHidlEnvironment = nullptr;
 
+using ::android::FQName;
 using ::android::hardware::tests::foo::V1_0::Abc;
 using ::android::hardware::tests::foo::V1_0::IFoo;
 using ::android::hardware::tests::foo::V1_0::IFooCallback;
@@ -745,6 +747,16 @@ TEST_F(HidlTest, ServiceAllNotificationTest) {
     EXPECT_EQ(
         to_string(registrations.data(), registrations.size()),
         "['" + descriptor + "/" + instanceOne + "', '" + descriptor + "/" + instanceTwo + "']");
+}
+
+TEST_F(HidlTest, DebugDumpTest) {
+    EXPECT_OK(manager->debugDump([](const auto& list) {
+        for (const auto& debugInfo : list) {
+            FQName name;
+            EXPECT_TRUE(FQName::parse(debugInfo.interfaceName, &name)) << debugInfo.interfaceName;
+            EXPECT_TRUE(debugInfo.instanceName.size() > 0);
+        }
+    }));
 }
 
 TEST_F(HidlTest, InterfacesEqualTest) {
