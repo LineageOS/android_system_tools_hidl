@@ -781,6 +781,7 @@ void AST::generateCppSource(Formatter& out) const {
     out << "#include <android/log.h>\n";
     out << "#include <cutils/trace.h>\n";
     out << "#include <hidl/HidlTransportSupport.h>\n\n";
+    out << "#include <utils/Trace.h>\n";
     if (iface) {
         // This is a no-op for IServiceManager itself.
         out << "#include <android/hidl/manager/1.0/IServiceManager.h>\n";
@@ -1811,12 +1812,6 @@ void AST::generateCppAtraceCall(Formatter &out,
                 << baseString + "::server\");\n";
             break;
         }
-        case CLIENT_API_ENTRY:
-        {
-            out << "atrace_begin(ATRACE_TAG_HAL, \""
-                << baseString + "::client\");\n";
-            break;
-        }
         case PASSTHROUGH_ENTRY:
         {
             out << "atrace_begin(ATRACE_TAG_HAL, \""
@@ -1824,12 +1819,20 @@ void AST::generateCppAtraceCall(Formatter &out,
             break;
         }
         case SERVER_API_EXIT:
-        case CLIENT_API_EXIT:
         case PASSTHROUGH_EXIT:
         {
             out << "atrace_end(ATRACE_TAG_HAL);\n";
             break;
         }
+        // client uses scope because of gotos
+        // this isn't done for server because the profiled code isn't alone in its scope
+        // this isn't done for passthrough becuase the profiled boundary isn't even in the same code
+        case CLIENT_API_ENTRY: {
+            out << "::android::ScopedTrace(ATRACE_TAG_HAL, \"" << baseString + "::client\");\n";
+            break;
+        }
+        case CLIENT_API_EXIT:
+            break;
         default:
         {
             CHECK(false) << "Unsupported instrumentation event: " << event;
