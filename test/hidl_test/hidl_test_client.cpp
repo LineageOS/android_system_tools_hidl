@@ -5,8 +5,8 @@
 
 #include <android-base/logging.h>
 
-#include <android/hidl/manager/1.1/IServiceManager.h>
 #include <android/hidl/manager/1.0/IServiceNotification.h>
+#include <android/hidl/manager/1.2/IServiceManager.h>
 
 #include <android/hidl/allocator/1.0/IAllocator.h>
 #include <android/hidl/memory/1.0/IMemory.h>
@@ -121,8 +121,8 @@ using ::android::hardware::hidl_string;
 using ::android::hardware::hidl_vec;
 using ::android::hidl::allocator::V1_0::IAllocator;
 using ::android::hidl::base::V1_0::IBase;
-using ::android::hidl::manager::V1_1::IServiceManager;
 using ::android::hidl::manager::V1_0::IServiceNotification;
+using ::android::hidl::manager::V1_2::IServiceManager;
 using ::android::hidl::memory::V1_0::IMemory;
 using ::android::hidl::memory::token::V1_0::IMemoryToken;
 using ::android::hidl::memory::block::V1_0::MemoryBlock;
