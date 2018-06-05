@@ -113,7 +113,7 @@ bool isValidIdentifier(const std::string& identifier, std::string *errorMsg) {
         "int8_t", "int16_t", "int32_t", "int64_t", "bool", "float", "double",
         "interface", "struct", "union", "string", "vec", "enum", "ref", "handle",
         "package", "import", "typedef", "generates", "oneway", "extends",
-        "fmq_sync", "fmq_unsync",
+        "fmq_sync", "fmq_unsync", "safe_union",
     });
     static const std::vector<std::string> cppKeywords({
         "alignas", "alignof", "and", "and_eq", "asm", "atomic_cancel", "atomic_commit",
@@ -234,6 +234,7 @@ bool isValidTypeName(const std::string& identifier, std::string *errorMsg) {
 %token<str> STRING_LITERAL "string literal"
 %token<void> TYPEDEF "keyword `typedef`"
 %token<void> UNION "keyword `union`"
+%token<void> SAFE_UNION "keyword `safe_union`"
 %token<templatedType> TEMPLATED "templated type"
 %token<void> ONEWAY "keyword `oneway`"
 %token<str> UNKNOWN "unknown character"
@@ -337,6 +338,11 @@ doc_comments
       {
         $1->merge($2);
         $$ = $1;
+      }
+    | doc_comments '}'
+      {
+        std::cerr << "ERROR: Doc comments must preceed what they describe at " << @1 << "\n";
+        YYERROR;
       }
     ;
 
@@ -871,6 +877,7 @@ typed_var
 struct_or_union_keyword
     : STRUCT { $$ = CompoundType::STYLE_STRUCT; }
     | UNION { $$ = CompoundType::STYLE_UNION; }
+    | SAFE_UNION { CHECK(!"Unimplemented feature."); }
     ;
 
 named_struct_or_union_declaration

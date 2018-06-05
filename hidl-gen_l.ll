@@ -111,6 +111,7 @@ static std::string gCurrentComment;
 "import"            { return token::IMPORT; }
 "interface"         { return token::INTERFACE; }
 "package"           { return token::PACKAGE; }
+"safe_union"        { return token::SAFE_UNION; }
 "struct"            { return token::STRUCT; }
 "typedef"           { return token::TYPEDEF; }
 "union"             { return token::UNION; }
