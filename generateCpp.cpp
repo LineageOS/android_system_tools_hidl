@@ -778,9 +778,6 @@ void AST::generateCppSource(Formatter& out) const {
         << mPackage.string() << "::" << baseName
         << "\"\n\n";
 
-    // TODO(b/65200821): remove define
-    out << "#define REALLY_IS_HIDL_INTERNAL_LIB" << gCurrentCompileName << "\n";
-
     out << "#include <android/log.h>\n";
     out << "#include <cutils/trace.h>\n";
     out << "#include <hidl/HidlTransportSupport.h>\n\n";
@@ -1324,6 +1321,11 @@ void AST::generateStubSource(Formatter& out, const Interface* iface) const {
             << " */:\n{\n";
 
         out.indent();
+
+        out << "bool _hidl_is_oneway = _hidl_flags & " << Interface::FLAG_ONEWAY
+            << " /* oneway */;\n";
+        out << "if (_hidl_is_oneway != " << (method->isOneway() ? "true" : "false") << ") ";
+        out.block([&] { out << "return ::android::UNKNOWN_ERROR;\n"; }).endl().endl();
 
         generateStubSourceForMethod(out, method, superInterface);
 
