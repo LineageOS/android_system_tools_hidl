@@ -10,6 +10,7 @@
 #include <android/hardware/tests/multithread/1.0/IMultithread.h>
 #include <android/hardware/tests/pointer/1.0/IGraph.h>
 #include <android/hardware/tests/pointer/1.0/IPointer.h>
+#include <android/hardware/tests/safeunion/1.0/ISafeUnion.h>
 #include <android/hardware/tests/trie/1.0/ITrie.h>
 
 template <template <typename Type> class Service>
@@ -23,6 +24,7 @@ void runOnEachServer(void) {
     using ::android::hardware::tests::multithread::V1_0::IMultithread;
     using ::android::hardware::tests::pointer::V1_0::IGraph;
     using ::android::hardware::tests::pointer::V1_0::IPointer;
+    using ::android::hardware::tests::safeunion::V1_0::ISafeUnion;
     using ::android::hardware::tests::trie::V1_0::ITrie;
 
     Service<IMemoryTest>::run("memory");
@@ -35,6 +37,7 @@ void runOnEachServer(void) {
     Service<IPointer>::run("pointer");
     Service<IMultithread>::run("multithread");
     Service<ITrie>::run("trie");
+    Service<ISafeUnion>::run("safeunion");
 }
 
 #endif  // HIDL_TEST_H_
