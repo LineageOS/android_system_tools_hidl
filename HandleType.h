@@ -56,6 +56,8 @@ struct HandleType : public Type {
             const std::string &parentName,
             const std::string &offsetText) const override;
 
+    void emitTypeDestructorCall(Formatter& out, const std::string& objName) const override;
+
     bool needsEmbeddedReadWrite() const override;
 
     bool deepIsJavaCompatible(std::unordered_set<const Type*>* visited) const override;
