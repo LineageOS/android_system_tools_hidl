@@ -106,6 +106,8 @@ struct EnumType : public Scope {
             const std::string &streamName,
             const std::string &name) const override;
 
+    void emitTypeDestructorCall(Formatter& out, const std::string& objName) const override;
+
     void getAlignmentAndSize(size_t *align, size_t *size) const override;
 
     void appendToExportedTypesVector(
@@ -223,6 +225,8 @@ struct BitFieldType : public TemplatedType {
         const std::string &fieldName,
         const std::string &offset,
         bool isReader) const override;
+
+    void emitTypeDestructorCall(Formatter& out, const std::string& objName) const override;
 };
 
 }  // namespace android

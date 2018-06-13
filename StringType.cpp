@@ -213,6 +213,10 @@ void StringType::emitVtsTypeDeclarations(Formatter& out) const {
     out << "type: " << getVtsType() << "\n";
 }
 
+void StringType::emitTypeDestructorCall(Formatter& out, const std::string& objName) const {
+    out << objName << ".~hidl_string();\n";
+}
+
 static HidlTypeAssertion assertion("hidl_string", 16 /* size */);
 void StringType::getAlignmentAndSize(size_t *align, size_t *size) const {
     *align = 8;  // hidl_string
