@@ -110,6 +110,8 @@ struct VectorType : public TemplatedType {
             const std::string &offset,
             bool isReader) const override;
 
+    void emitTypeDestructorCall(Formatter& out, const std::string& objName) const override;
+
     static void EmitJavaFieldReaderWriterForElementType(
             Formatter &out,
             size_t depth,

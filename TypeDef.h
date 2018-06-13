@@ -45,6 +45,8 @@ struct TypeDef : public NamedType {
 
     void emitTypeDeclarations(Formatter& out) const override;
 
+    void emitTypeDestructorCall(Formatter& out, const std::string& objName) const override;
+
    private:
     Reference<Type> mReferencedType;
 
