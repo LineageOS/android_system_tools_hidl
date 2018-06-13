@@ -959,6 +959,10 @@ void Interface::emitVtsAttributeType(Formatter& out) const {
         << "\"\n";
 }
 
+void Interface::emitTypeDestructorCall(Formatter& out, const std::string& objName) const {
+    out << objName << ".~sp();\n";
+}
+
 bool Interface::hasOnewayMethods() const {
     for (auto const &method : methods()) {
         if (method->isOneway()) {

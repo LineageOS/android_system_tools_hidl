@@ -583,6 +583,10 @@ void ArrayType::emitVtsTypeDeclarations(Formatter& out) const {
     }
 }
 
+void ArrayType::emitTypeDestructorCall(Formatter& out, const std::string& objName) const {
+    out << objName << ".~hidl_array();\n";
+}
+
 bool ArrayType::deepIsJavaCompatible(std::unordered_set<const Type*>* visited) const {
     if (!mElementType->isJavaCompatible(visited)) {
         return false;

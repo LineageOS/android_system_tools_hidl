@@ -1032,6 +1032,10 @@ void CompoundType::emitVtsAttributeType(Formatter& out) const {
     out << "predefined_type: \"" << fullName() << "\"\n";
 }
 
+void CompoundType::emitTypeDestructorCall(Formatter& out, const std::string& objName) const {
+    out << objName << ".~" << localName() << "();\n";
+}
+
 bool CompoundType::deepIsJavaCompatible(std::unordered_set<const Type*>* visited) const {
     if (mStyle != STYLE_STRUCT) {
         return false;

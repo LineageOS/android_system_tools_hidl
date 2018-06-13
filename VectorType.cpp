@@ -574,6 +574,10 @@ void VectorType::emitJavaFieldReaderWriter(
             isReader);
 }
 
+void VectorType::emitTypeDestructorCall(Formatter& out, const std::string& objName) const {
+    out << objName << ".~hidl_vec();\n";
+}
+
 void VectorType::EmitJavaFieldReaderWriterForElementType(
         Formatter &out,
         size_t depth,

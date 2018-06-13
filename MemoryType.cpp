@@ -133,6 +133,10 @@ void MemoryType::emitReaderWriterEmbedded(
             "::android::hardware");
 }
 
+void MemoryType::emitTypeDestructorCall(Formatter& out, const std::string& objName) const {
+    out << objName << ".~hidl_memory();\n";
+}
+
 bool MemoryType::needsEmbeddedReadWrite() const {
     return true;
 }

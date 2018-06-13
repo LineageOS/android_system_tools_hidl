@@ -282,6 +282,8 @@ void ScalarType::emitVtsTypeDeclarations(Formatter& out) const {
     out << "scalar_type: \"" << getVtsScalarType() << "\"\n";
 }
 
+void ScalarType::emitTypeDestructorCall(Formatter&, const std::string&) const {}
+
 void ScalarType::getAlignmentAndSize(size_t *align, size_t *size) const {
     static const size_t kAlign[] = {
         1,  // bool, this is NOT standardized!
