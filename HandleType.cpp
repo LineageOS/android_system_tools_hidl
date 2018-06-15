@@ -153,6 +153,10 @@ void HandleType::emitReaderWriterEmbedded(
     }
 }
 
+void HandleType::emitTypeDestructorCall(Formatter& out, const std::string& objName) const {
+    out << objName << ".~hidl_handle();\n";
+}
+
 bool HandleType::needsEmbeddedReadWrite() const {
     return true;
 }

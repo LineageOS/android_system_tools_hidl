@@ -55,6 +55,8 @@ void PointerType::emitReaderWriter(
     out << "LOG_ALWAYS_FATAL(\"Pointer is only supported in passthrough mode\");\n";
 }
 
+void PointerType::emitTypeDestructorCall(Formatter&, const std::string&) const {}
+
 bool PointerType::needsEmbeddedReadWrite() const {
     return false;
 }

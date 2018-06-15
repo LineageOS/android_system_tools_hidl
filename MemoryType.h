@@ -54,6 +54,8 @@ struct MemoryType : public Type {
             const std::string &parentName,
             const std::string &offsetText) const override;
 
+    void emitTypeDestructorCall(Formatter& out, const std::string& objName) const override;
+
     bool needsEmbeddedReadWrite() const override;
     bool resultNeedsDeref() const override;
 

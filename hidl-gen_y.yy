@@ -107,6 +107,15 @@ bool isValidStructField(const std::string& identifier, std::string *errorMsg) {
     return true;
 }
 
+bool isValidCompoundTypeField(CompoundType::Style style, const std::string& identifier,
+                              std::string *errorMsg) {
+    // Unions don't support fix-up types; as such, they can't
+    // have name collisions with embedded read/write methods.
+    if (style == CompoundType::STYLE_UNION) { return true; }
+
+    return isValidStructField(identifier, errorMsg);;
+}
+
 bool isValidIdentifier(const std::string& identifier, std::string *errorMsg) {
     static const std::vector<std::string> keywords({
         "uint8_t", "uint16_t", "uint32_t", "uint64_t",
@@ -877,7 +886,7 @@ typed_var
 struct_or_union_keyword
     : STRUCT { $$ = CompoundType::STYLE_STRUCT; }
     | UNION { $$ = CompoundType::STYLE_UNION; }
-    | SAFE_UNION { CHECK(!"Unimplemented feature."); }
+    | SAFE_UNION { $$ = CompoundType::STYLE_SAFE_UNION; }
     ;
 
 named_struct_or_union_declaration
@@ -931,8 +940,9 @@ field_declaration
           CHECK((*scope)->isCompoundType());
 
           std::string errorMsg;
-          if (static_cast<CompoundType *>(*scope)->style() == CompoundType::STYLE_STRUCT &&
-              !isValidStructField($2, &errorMsg)) {
+          auto style = static_cast<CompoundType *>(*scope)->style();
+
+          if (!isValidCompoundTypeField(style, $2, &errorMsg)) {
               std::cerr << "ERROR: " << errorMsg << " at "
                         << @2 << "\n";
               YYERROR;
@@ -944,9 +954,11 @@ field_declaration
           CHECK((*scope)->isCompoundType());
 
           std::string errorMsg;
-          if (static_cast<CompoundType *>(*scope)->style() == CompoundType::STYLE_STRUCT &&
-              $1 != nullptr && $1->isNamedType() &&
-              !isValidStructField(static_cast<NamedType*>($1)->localName().c_str(), &errorMsg)) {
+          auto style = static_cast<CompoundType *>(*scope)->style();
+
+          if ($1 != nullptr && $1->isNamedType() &&
+              !isValidCompoundTypeField(style, static_cast<NamedType*>(
+                        $1)->localName().c_str(), &errorMsg)) {
               std::cerr << "ERROR: " << errorMsg << " at "
                         << @2 << "\n";
               YYERROR;
