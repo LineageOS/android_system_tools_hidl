@@ -39,6 +39,7 @@ type ccProperties struct {
 	Owner                     *string
 	Defaults                  []string
 	Vendor_available          *bool
+	Recovery_available        *bool
 	Generated_sources         []string
 	Generated_headers         []string
 	Group_static_libs         *bool
