@@ -251,13 +251,14 @@ func hidlInterfaceMutator(mctx android.LoadHookContext, i *hidlInterface) {
 
 	if shouldGenerateLibrary {
 		mctx.CreateModule(android.ModuleFactoryAdaptor(cc.LibraryFactory), &ccProperties{
-			Name:              proptools.StringPtr(name.string()),
-			Owner:             i.properties.Owner,
-			Vendor_available:  proptools.BoolPtr(true),
-			Double_loadable:   proptools.BoolPtr(isDoubleLoadable(name.string())),
-			Defaults:          []string{"hidl-module-defaults"},
-			Generated_sources: []string{name.sourcesName()},
-			Generated_headers: []string{name.headersName()},
+			Name:               proptools.StringPtr(name.string()),
+			Owner:              i.properties.Owner,
+			Recovery_available: proptools.BoolPtr(true),
+			Vendor_available:   proptools.BoolPtr(true),
+			Double_loadable:    proptools.BoolPtr(isDoubleLoadable(name.string())),
+			Defaults:           []string{"hidl-module-defaults"},
+			Generated_sources:  []string{name.sourcesName()},
+			Generated_headers:  []string{name.headersName()},
 			Shared_libs: concat(cppDependencies, []string{
 				"libhidlbase",
 				"libhidltransport",
