@@ -398,10 +398,13 @@ void CompoundType::emitJavaReaderWriter(
 
 void CompoundType::emitJavaFieldInitializer(
         Formatter &out, const std::string &fieldName) const {
-    out << "final "
-        << fullJavaName()
-        << " "
-        << fieldName
+    const std::string fieldDeclaration = "final " + fullJavaName() + " " + fieldName;
+    emitJavaFieldDefaultInitialValue(out, fieldDeclaration);
+}
+
+void CompoundType::emitJavaFieldDefaultInitialValue(
+        Formatter &out, const std::string &declaredFieldName) const {
+    out << declaredFieldName
         << " = new "
         << fullJavaName()
         << "();\n";
@@ -416,8 +419,9 @@ void CompoundType::emitJavaFieldReaderWriter(
         const std::string &offset,
         bool isReader) const {
     if (isReader) {
-        out << fieldName
-            << ".readEmbeddedFromParcel("
+        out << "("
+            << getJavaTypeCast(fieldName)
+            << ").readEmbeddedFromParcel("
             << parcelName
             << ", "
             << blobName
@@ -983,7 +987,7 @@ void CompoundType::emitSafeUnionTypeConstructors(Formatter& out) const {
         << "& other) ";
 
     out.block([&] {
-        out << "switch(other.hidl_d) ";
+        out << "switch (other.hidl_d) ";
         out.block([&] {
 
             for (const auto& field : *mFields) {
@@ -1021,7 +1025,7 @@ void CompoundType::emitSafeUnionTypeDefinitions(Formatter& out) const {
         << "::hidl_destructUnion() ";
 
     out.block([&] {
-        out << "switch(hidl_d) ";
+        out << "switch (hidl_d) ";
         out.block([&] {
 
             for (const auto& field : *mFields) {
@@ -1187,7 +1191,6 @@ void CompoundType::emitTypeDefinitions(Formatter& out, const std::string& prefix
     }
 }
 
-// TODO(b/79878527): Implement Java bindings for safe unions
 void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) const {
     out << "public final ";
 
@@ -1203,15 +1206,128 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
 
     Scope::emitJavaTypeDeclarations(out, false /* atTopLevel */);
 
-    for (const auto& field : *mFields) {
-        field->emitDocComment(out);
+    if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
+        const std::string discriminatorStorageType = (
+                getUnionDiscriminatorType()->getJavaType(false));
 
-        out << "public ";
+        out << "public static final class hidl_discriminator ";
+        out.block([&] {
+            std::vector<std::string> enumNames;
+            for (const auto& field : *mFields) {
+                enumNames.push_back(field->name());
+            }
+            enumNames.push_back("hidl_no_init");
 
-        field->type().emitJavaFieldInitializer(out, field->name());
-    }
+            for (size_t idx = 0; idx < enumNames.size(); idx++) {
+                out << "public static final "
+                    << discriminatorStorageType
+                    << " "
+                    << enumNames[idx]
+                    << " = "
+                    << idx
+                    << ";\n";
+            }
 
-    if (!mFields->empty()) {
+            out << "\n"
+                << "public static final String getName("
+                << discriminatorStorageType
+                << " value) ";
+
+            out.block([&] {
+                out << "switch (value) ";
+                out.block([&] {
+                    for (size_t idx = 0; idx < enumNames.size(); idx++) {
+                        out << "case "
+                            << idx
+                            << ": { return \""
+                            << enumNames[idx]
+                            << "\"; }\n";
+                    }
+                    out << "default: { return \"Unknown\"; }\n";
+                }).endl();
+            }).endl().endl();
+
+            out << "private hidl_discriminator() {}\n";
+        }).endl().endl();
+
+        out << "private "
+            << discriminatorStorageType
+            << " hidl_d = hidl_discriminator.hidl_no_init;\n";
+
+        out << "private Object hidl_o;\n\n";
+
+        for (const auto& field : *mFields) {
+            // Setter
+            out << "public void "
+                << field->name()
+                << "("
+                << field->type().getJavaType(false)
+                << " "
+                << field->name()
+                << ") ";
+
+            out.block([&] {
+                out << "hidl_d = hidl_discriminator."
+                    << field->name()
+                    << ";\n";
+
+                out << "hidl_o = "
+                    << field->name()
+                    << ";\n";
+            }).endl().endl();
+
+            // Getter
+            out << "public "
+                << field->type().getJavaType(false)
+                << " "
+                << field->name()
+                << "() ";
+
+            out.block([&] {
+                out << "if (hidl_d != hidl_discriminator."
+                    << field->name()
+                    << ") ";
+
+                out.block([&] {
+                    out << "String className = (hidl_o != null) ? "
+                        << "hidl_o.getClass().getName() : \"null\";\n";
+
+                    out << "throw new IllegalStateException(\n";
+                    out.indent(2, [&] {
+                        out << "\"Read access to inactive union components is disallowed. \" +\n"
+                            << "\"Discriminator value is \" + hidl_d + \" (corresponding \" +\n"
+                            << "\"to \" + hidl_discriminator.getName(hidl_d) + \"), and \" +\n"
+                            << "\"hidl_o is of type \" + className + \".\");\n";
+                    });
+                }).endl();
+
+                out << "if (hidl_o != null && !"
+                    << field->type().getJavaTypeClass()
+                    << ".class.isInstance(hidl_o)) ";
+
+                out.block([&] {
+                    out << "throw new Error(\"Union is in a corrupted state.\");\n";
+                }).endl();
+
+                out << "return ("
+                    << field->type().getJavaTypeCast("hidl_o")
+                    << ");\n";
+            }).endl().endl();
+        }
+
+        out << "// Utility method\n"
+            << "public "
+            << discriminatorStorageType
+            << " getDiscriminator() { return hidl_d; }\n\n";
+
+    } else if (!mFields->empty()) {
+        for (const auto& field : *mFields) {
+            field->emitDocComment(out);
+
+            out << "public ";
+            field->type().emitJavaFieldInitializer(out, field->name());
+        }
+
         out << "\n";
     }
 
@@ -1231,14 +1347,27 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
                 out << "return false;\n";
             }).endl();
             out << fullJavaName() << " other = (" << fullJavaName() << ")otherObject;\n";
-            for (const auto &field : *mFields) {
-                std::string condition = (field->type().isScalar() || field->type().isEnum())
-                    ? "this." + field->name() + " != other." + field->name()
-                    : ("!android.os.HidlSupport.deepEquals(this." + field->name()
-                            + ", other." + field->name() + ")");
-                out.sIf(condition, [&] {
+
+            if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
+                out.sIf("this.hidl_d != other.hidl_d", [&] {
                     out << "return false;\n";
                 }).endl();
+                out.sIf("this.hidl_d == hidl_discriminator.hidl_no_init", [&] {
+                    out << "return false;\n";
+                }).endl();
+                out.sIf("!android.os.HidlSupport.deepEquals(this.hidl_o, other.hidl_o)", [&] {
+                    out << "return false;\n";
+                }).endl();
+            } else if (!mFields->empty()) {
+                for (const auto &field : *mFields) {
+                    std::string condition = (field->type().isScalar() || field->type().isEnum())
+                        ? "this." + field->name() + " != other." + field->name()
+                        : ("!android.os.HidlSupport.deepEquals(this." + field->name()
+                                + ", other." + field->name() + ")");
+                    out.sIf(condition, [&] {
+                        out << "return false;\n";
+                    }).endl();
+                }
             }
             out << "return true;\n";
         }).endl().endl();
@@ -1247,9 +1376,14 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
         out.block([&] {
             out << "return java.util.Objects.hash(\n";
             out.indent(2, [&] {
-                out.join(mFields->begin(), mFields->end(), ", \n", [&] (const auto &field) {
-                    out << "android.os.HidlSupport.deepHashCode(this." << field->name() << ")";
-                });
+                if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
+                    out << "android.os.HidlSupport.deepHashCode(this.hidl_o),\n"
+                        << "java.util.Objects.hashCode(this.hidl_d)";
+                } else {
+                    out.join(mFields->begin(), mFields->end(), ", \n", [&] (const auto &field) {
+                        out << "android.os.HidlSupport.deepHashCode(this." << field->name() << ")";
+                    });
+                }
             });
             out << ");\n";
         }).endl().endl();
@@ -1263,32 +1397,94 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
     out.block([&] {
         out << "java.lang.StringBuilder builder = new java.lang.StringBuilder();\n"
             << "builder.append(\"{\");\n";
-        for (const auto &field : *mFields) {
-            out << "builder.append(\"";
-            if (field != *(mFields->begin())) {
-                out << ", ";
-            }
-            out << "." << field->name() << " = \");\n";
-            field->type().emitJavaDump(out, "builder", "this." + field->name());
+
+        if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
+            out << "switch (this.hidl_d) {\n";
+            out.indent();
         }
+
+        for (const auto &field : *mFields) {
+            if (mStyle == STYLE_SAFE_UNION) {
+                out << "case hidl_discriminator."
+                    << field->name()
+                    << ": ";
+
+                out.block([&] {
+                    out << "builder.append(\""
+                        << "."
+                        << field->name()
+                        << " = \");\n";
+
+                    field->type().emitJavaDump(out, "builder", "this." + field->name() + "()");
+                    out << "break;\n";
+                }).endl();
+            }
+            else {
+                out << "builder.append(\"";
+                if (field != *(mFields->begin())) {
+                    out << ", ";
+                }
+                out << "." << field->name() << " = \");\n";
+                field->type().emitJavaDump(out, "builder", "this." + field->name());
+            }
+        }
+
+        if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
+            out << "case hidl_discriminator.hidl_no_init: { break; }\n"
+                << "default: { throw new Error(\"Unknown union discriminator.\"); }\n";
+
+            out.unindent();
+            out << "}\n";
+        }
+
         out << "builder.append(\"}\");\nreturn builder.toString();\n";
     }).endl().endl();
 
-    size_t structAlign, structSize;
-    getAlignmentAndSize(&structAlign, &structSize);
+    CompoundLayout layout = getCompoundAlignmentAndSize();
 
     ////////////////////////////////////////////////////////////////////////////
 
     out << "public final void readFromParcel(android.os.HwParcel parcel) {\n";
     out.indent();
     if (containsInterface()) {
+
+        if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
+            out << "hidl_d = ";
+            getUnionDiscriminatorType()->emitJavaReaderWriter(
+                    out, "parcel", "hidl_d", true);
+
+            out << "switch (hidl_d) {\n";
+            out.indent();
+        }
+
         for (const auto& field : *mFields) {
-            out << field->name() << " = ";
-            field->type().emitJavaReaderWriter(out, "parcel", field->name(), true);
+            if (mStyle == STYLE_SAFE_UNION) {
+                out << "case hidl_discriminator."
+                    << field->name()
+                    << ": ";
+
+                out.block([&] {
+                    out << "hidl_o = ";
+                    field->type().emitJavaReaderWriter(out, "parcel", "hidl_o", true);
+
+                    out << "break;\n";
+                }).endl();
+            } else {
+                out << field->name() << " = ";
+                field->type().emitJavaReaderWriter(out, "parcel", field->name(), true);
+            }
+        }
+
+        if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
+            out << "case hidl_discriminator.hidl_no_init: { break; }\n"
+                << "default: { throw new Error(\"Unknown union discriminator.\"); }\n";
+
+            out.unindent();
+            out << "}\n";
         }
     } else {
         out << "android.os.HwBlob blob = parcel.readBuffer(";
-        out << structSize << "/* size */);\n";
+        out << layout.overall.size << " /* size */);\n";
         out << "readEmbeddedFromParcel(parcel, blob, 0 /* parentOffset */);\n";
     }
     out.unindent();
@@ -1333,17 +1529,51 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
         out.indent(2);
         out << "android.os.HwParcel parcel, android.os.HwBlob _hidl_blob, long _hidl_offset) {\n";
         out.unindent();
-        size_t offset = 0;
+
+        if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
+            getUnionDiscriminatorType()->emitJavaFieldReaderWriter(
+                out, 0 /* depth */, "parcel", "_hidl_blob", "hidl_d",
+                "_hidl_offset + " + std::to_string(layout.discriminator.offset),
+                true /* isReader */);
+
+            out << "switch (this.hidl_d) {\n";
+            out.indent();
+        }
+
+        size_t offset = layout.innerStruct.offset;
         for (const auto& field : *mFields) {
-            size_t fieldAlign, fieldSize;
-            field->type().getAlignmentAndSize(&fieldAlign, &fieldSize);
 
-            offset += Layout::getPad(offset, fieldAlign);
+            if (mStyle == STYLE_SAFE_UNION) {
+                out << "case hidl_discriminator."
+                    << field->name()
+                    << ": ";
 
-            field->type().emitJavaFieldReaderWriter(
-                out, 0 /* depth */, "parcel", "_hidl_blob", field->name(),
-                "_hidl_offset + " + std::to_string(offset), true /* isReader */);
-            offset += fieldSize;
+                out.block([&] {
+                    field->type().emitJavaFieldDefaultInitialValue(out, "hidl_o");
+                    field->type().emitJavaFieldReaderWriter(
+                        out, 0 /* depth */, "parcel", "_hidl_blob", "hidl_o",
+                        "_hidl_offset + " + std::to_string(offset), true /* isReader */);
+
+                    out << "break;\n";
+                }).endl();
+            } else {
+                size_t fieldAlign, fieldSize;
+                field->type().getAlignmentAndSize(&fieldAlign, &fieldSize);
+
+                offset += Layout::getPad(offset, fieldAlign);
+                field->type().emitJavaFieldReaderWriter(
+                    out, 0 /* depth */, "parcel", "_hidl_blob", field->name(),
+                    "_hidl_offset + " + std::to_string(offset), true /* isReader */);
+                offset += fieldSize;
+            }
+        }
+
+        if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
+            out << "case hidl_discriminator.hidl_no_init: { break; }\n"
+                << "default: { throw new Error(\"Unknown union discriminator.\"); }\n";
+
+            out.unindent();
+            out << "}\n";
         }
         out.unindent();
         out << "}\n\n";
@@ -1355,11 +1585,39 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
     out.indent();
 
     if (containsInterface()) {
+        if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
+            getUnionDiscriminatorType()->emitJavaReaderWriter(
+                out, "parcel", "hidl_d", false);
+
+            out << "switch (this.hidl_d) {\n";
+            out.indent();
+        }
+
         for (const auto& field : *mFields) {
-            field->type().emitJavaReaderWriter(out, "parcel", field->name(), false);
+            if (mStyle == STYLE_SAFE_UNION) {
+                out << "case hidl_discriminator."
+                    << field->name()
+                    << ": ";
+
+                out.block([&] {
+                    field->type().emitJavaReaderWriter(out, "parcel", field->name() + "()", false);
+                    out << "break;\n";
+                }).endl();
+            } else {
+                field->type().emitJavaReaderWriter(out, "parcel", field->name(), false);
+            }
+        }
+
+        if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
+            out << "case hidl_discriminator.hidl_no_init: { break; }\n"
+                << "default: { throw new Error(\"Unknown union discriminator.\"); }\n";
+
+            out.unindent();
+            out << "}\n";
         }
     } else {
-        out << "android.os.HwBlob _hidl_blob = new android.os.HwBlob(" << structSize
+        out << "android.os.HwBlob _hidl_blob = new android.os.HwBlob("
+            << layout.overall.size
             << " /* size */);\n";
 
         out << "writeEmbeddedToBlob(_hidl_blob, 0 /* parentOffset */);\n"
@@ -1377,10 +1635,10 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
 
     if (containsInterface()) {
         out << "parcel.writeInt32(_hidl_vec.size());\n";
-        out << "for(" << fullJavaName() << " tmp: _hidl_vec)\n";
-        out.indent();
-        emitJavaReaderWriter(out, "parcel", "tmp", false);
-        out.unindent();
+        out << "for(" << fullJavaName() << " tmp: _hidl_vec) ";
+        out.block([&] {
+            emitJavaReaderWriter(out, "parcel", "tmp", false);
+        }).endl();
     } else {
         out << "android.os.HwBlob _hidl_blob = new android.os.HwBlob(" << vecSize
             << " /* sizeof(hidl_vec<T>) */);\n";
@@ -1396,25 +1654,56 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
     ////////////////////////////////////////////////////////////////////////////
 
     if (containsInterface()) {
-        out << "// writeEmbeddedFromParcel() is not generated\n";
+        out << "// writeEmbeddedToBlob() is not generated\n";
     } else {
         out << "public final void writeEmbeddedToBlob(\n";
         out.indent(2);
         out << "android.os.HwBlob _hidl_blob, long _hidl_offset) {\n";
         out.unindent();
-        size_t offset = 0;
-        for (const auto& field : *mFields) {
-            size_t fieldAlign, fieldSize;
-            field->type().getAlignmentAndSize(&fieldAlign, &fieldSize);
 
-            offset += Layout::getPad(offset, fieldAlign);
+        if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
+            getUnionDiscriminatorType()->emitJavaFieldReaderWriter(
+                out, 0 /* depth */, "parcel", "_hidl_blob", "hidl_d",
+                "_hidl_offset + " + std::to_string(layout.discriminator.offset),
+                false /* isReader */);
 
-            field->type().emitJavaFieldReaderWriter(
-                out, 0 /* depth */, "parcel", "_hidl_blob", field->name(),
-                "_hidl_offset + " + std::to_string(offset), false /* isReader */);
-            offset += fieldSize;
+            out << "switch (this.hidl_d) {\n";
+            out.indent();
         }
 
+        size_t offset = layout.innerStruct.offset;
+        for (const auto& field : *mFields) {
+            if (mStyle == STYLE_SAFE_UNION) {
+                out << "case hidl_discriminator."
+                    << field->name()
+                    << ": ";
+
+                out.block([&] {
+                    field->type().emitJavaFieldReaderWriter(
+                        out, 0 /* depth */, "parcel", "_hidl_blob", field->name() + "()",
+                        "_hidl_offset + " + std::to_string(offset), false /* isReader */);
+
+                    out << "break;\n";
+                }).endl();
+            } else {
+                size_t fieldAlign, fieldSize;
+                field->type().getAlignmentAndSize(&fieldAlign, &fieldSize);
+
+                offset += Layout::getPad(offset, fieldAlign);
+                field->type().emitJavaFieldReaderWriter(
+                    out, 0 /* depth */, "parcel", "_hidl_blob", field->name(),
+                    "_hidl_offset + " + std::to_string(offset), false /* isReader */);
+                offset += fieldSize;
+            }
+        }
+
+        if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
+            out << "case hidl_discriminator.hidl_no_init: { break; }\n"
+                << "default: { throw new Error(\"Unknown union discriminator.\"); }\n";
+
+            out.unindent();
+            out << "}\n";
+        }
         out.unindent();
         out << "}\n";
     }
@@ -1729,7 +2018,7 @@ void CompoundType::emitVtsAttributeType(Formatter& out) const {
 }
 
 bool CompoundType::deepIsJavaCompatible(std::unordered_set<const Type*>* visited) const {
-    if (mStyle != STYLE_STRUCT) {  // TODO(natre): Update
+    if (mStyle == STYLE_UNION) {
         return false;
     }
 

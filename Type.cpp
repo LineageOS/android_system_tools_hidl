@@ -385,8 +385,12 @@ std::string Type::getJavaType(bool /* forInitializer */) const {
     return std::string();
 }
 
-std::string Type::getJavaWrapperType() const {
+std::string Type::getJavaTypeClass() const {
     return getJavaType();
+}
+
+std::string Type::getJavaTypeCast(const std::string& objName) const {
+    return "(" + getJavaType() + ") " + objName;
 }
 
 std::string Type::getJavaSuffix() const {
@@ -512,6 +516,8 @@ void Type::emitJavaFieldInitializer(
         << fieldName
         << ";\n";
 }
+
+void Type::emitJavaFieldDefaultInitialValue(Formatter &, const std::string &) const {}
 
 void Type::emitJavaFieldReaderWriter(
         Formatter &,

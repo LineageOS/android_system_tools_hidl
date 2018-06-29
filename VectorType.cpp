@@ -113,17 +113,15 @@ std::string VectorType::getCppType(StorageMode mode,
 }
 
 std::string VectorType::getJavaType(bool /* forInitializer */) const {
+    const std::string elementJavaType = mElementType->isTemplatedType()
+        ? mElementType->getJavaType()
+        : mElementType->getJavaTypeClass();
 
-    std::string elementJavaType;
-    if (mElementType->isArray()) {
-        elementJavaType = mElementType->getJavaType();
-    } else {
-        elementJavaType = mElementType->getJavaWrapperType();
-    }
+    return "java.util.ArrayList<" + elementJavaType + ">";
+}
 
-    return "java.util.ArrayList<"
-        + elementJavaType
-        + ">";
+std::string VectorType::getJavaTypeClass() const {
+    return "java.util.ArrayList";
 }
 
 std::string VectorType::getVtsType() const {
@@ -547,14 +545,17 @@ void VectorType::emitJavaReaderWriter(
 
 void VectorType::emitJavaFieldInitializer(
         Formatter &out, const std::string &fieldName) const {
-    std::string javaType = getJavaType(false /* forInitializer */);
+    const std::string typeName = getJavaType(false /* forInitializer */);
+    const std::string fieldDeclaration = "final " + typeName + " " + fieldName;
 
-    out << "final "
-        << javaType
-        << " "
-        << fieldName
+    emitJavaFieldDefaultInitialValue(out, fieldDeclaration);
+}
+
+void VectorType::emitJavaFieldDefaultInitialValue(
+        Formatter &out, const std::string &declaredFieldName) const {
+    out << declaredFieldName
         << " = new "
-        << javaType
+        << getJavaType(false /* forInitializer */)
         << "();\n";
 }
 
@@ -566,13 +567,18 @@ void VectorType::emitJavaFieldReaderWriter(
         const std::string &fieldName,
         const std::string &offset,
         bool isReader) const {
+
+    const std::string fieldNameWithCast = isReader
+        ? "(" + getJavaTypeCast(fieldName) + ")"
+        : fieldName;
+
     VectorType::EmitJavaFieldReaderWriterForElementType(
             out,
             depth,
             mElementType.get(),
             parcelName,
             blobName,
-            fieldName,
+            fieldNameWithCast,
             offset,
             isReader);
 }
