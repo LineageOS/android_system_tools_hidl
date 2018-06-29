@@ -436,7 +436,11 @@ void CompoundType::emitSafeUnionTypeDeclarations(Formatter& out) const {
 
     Scope::emitTypeDeclarations(out);
 
-    CompoundLayout layout = getCompoundAlignmentAndSize();
+    bool hasPointer = containsPointer();
+    CompoundLayout layout = hasPointer
+                            ? CompoundLayout()
+                            : getCompoundAlignmentAndSize();
+
     if (mFields->empty()) {
         out.unindent();
         out << "};\n\n";
@@ -480,18 +484,29 @@ void CompoundType::emitSafeUnionTypeDeclarations(Formatter& out) const {
             << "() const;\n\n";
     }
 
-    out << "// Utility method\n";
+    out << "// Utility methods\n";
     out << "hidl_discriminator getDiscriminator() const;\n\n";
+
+    out << "constexpr size_t hidl_getUnionOffset() const ";
+    out.block([&] {
+        out << "return offsetof(" << fullName() << ", hidl_u);\n";
+    }).endl().endl();
 
     out.unindent();
     out << "private:\n";
     out.indent();
 
     out << "void hidl_destructUnion();\n\n";
+
+    out << "hidl_discriminator hidl_d";
+    if (!hasPointer) {
+        out << " __attribute__ ((aligned("
+            << layout.discriminator.align << "))) ";
+    }
+    out << "{hidl_discriminator::hidl_no_init};\n";
     out << "union hidl_union final {\n";
     out.indent();
 
-    bool hasPointer = containsPointer();
     for (const auto& field : *mFields) {
 
         size_t fieldAlign, fieldSize;
@@ -514,14 +529,7 @@ void CompoundType::emitSafeUnionTypeDeclarations(Formatter& out) const {
         << "~hidl_union();\n";
 
     out.unindent();
-    out << "} hidl_u;\n\n";
-    out << "hidl_discriminator hidl_d";
-
-    if (!hasPointer) {
-        out << " __attribute__ ((aligned("
-            << layout.discriminator.align << "))) ";
-    }
-    out << "{hidl_discriminator::hidl_no_init};\n";
+    out << "} hidl_u;\n";
 
     if (!hasPointer) {
         out << "\n";
@@ -822,7 +830,22 @@ void CompoundType::emitSafeUnionTypeConstructors(Formatter& out) const {
     out << fullName()
         << "::"
         << localName()
-        << "() {}\n\n";
+        << "() ";
+
+    out.block([&] {
+        out << "static_assert(offsetof("
+            << fullName()
+            << ", hidl_d) == 0, \"wrong offset\");\n";
+
+        if (!containsPointer()) {
+            CompoundLayout layout = getCompoundAlignmentAndSize();
+            out << "static_assert(offsetof("
+                << fullName()
+                << ", hidl_u) == "
+                << layout.innerStruct.offset
+                << ", \"wrong offset\");\n";
+        }
+    }).endl().endl();
 
     // Destructor
     out << fullName()
@@ -904,7 +927,6 @@ void CompoundType::emitSafeUnionTypeDefinitions(Formatter& out) const {
         out << "hidl_d = hidl_discriminator::hidl_no_init;\n";
     }).endl().endl();
 
-    CompoundLayout layout = getCompoundAlignmentAndSize();
     for (const NamedReference<Type>* field : *mFields) {
         // Setter
         out << "void "
@@ -976,19 +998,6 @@ void CompoundType::emitSafeUnionTypeDefinitions(Formatter& out) const {
         << localName() << "::getDiscriminator() const ";
 
     out.block([&] {
-        out << "static_assert(offsetof("
-            << fullName()
-            << ", hidl_u) == 0"
-            << ", \"wrong offset\");\n";
-
-        if (!containsPointer()) {
-            out << "static_assert(offsetof("
-                << fullName()
-                << ", hidl_d) == "
-                << layout.discriminator.offset
-                << ", \"wrong offset\");\n";
-        }
-
         out << "\nreturn hidl_d;\n";
     }).endl().endl();
 }
@@ -1311,7 +1320,8 @@ void CompoundType::emitStructReaderWriter(
                                         : (name + "." + field->name() + error);
 
         const std::string fieldOffset = (mStyle == STYLE_SAFE_UNION)
-                                        ? "0 /* safe_union: union offset into struct */"
+                                        ? (name + ".hidl_getUnionOffset() " +
+                                           "/* safe_union: union offset into struct */")
                                         : ("offsetof(" + fullName() + ", " + field->name() + ")");
 
         field->type().emitReaderWriterEmbedded(
@@ -1412,7 +1422,8 @@ void CompoundType::emitResolveReferenceDef(Formatter& out, const std::string& pr
                                         : (nameDeref + field->name());
 
         const std::string fieldOffset = (mStyle == STYLE_SAFE_UNION)
-                                        ? "0 /* safe_union: union offset into struct */"
+                                        ? (nameDeref + "hidl_getUnionOffset() " +
+                                           "/* safe_union: union offset into struct */")
                                         : ("offsetof(" + fullName() + ", " + field->name() + ")");
 
         field->type().emitResolveReferencesEmbedded(
@@ -1593,6 +1604,13 @@ CompoundType::CompoundLayout CompoundType::getCompoundAlignmentAndSize() const {
     Layout& innerStruct = compoundLayout.innerStruct;
     Layout& discriminator = compoundLayout.discriminator;
 
+    if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
+        getUnionDiscriminatorType()->getAlignmentAndSize(
+            &(discriminator.align), &(discriminator.size));
+
+        innerStruct.offset = discriminator.size;
+    }
+
     for (const auto &field : *mFields) {
 
         // Each field is aligned according to its alignment requirement.
@@ -1609,29 +1627,22 @@ CompoundType::CompoundLayout CompoundType::getCompoundAlignmentAndSize() const {
         innerStruct.align = std::max(innerStruct.align, fieldAlign);
     }
 
-    // Padding for the inner structure
+    // Pad the inner structure's size
     innerStruct.size += Layout::getPad(innerStruct.size,
                                        innerStruct.align);
 
-    if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
-        getUnionDiscriminatorType()->getAlignmentAndSize(
-            &(discriminator.align), &(discriminator.size));
+    // Compute its final offset
+    innerStruct.offset += Layout::getPad(innerStruct.offset,
+                                         innerStruct.align);
 
-        discriminator.offset = innerStruct.size;
-        discriminator.offset += Layout::getPad(discriminator.offset,
-                                               discriminator.align);
-
-        overall.size = discriminator.offset + discriminator.size;
-    } else {
-        overall.size = innerStruct.size;
-    }
+    overall.size = innerStruct.offset + innerStruct.size;
 
     // An empty struct/union still occupies a byte of space in C++.
     if (overall.size == 0) {
         overall.size = 1;
     }
 
-    // Padding for the overall structure
+    // Pad the overall structure's size
     overall.align = std::max(innerStruct.align, discriminator.align);
     overall.size += Layout::getPad(overall.size, overall.align);
 
