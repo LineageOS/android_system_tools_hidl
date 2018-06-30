@@ -668,6 +668,10 @@ std::string Type::getCppArgumentType(bool specifyNamespaces) const {
     return getCppType(StorageMode_Argument, specifyNamespaces);
 }
 
+std::string Type::getCppTypeCast(const std::string& objName, bool specifyNamespaces) const {
+    return "(" + getCppStackType(specifyNamespaces) + ") " + objName;
+}
+
 void Type::emitJavaReaderWriterWithSuffix(
         Formatter &out,
         const std::string &parcelObj,
