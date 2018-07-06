@@ -2015,6 +2015,31 @@ TEST_F(HidlTest, SafeUnionEqualityTest) {
     }));
 }
 
+TEST_F(HidlTest, SafeUnionSimpleDestructorTest) {
+    sp<IOtherInterface> otherInterface = new OtherInterface();
+    ASSERT_EQ(1, otherInterface->getStrongCount());
+
+    {
+        InterfaceTypeSafeUnion safeUnion;
+        safeUnion.c(otherInterface);
+        EXPECT_EQ(2, otherInterface->getStrongCount());
+    }
+
+    EXPECT_EQ(1, otherInterface->getStrongCount());
+}
+
+TEST_F(HidlTest, SafeUnionSwitchActiveComponentsDestructorTest) {
+    sp<IOtherInterface> otherInterface = new OtherInterface();
+    ASSERT_EQ(1, otherInterface->getStrongCount());
+
+    InterfaceTypeSafeUnion safeUnion;
+    safeUnion.c(otherInterface);
+    EXPECT_EQ(2, otherInterface->getStrongCount());
+
+    safeUnion.a(1);
+    EXPECT_EQ(1, otherInterface->getStrongCount());
+}
+
 class HidlMultithreadTest : public ::testing::Test {
    public:
     sp<IMultithread> multithreadInterface;
