@@ -176,6 +176,14 @@ private:
 
     CompoundLayout getCompoundAlignmentAndSize() const;
 
+    void emitSafeUnionReaderWriterForInterfaces(
+            Formatter &out,
+            const std::string &name,
+            const std::string &parcelObj,
+            bool parcelObjIsPointer,
+            bool isReader,
+            ErrorMode mode) const;
+
     void emitStructReaderWriter(
             Formatter &out, const std::string &prefix, bool isReader) const;
     void emitResolveReferenceDef(Formatter& out, const std::string& prefix, bool isReader) const;
