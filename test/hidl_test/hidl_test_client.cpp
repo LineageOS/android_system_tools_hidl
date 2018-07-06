@@ -32,6 +32,7 @@
 #include <android/hardware/tests/multithread/1.0/IMultithread.h>
 #include <android/hardware/tests/pointer/1.0/IGraph.h>
 #include <android/hardware/tests/pointer/1.0/IPointer.h>
+#include <android/hardware/tests/safeunion/1.0/IOtherInterface.h>
 #include <android/hardware/tests/safeunion/1.0/ISafeUnion.h>
 #include <android/hardware/tests/trie/1.0/ITrie.h>
 
@@ -129,11 +130,8 @@ using ::android::hardware::tests::memory::V1_0::IMemoryTest;
 using ::android::hardware::tests::multithread::V1_0::IMultithread;
 using ::android::hardware::tests::pointer::V1_0::IGraph;
 using ::android::hardware::tests::pointer::V1_0::IPointer;
+using ::android::hardware::tests::safeunion::V1_0::IOtherInterface;
 using ::android::hardware::tests::safeunion::V1_0::ISafeUnion;
-using ::android::hardware::tests::safeunion::V1_0::J;
-using ::android::hardware::tests::safeunion::V1_0::LargeSafeUnion;
-using ::android::hardware::tests::safeunion::V1_0::MiscTypesSafeUnion;
-using ::android::hardware::tests::safeunion::V1_0::SmallSafeUnion;
 using ::android::hardware::tests::trie::V1_0::ITrie;
 using ::android::hardware::tests::trie::V1_0::TrieNode;
 using ::android::hidl::allocator::V1_0::IAllocator;
@@ -145,6 +143,10 @@ using ::android::hidl::memory::token::V1_0::IMemoryToken;
 using ::android::hidl::memory::V1_0::IMemory;
 using ::android::hidl::token::V1_0::ITokenManager;
 using std::to_string;
+
+using InterfaceTypeSafeUnion = ISafeUnion::InterfaceTypeSafeUnion;
+using LargeSafeUnion = ISafeUnion::LargeSafeUnion;
+using SmallSafeUnion = ISafeUnion::SmallSafeUnion;
 
 template <typename T>
 using hidl_enum_range = ::android::hardware::hidl_enum_range<T>;
@@ -277,6 +279,16 @@ struct Complicated : public IComplicated {
 
 private:
     int32_t mCookie;
+};
+
+struct OtherInterface : public IOtherInterface {
+    Return<void> concatTwoStrings(const hidl_string& a, const hidl_string& b,
+                                  concatTwoStrings_cb _hidl_cb) override {
+        hidl_string result = std::string(a) + std::string(b);
+        _hidl_cb(result);
+
+        return Void();
+    }
 };
 
 struct ServiceNotification : public IServiceNotification {
@@ -1909,7 +1921,7 @@ TEST_F(HidlTest, SafeUnionMutateTest) {
     safeUnion.f()[0] += 10;
     EXPECT_EQ(testArray[0] + 10, safeUnion.f()[0]);
 
-    safeUnion.j(J());
+    safeUnion.j(ISafeUnion::J());
     safeUnion.j().j3 = testString;
     EXPECT_EQ(testString, std::string(safeUnion.j().j3));
 }
@@ -1927,6 +1939,43 @@ TEST_F(HidlTest, SafeUnionNestedTest) {
                 EXPECT_EQ(1, safeUnion.l().a());
             }));
     }));
+}
+
+TEST_F(HidlTest, SafeUnionInterfaceTest) {
+    const std::array<int8_t, 7> testArray{-1, -2, -3, 0, 1, 2, 3};
+    const std::string testStringA = "Hello";
+    const std::string testStringB = "World";
+
+    const std::string serviceName = "otherinterface";
+    sp<IOtherInterface> otherInterface = new OtherInterface();
+    EXPECT_EQ(::android::OK, otherInterface->registerAsService(serviceName));
+
+    EXPECT_OK(
+        safeunionInterface->newInterfaceTypeSafeUnion([&](const InterfaceTypeSafeUnion& safeUnion) {
+            EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::hidl_no_init,
+                      safeUnion.getDiscriminator());
+
+            isOk(safeunionInterface->setInterfaceB(
+                safeUnion, testArray, [&](const InterfaceTypeSafeUnion& safeUnion) {
+                    EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::b,
+                              safeUnion.getDiscriminator());
+
+                    for (size_t i = 0; i < testArray.size(); i++) {
+                        EXPECT_EQ(testArray[i], safeUnion.b()[i]);
+                    }
+
+                    EXPECT_OK(safeunionInterface->setInterfaceC(
+                        safeUnion, otherInterface, [&](const InterfaceTypeSafeUnion& safeUnion) {
+                            EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::c,
+                                      safeUnion.getDiscriminator());
+
+                            EXPECT_OK(safeUnion.c()->concatTwoStrings(
+                                testStringA, testStringB, [&](const hidl_string& result) {
+                                    EXPECT_EQ(testStringA + testStringB, std::string(result));
+                                }));
+                        }));
+                }));
+        }));
 }
 
 TEST_F(HidlTest, SafeUnionEqualityTest) {
