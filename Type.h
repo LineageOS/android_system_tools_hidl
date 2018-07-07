@@ -157,6 +157,9 @@ struct Type : DocCommentable {
 
     std::string getCppArgumentType(bool specifyNamespaces = true) const;
 
+    std::string getCppTypeCast(const std::string& objName,
+                               bool specifyNamespaces = true) const;
+
     // For an array type, dimensionality information will be accumulated at the
     // end of the returned string.
     // if forInitializer == true, actual dimensions are included, i.e. [3][5],
