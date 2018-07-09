@@ -297,9 +297,6 @@ struct Type : DocCommentable {
     // argument) or attribute of compound type for vts proto file.
     virtual void emitVtsAttributeType(Formatter& out) const;
 
-    // Emits the explicit destructor invocation for this type.
-    virtual void emitTypeDestructorCall(Formatter& out, const std::string& objName) const = 0;
-
     // Returns true iff this type is supported through the Java backend.
     bool isJavaCompatible() const;
     bool isJavaCompatible(std::unordered_set<const Type*>* visited) const;

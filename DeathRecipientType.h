@@ -48,8 +48,6 @@ struct DeathRecipientType : public Type {
     void getAlignmentAndSize(size_t *align, size_t *size) const override;
 
     void emitVtsTypeDeclarations(Formatter& out) const override;
-
-    void emitTypeDestructorCall(Formatter& out, const std::string& objName) const override;
 };
 
 }  // namespace android

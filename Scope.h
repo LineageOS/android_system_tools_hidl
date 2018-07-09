@@ -99,8 +99,6 @@ struct RootScope : public Scope {
     virtual status_t validate() const override;
 
     std::string typeName() const override;
-
-    void emitTypeDestructorCall(Formatter& out, const std::string& objName) const override;
 };
 
 struct LocalIdentifier {
