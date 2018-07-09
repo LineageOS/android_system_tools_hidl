@@ -1024,9 +1024,10 @@ void CompoundType::emitSafeUnionTypeDefinitions(Formatter& out) const {
                     << ": ";
 
                 out.block([&] {
-                    const std::string fullFieldName = "hidl_u." + field->name();
-                    field->type().emitTypeDestructorCall(out, fullFieldName);
-                    out << "break;\n";
+                    out << "details::destructElement(&(hidl_u."
+                        << field->name()
+                        << "));\n"
+                        << "break;\n";
                 }).endl();
             }
 
