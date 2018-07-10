@@ -230,8 +230,6 @@ void RefType::emitResolveReferencesEmbedded(
     out << "}\n\n";
 }
 
-void RefType::emitTypeDestructorCall(Formatter&, const std::string&) const {}
-
 bool RefType::deepNeedsResolveReferences(std::unordered_set<const Type*>* /* visited */) const {
     return true;
 }

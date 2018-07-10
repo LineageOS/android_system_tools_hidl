@@ -98,8 +98,6 @@ struct ScalarType : public Type {
 
     void emitVtsTypeDeclarations(Formatter& out) const override;
 
-    void emitTypeDestructorCall(Formatter& out, const std::string& objName) const override;
-
     void getAlignmentAndSize(size_t *align, size_t *size) const override;
 
     Kind getKind() const;

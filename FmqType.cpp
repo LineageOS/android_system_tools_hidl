@@ -137,10 +137,6 @@ void FmqType::emitReaderWriterEmbedded(
             mNamespace);
 }
 
-void FmqType::emitTypeDestructorCall(Formatter& out, const std::string& objName) const {
-    out << objName << ".~" << mName << "();\n";
-}
-
 bool FmqType::deepIsJavaCompatible(std::unordered_set<const Type*>* /* visited */) const {
     return false;
 }

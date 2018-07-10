@@ -135,8 +135,6 @@ struct CompoundType : public Scope {
     void emitVtsTypeDeclarations(Formatter& out) const override;
     void emitVtsAttributeType(Formatter& out) const override;
 
-    void emitTypeDestructorCall(Formatter& out, const std::string& objName) const override;
-
     bool deepIsJavaCompatible(std::unordered_set<const Type*>* visited) const override;
     bool deepContainsPointer(std::unordered_set<const Type*>* visited) const override;
 
