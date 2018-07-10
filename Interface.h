@@ -129,8 +129,6 @@ struct Interface : public Scope {
     void emitVtsAttributeDeclaration(Formatter& out) const;
     void emitVtsMethodDeclaration(Formatter& out) const;
 
-    void emitTypeDestructorCall(Formatter& out, const std::string& objName) const override;
-
     bool hasOnewayMethods() const;
 
     bool deepIsJavaCompatible(std::unordered_set<const Type*>* visited) const override;
