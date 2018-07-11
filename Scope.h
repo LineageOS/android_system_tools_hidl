@@ -51,7 +51,7 @@ struct Scope : public NamedType {
     // Returns the single interface or NULL.
     Interface *getInterface() const;
 
-    bool containsInterfaces() const;
+    bool definesInterfaces() const;
 
     const std::vector<Annotation*>& annotations() const;
 

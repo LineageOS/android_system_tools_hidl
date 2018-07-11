@@ -53,7 +53,7 @@ struct AST {
     // package and version really.
     FQName package() const;
     bool isInterface() const;
-    bool containsInterfaces() const;
+    bool definesInterfaces() const;
 
     // Adds package, version and scope stack to local name
     FQName makeFullName(const char* localName, Scope* scope) const;
