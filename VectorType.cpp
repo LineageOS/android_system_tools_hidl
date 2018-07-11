@@ -45,6 +45,9 @@ bool VectorType::isCompatibleElementType(const Type* elementType) const {
         return true;
     }
     if (elementType->isCompoundType()) {
+        if (static_cast<const CompoundType*>(elementType)->containsInterface()) {
+            return false;
+        }
         return true;
     }
     if (elementType->isInterface()) {
