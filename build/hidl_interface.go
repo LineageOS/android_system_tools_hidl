@@ -288,11 +288,12 @@ func hidlInterfaceMutator(mctx android.LoadHookContext, i *hidlInterface) {
 			Out: concat(wrap(name.sanitizedDir()+"I", interfaces, ".java"),
 				wrap(name.sanitizedDir(), i.properties.Types, ".java")),
 		})
-		mctx.CreateModule(android.ModuleFactoryAdaptor(java.LibraryFactory(true)), &javaProperties{
+		mctx.CreateModule(android.ModuleFactoryAdaptor(java.LibraryFactory), &javaProperties{
 			Name:              proptools.StringPtr(name.javaName()),
 			Owner:             i.properties.Owner,
 			Defaults:          []string{"hidl-java-module-defaults"},
 			No_framework_libs: proptools.BoolPtr(true),
+			Installable:       proptools.BoolPtr(true),
 			Srcs:              []string{":" + name.javaSourcesName()},
 			Static_libs:       javaDependencies,
 
@@ -315,11 +316,12 @@ func hidlInterfaceMutator(mctx android.LoadHookContext, i *hidlInterface) {
 			Srcs:    i.properties.Srcs,
 			Out:     []string{name.sanitizedDir() + "Constants.java"},
 		})
-		mctx.CreateModule(android.ModuleFactoryAdaptor(java.LibraryFactory(true)), &javaProperties{
+		mctx.CreateModule(android.ModuleFactoryAdaptor(java.LibraryFactory), &javaProperties{
 			Name:              proptools.StringPtr(name.javaConstantsName()),
 			Owner:             i.properties.Owner,
 			Defaults:          []string{"hidl-java-module-defaults"},
 			No_framework_libs: proptools.BoolPtr(true),
+			Installable:       proptools.BoolPtr(true),
 			Srcs:              []string{":" + name.javaConstantsSourcesName()},
 		})
 	}
@@ -435,7 +437,7 @@ func lookupInterface(name string) *hidlInterface {
 	return nil
 }
 
-var doubleLoadablePackageNames = []string {
+var doubleLoadablePackageNames = []string{
 	"android.hardware.configstore@",
 	"android.hardware.graphics.allocator@",
 	"android.hardware.graphics.bufferqueue@",
