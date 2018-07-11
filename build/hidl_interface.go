@@ -321,7 +321,6 @@ func hidlInterfaceMutator(mctx android.LoadHookContext, i *hidlInterface) {
 			Owner:             i.properties.Owner,
 			Defaults:          []string{"hidl-java-module-defaults"},
 			No_framework_libs: proptools.BoolPtr(true),
-			Installable:       proptools.BoolPtr(true),
 			Srcs:              []string{":" + name.javaConstantsSourcesName()},
 		})
 	}
