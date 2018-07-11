@@ -96,7 +96,7 @@ Interface *Scope::getInterface() const {
     return NULL;
 }
 
-bool Scope::containsInterfaces() const {
+bool Scope::definesInterfaces() const {
     for (const NamedType *type : mTypes) {
         if (type->isInterface()) {
             return true;

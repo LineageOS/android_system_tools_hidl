@@ -320,7 +320,7 @@ status_t Coordinator::parseOptional(const FQName& fqName, AST** ast, std::set<AS
                     fqName.name().c_str());
 
             err = UNKNOWN_ERROR;
-        } else if ((*ast)->containsInterfaces()) {
+        } else if ((*ast)->definesInterfaces()) {
             fprintf(stderr,
                     "ERROR: types.hal file at '%s' declares at least one "
                     "interface type.\n",

@@ -83,8 +83,8 @@ bool AST::isInterface() const {
     return mRootScope.getInterface() != nullptr;
 }
 
-bool AST::containsInterfaces() const {
-    return mRootScope.containsInterfaces();
+bool AST::definesInterfaces() const {
+    return mRootScope.definesInterfaces();
 }
 
 status_t AST::postParse() {

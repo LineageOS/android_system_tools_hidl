@@ -50,12 +50,18 @@ status_t CompoundType::validate() const {
         const Type& type = field->type();
 
         if ((type.isVector() && static_cast<const VectorType*>(&type)->isVectorOfBinders())) {
-            std::cerr << "ERROR: Struct/Union must not contain references to interfaces at "
+            std::cerr << "ERROR: Struct/union cannot contain vectors of interfaces at "
                       << field->location() << "\n";
             return UNKNOWN_ERROR;
         }
 
         if (mStyle == STYLE_UNION) {
+            if (type.isBinder()) {
+                std::cerr << "ERROR: Union cannot contain interfaces at " << field->location()
+                          << "\n";
+                return UNKNOWN_ERROR;
+            }
+
             if (type.needsEmbeddedReadWrite()) {
                 std::cerr << "ERROR: Union must not contain any types that need fixup at "
                           << field->location() << "\n";
