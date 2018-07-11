@@ -242,8 +242,6 @@ status_t RootScope::validate() const {
     return Scope::validate();
 }
 
-void RootScope::emitTypeDestructorCall(Formatter&, const std::string&) const {}
-
 ////////////////////////////////////////
 
 LocalIdentifier::LocalIdentifier(){}

@@ -82,9 +82,5 @@ void DeathRecipientType::emitVtsTypeDeclarations(Formatter& out) const {
     out << "type: " << getVtsType() << "\n";
 }
 
-void DeathRecipientType::emitTypeDestructorCall(Formatter& out, const std::string& objName) const {
-    out << objName << ".~sp();\n";
-}
-
 }  // namespace android
 

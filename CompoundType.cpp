@@ -1010,9 +1010,10 @@ void CompoundType::emitSafeUnionTypeDefinitions(Formatter& out) const {
                     << ": ";
 
                 out.block([&] {
-                    const std::string fullFieldName = "hidl_u." + field->name();
-                    field->type().emitTypeDestructorCall(out, fullFieldName);
-                    out << "break;\n";
+                    out << "details::destructElement(&(hidl_u."
+                        << field->name()
+                        << "));\n"
+                        << "break;\n";
                 }).endl();
             }
 
@@ -1657,10 +1658,6 @@ void CompoundType::emitVtsTypeDeclarations(Formatter& out) const {
 void CompoundType::emitVtsAttributeType(Formatter& out) const {
     out << "type: " << getVtsType() << "\n";
     out << "predefined_type: \"" << fullName() << "\"\n";
-}
-
-void CompoundType::emitTypeDestructorCall(Formatter& out, const std::string& objName) const {
-    out << objName << ".~" << localName() << "();\n";
 }
 
 bool CompoundType::deepIsJavaCompatible(std::unordered_set<const Type*>* visited) const {

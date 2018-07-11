@@ -81,7 +81,5 @@ void TypeDef::emitTypeDeclarations(Formatter& out) const {
         << ";\n\n";
 }
 
-void TypeDef::emitTypeDestructorCall(Formatter&, const std::string&) const {}
-
 }  // namespace android
 

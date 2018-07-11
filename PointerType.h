@@ -45,8 +45,6 @@ struct PointerType : public Type {
             bool isReader,
             ErrorMode mode) const override;
 
-    void emitTypeDestructorCall(Formatter& out, const std::string& objName) const override;
-
     bool needsEmbeddedReadWrite() const override;
     bool resultNeedsDeref() const override;
 

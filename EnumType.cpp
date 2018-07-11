@@ -591,8 +591,6 @@ void EnumType::emitJavaDump(
         << name << "));\n";
 }
 
-void EnumType::emitTypeDestructorCall(Formatter&, const std::string&) const {}
-
 std::vector<const EnumType*> EnumType::typeChain() const {
     std::vector<const EnumType*> types;
     for (const EnumType* type = this; type != nullptr;) {
@@ -913,8 +911,6 @@ void BitFieldType::emitReaderWriter(
             mode,
             true /* needsCast */);
 }
-
-void BitFieldType::emitTypeDestructorCall(Formatter&, const std::string&) const {}
 
 const EnumType* BitFieldType::getEnumType() const {
     CHECK(mElementType->isEnum());
