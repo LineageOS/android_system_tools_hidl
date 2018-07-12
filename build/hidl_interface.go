@@ -175,7 +175,7 @@ func removeCoreDependencies(mctx android.LoadHookContext, dependencies []string)
 }
 
 func hidlGenCommand(lang string, roots []string, name *fqName) *string {
-	cmd := "$(location hidl-gen) -d $(depfile) -o $(genDir)"
+	cmd := "$(location hidl-gen) -p . -d $(depfile) -o $(genDir)"
 	cmd += " -L" + lang
 	cmd += " " + strings.Join(wrap("-r", roots, ""), " ")
 	cmd += " " + name.string()
