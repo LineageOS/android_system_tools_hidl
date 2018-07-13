@@ -329,6 +329,7 @@ public:
     sp<IMemoryTest> memoryTest;
     sp<IFetcher> fetcher;
     sp<IFoo> foo;
+    sp<IBaz> baz;
     sp<IBaz> dyingBaz;
     sp<IBar> bar;
     sp<IGraph> graphInterface;
@@ -373,6 +374,10 @@ public:
         foo = IFoo::getService("foo", mode == PASSTHROUGH /* getStub */);
         ASSERT_NE(foo, nullptr);
         ASSERT_EQ(foo->isRemote(), mode == BINDERIZED);
+
+        baz = IBaz::getService("baz", mode == PASSTHROUGH /* getStub */);
+        ASSERT_NE(baz, nullptr);
+        ASSERT_EQ(baz->isRemote(), mode == BINDERIZED);
 
         dyingBaz = IBaz::getService("dyingBaz", mode == PASSTHROUGH /* getStub */);
         ASSERT_NE(dyingBaz, nullptr);
@@ -423,6 +428,7 @@ public:
     sp<IMemoryTest> memoryTest;
     sp<IFetcher> fetcher;
     sp<IFoo> foo;
+    sp<IBaz> baz;
     sp<IBaz> dyingBaz;
     sp<IBar> bar;
     sp<IGraph> graphInterface;
@@ -440,6 +446,7 @@ public:
         memoryTest = gHidlEnvironment->memoryTest;
         fetcher = gHidlEnvironment->fetcher;
         foo = gHidlEnvironment->foo;
+        baz = gHidlEnvironment->baz;
         dyingBaz = gHidlEnvironment->dyingBaz;
         bar = gHidlEnvironment->bar;
         graphInterface = gHidlEnvironment->graphInterface;
@@ -1550,6 +1557,41 @@ TEST_F(HidlTest, FooHandleVecTest) {
     EXPECT_OK(foo->closeHandles());
 }
 
+TEST_F(HidlTest, BazStructWithInterfaceTest) {
+    using ::android::hardware::interfacesEqual;
+
+    const std::string testString = "Hello, World!";
+    const std::array<int8_t, 7> testArray{-1, -2, -3, 0, 1, 2, 3};
+    const hidl_vec<hidl_string> testStrings{"So", "Many", "Words"};
+    const hidl_vec<bool> testVector{false, true, false, true, true, true};
+
+    hidl_vec<bool> goldenResult(testVector.size());
+    for (size_t i = 0; i < testVector.size(); i++) {
+        goldenResult[i] = !testVector[i];
+    }
+
+    IBaz::StructWithInterface swi;
+    swi.number = 42;
+    swi.array = testArray;
+    swi.oneString = testString;
+    swi.vectorOfStrings = testStrings;
+    swi.dummy = baz;
+
+    EXPECT_OK(baz->haveSomeStructWithInterface(swi, [&](const IBaz::StructWithInterface& swiBack) {
+        EXPECT_EQ(42, swiBack.number);
+        for (size_t i = 0; i < testArray.size(); i++) {
+            EXPECT_EQ(testArray[i], swiBack.array[i]);
+        }
+
+        EXPECT_EQ(testString, std::string(swiBack.oneString));
+        EXPECT_EQ(testStrings, swiBack.vectorOfStrings);
+
+        EXPECT_TRUE(interfacesEqual(swi.dummy, swiBack.dummy));
+        EXPECT_OK(swiBack.dummy->someBoolVectorMethod(
+            testVector, [&](const hidl_vec<bool>& result) { EXPECT_EQ(goldenResult, result); }));
+    }));
+}
+
 struct HidlDeathRecipient : hidl_death_recipient {
     std::mutex mutex;
     std::condition_variable condition;
@@ -1943,6 +1985,7 @@ TEST_F(HidlTest, SafeUnionNestedTest) {
 
 TEST_F(HidlTest, SafeUnionInterfaceTest) {
     const std::array<int8_t, 7> testArray{-1, -2, -3, 0, 1, 2, 3};
+    const hidl_vec<hidl_string> testVector{"So", "Many", "Words"};
     const std::string testStringA = "Hello";
     const std::string testStringB = "World";
 
@@ -1974,6 +2017,20 @@ TEST_F(HidlTest, SafeUnionInterfaceTest) {
                                     EXPECT_EQ(testStringA + testStringB, std::string(result));
                                 }));
                         }));
+                }));
+
+            EXPECT_OK(safeunionInterface->setInterfaceD(
+                safeUnion, testStringA, [&](const InterfaceTypeSafeUnion& safeUnion) {
+                    EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::d,
+                              safeUnion.getDiscriminator());
+                    EXPECT_EQ(testStringA, safeUnion.d());
+                }));
+
+            EXPECT_OK(safeunionInterface->setInterfaceE(
+                safeUnion, testVector, [&](const InterfaceTypeSafeUnion& safeUnion) {
+                    EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::e,
+                              safeUnion.getDiscriminator());
+                    EXPECT_EQ(testVector, safeUnion.e());
                 }));
         }));
 }

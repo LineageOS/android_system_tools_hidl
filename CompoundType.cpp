@@ -313,9 +313,36 @@ void CompoundType::emitReaderWriter(
         }
 
         for (const auto& field : *mFields) {
-            field->type().emitReaderWriter(out, name + "." + field->name(),
-                                            parcelObj, parcelObjIsPointer,
-                                            isReader, mode);
+            const std::string tempFieldName = "_hidl_temp_" + field->name();
+            const std::string fieldValue = name + "." + field->name();
+
+            out.block([&] {
+                if (isReader) {
+                    out << field->type().getCppResultType()
+                        << " "
+                        << tempFieldName
+                        << ";\n";
+                } else {
+                    out << field->type().getCppArgumentType()
+                        << " "
+                        << tempFieldName
+                        << " = "
+                        << fieldValue
+                        << ";\n";
+                }
+
+                field->type().emitReaderWriter(out, tempFieldName, parcelObj,
+                                               parcelObjIsPointer, isReader, mode);
+                if (isReader) {
+                    const std::string derefOperator = field->type().resultNeedsDeref()
+                                                      ? "*" : "";
+                    out << fieldValue
+                        << " = std::move("
+                        << derefOperator
+                        << tempFieldName
+                        << ");\n";
+                }
+            }).endl();
         }
     } else {
         const std::string parentName = "_hidl_" + name + "_parent";
@@ -398,7 +425,7 @@ void CompoundType::emitJavaReaderWriter(
 
 void CompoundType::emitJavaFieldInitializer(
         Formatter &out, const std::string &fieldName) const {
-    const std::string fieldDeclaration = "final " + fullJavaName() + " " + fieldName;
+    const std::string fieldDeclaration = fullJavaName() + " " + fieldName;
     emitJavaFieldDefaultInitialValue(out, fieldDeclaration);
 }
 
