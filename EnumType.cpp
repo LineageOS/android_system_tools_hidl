@@ -168,8 +168,8 @@ std::string EnumType::getJavaSuffix() const {
     return mStorageType->resolveToScalarType()->getJavaSuffix();
 }
 
-std::string EnumType::getJavaWrapperType() const {
-    return mStorageType->resolveToScalarType()->getJavaWrapperType();
+std::string EnumType::getJavaTypeClass() const {
+    return mStorageType->resolveToScalarType()->getJavaTypeClass();
 }
 
 std::string EnumType::getVtsType() const {
@@ -185,8 +185,8 @@ std::string EnumType::getBitfieldJavaType(bool forInitializer) const {
     return resolveToScalarType()->getJavaType(forInitializer);
 }
 
-std::string EnumType::getBitfieldJavaWrapperType() const {
-    return resolveToScalarType()->getJavaWrapperType();
+std::string EnumType::getBitfieldJavaTypeClass() const {
+    return resolveToScalarType()->getJavaTypeClass();
 }
 
 LocalIdentifier *EnumType::lookupIdentifier(const std::string &name) const {
@@ -512,7 +512,6 @@ void EnumType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) const {
     }).endl();
 
     auto bitfieldType = getBitfieldJavaType(false /* forInitializer */);
-    auto bitfieldWrapperType = getBitfieldJavaWrapperType();
     out << "\n"
         << "public static final String dumpBitfield("
         << bitfieldType << " o) ";
@@ -866,8 +865,8 @@ std::string BitFieldType::getJavaSuffix() const {
     return resolveToScalarType()->getJavaSuffix();
 }
 
-std::string BitFieldType::getJavaWrapperType() const {
-    return getElementEnumType()->getBitfieldJavaWrapperType();
+std::string BitFieldType::getJavaTypeClass() const {
+    return getElementEnumType()->getBitfieldJavaTypeClass();
 }
 
 std::string BitFieldType::getVtsType() const {
