@@ -20,6 +20,8 @@
 #include <android-base/logging.h>
 
 #include <android/hardware/tests/baz/1.0/IBaz.h>
+#include <android/hardware/tests/safeunion/1.0/IOtherInterface.h>
+#include <android/hardware/tests/safeunion/1.0/ISafeUnion.h>
 
 #include <hidl/LegacySupport.h>
 #include <hidl/ServiceManagement.h>
@@ -31,6 +33,8 @@ using ::android::sp;
 using ::android::hardware::tests::baz::V1_0::IBase;
 using ::android::hardware::tests::baz::V1_0::IBaz;
 using ::android::hardware::tests::baz::V1_0::IBazCallback;
+using ::android::hardware::tests::safeunion::V1_0::IOtherInterface;
+using ::android::hardware::tests::safeunion::V1_0::ISafeUnion;
 
 using ::android::hardware::hidl_array;
 using ::android::hardware::hidl_vec;
@@ -38,6 +42,10 @@ using ::android::hardware::hidl_string;
 using ::android::hardware::defaultPassthroughServiceImplementation;
 using ::android::hardware::Return;
 using ::android::hardware::Void;
+
+using InterfaceTypeSafeUnion = ISafeUnion::InterfaceTypeSafeUnion;
+using LargeSafeUnion = ISafeUnion::LargeSafeUnion;
+using SmallSafeUnion = ISafeUnion::SmallSafeUnion;
 
 struct BazCallback : public IBazCallback {
     Return<void> heyItsMe(const sp<IBazCallback> &cb) override;
@@ -57,6 +65,16 @@ Return<void> BazCallback::hey() {
     return Void();
 }
 
+struct OtherInterface : public IOtherInterface {
+    Return<void> concatTwoStrings(const hidl_string& a, const hidl_string& b,
+                                  concatTwoStrings_cb _hidl_cb) override {
+        hidl_string result = std::string(a) + std::string(b);
+        _hidl_cb(result);
+
+        return Void();
+    }
+};
+
 using std::to_string;
 
 static void usage(const char *me) {
@@ -73,17 +91,26 @@ struct HidlEnvironment : public ::testing::Environment {
 
 struct HidlTest : public ::testing::Test {
     sp<IBaz> baz;
+    sp<ISafeUnion> safeunionInterface;
+    sp<IOtherInterface> otherInterface;
 
     void SetUp() override {
         using namespace ::android::hardware;
 
-        ::android::hardware::details::waitForHwService(
-                IBaz::descriptor, "baz");
-
-        baz = IBaz::getService("baz");
-
-        CHECK(baz != NULL);
+        ::android::hardware::details::waitForHwService(IBaz::descriptor, "default");
+        baz = IBaz::getService();
+        CHECK(baz != nullptr);
         CHECK(baz->isRemote());
+
+        ::android::hardware::details::waitForHwService(ISafeUnion::descriptor, "default");
+        safeunionInterface = ISafeUnion::getService();
+        CHECK(safeunionInterface != nullptr);
+        CHECK(safeunionInterface->isRemote());
+
+        ::android::hardware::details::waitForHwService(IOtherInterface::descriptor, "default");
+        otherInterface = IOtherInterface::getService();
+        CHECK(otherInterface != nullptr);
+        CHECK(otherInterface->isRemote());
     }
 
     void TearDown() override {
@@ -574,6 +601,149 @@ TEST_F(HidlTest, BazTestDoubleVecs) {
                 in, [&](const auto &out) { EXPECT_EQ(in, out); }));
 }
 
+TEST_F(HidlTest, SafeUnionNoInitTest) {
+    EXPECT_OK(safeunionInterface->newLargeSafeUnion([&](const LargeSafeUnion& safeUnion) {
+        EXPECT_EQ(LargeSafeUnion::hidl_discriminator::hidl_no_init, safeUnion.getDiscriminator());
+    }));
+}
+
+TEST_F(HidlTest, SafeUnionSimpleTest) {
+    EXPECT_OK(safeunionInterface->newLargeSafeUnion([&](const LargeSafeUnion& safeUnion) {
+        EXPECT_OK(safeunionInterface->setA(safeUnion, -5, [&](const LargeSafeUnion& safeUnion) {
+            EXPECT_EQ(LargeSafeUnion::hidl_discriminator::a, safeUnion.getDiscriminator());
+            EXPECT_EQ(-5, safeUnion.a());
+
+            uint64_t max = std::numeric_limits<uint64_t>::max();
+            EXPECT_OK(
+                safeunionInterface->setD(safeUnion, max, [&](const LargeSafeUnion& safeUnion) {
+                    EXPECT_EQ(LargeSafeUnion::hidl_discriminator::d, safeUnion.getDiscriminator());
+                    EXPECT_EQ(max, safeUnion.d());
+                }));
+        }));
+    }));
+}
+
+TEST_F(HidlTest, SafeUnionArrayLikeTypesTest) {
+    const std::array<int64_t, 5> testArray{1, -2, 3, -4, 5};
+    const hidl_vec<uint64_t> testVector{std::numeric_limits<uint64_t>::max()};
+
+    EXPECT_OK(safeunionInterface->newLargeSafeUnion([&](const LargeSafeUnion& safeUnion) {
+        EXPECT_OK(
+            safeunionInterface->setF(safeUnion, testArray, [&](const LargeSafeUnion& safeUnion) {
+                EXPECT_EQ(LargeSafeUnion::hidl_discriminator::f, safeUnion.getDiscriminator());
+
+                for (size_t i = 0; i < testArray.size(); i++) {
+                    EXPECT_EQ(testArray[i], safeUnion.f()[i]);
+                }
+            }));
+
+        EXPECT_OK(
+            safeunionInterface->setI(safeUnion, testVector, [&](const LargeSafeUnion& safeUnion) {
+                EXPECT_EQ(LargeSafeUnion::hidl_discriminator::i, safeUnion.getDiscriminator());
+                EXPECT_EQ(testVector, safeUnion.i());
+            }));
+    }));
+}
+
+TEST_F(HidlTest, SafeUnionStringTypeTest) {
+    const std::string testString =
+        "This is an inordinately long test string to exercise hidl_string types in safe unions.";
+
+    EXPECT_OK(safeunionInterface->newLargeSafeUnion([&](const LargeSafeUnion& safeUnion) {
+        EXPECT_OK(safeunionInterface->setG(
+            safeUnion, hidl_string(testString), [&](const LargeSafeUnion& safeUnion) {
+                EXPECT_EQ(LargeSafeUnion::hidl_discriminator::g, safeUnion.getDiscriminator());
+                EXPECT_EQ(testString, std::string(safeUnion.g()));
+            }));
+    }));
+}
+
+TEST_F(HidlTest, SafeUnionNestedTest) {
+    SmallSafeUnion smallSafeUnion;
+    smallSafeUnion.a(1);
+
+    EXPECT_OK(safeunionInterface->newLargeSafeUnion([&](const LargeSafeUnion& safeUnion) {
+        EXPECT_OK(safeunionInterface->setL(
+            safeUnion, smallSafeUnion, [&](const LargeSafeUnion& safeUnion) {
+                EXPECT_EQ(LargeSafeUnion::hidl_discriminator::l, safeUnion.getDiscriminator());
+
+                EXPECT_EQ(SmallSafeUnion::hidl_discriminator::a, safeUnion.l().getDiscriminator());
+                EXPECT_EQ(1, safeUnion.l().a());
+            }));
+    }));
+}
+
+TEST_F(HidlTest, SafeUnionInterfaceTest) {
+    const std::array<int8_t, 7> testArray{-1, -2, -3, 0, 1, 2, 3};
+    const std::string testStringA = "Hello";
+    const std::string testStringB = "World";
+
+    EXPECT_OK(
+        safeunionInterface->newInterfaceTypeSafeUnion([&](const InterfaceTypeSafeUnion& safeUnion) {
+            EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::hidl_no_init,
+                      safeUnion.getDiscriminator());
+
+            EXPECT_OK(safeunionInterface->setInterfaceB(
+                safeUnion, testArray, [&](const InterfaceTypeSafeUnion& safeUnion) {
+                    EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::b,
+                              safeUnion.getDiscriminator());
+
+                    for (size_t i = 0; i < testArray.size(); i++) {
+                        EXPECT_EQ(testArray[i], safeUnion.b()[i]);
+                    }
+                }));
+        }));
+
+    // Same-process interface calls are not supported in Java, so we use
+    // a safe_union instance bound to this (client) process instead of
+    // safeunionInterface to exercise this test-case. Ref: b/110957763.
+    InterfaceTypeSafeUnion safeUnion;
+    safeUnion.c(otherInterface);
+
+    EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::c, safeUnion.getDiscriminator());
+    EXPECT_OK(safeUnion.c()->concatTwoStrings(
+        hidl_string(testStringA), hidl_string(testStringB), [&](const hidl_string& result) {
+            EXPECT_EQ(testStringA + testStringB, std::string(result));
+        }));
+}
+
+TEST_F(HidlTest, SafeUnionEqualityTest) {
+    EXPECT_OK(safeunionInterface->newLargeSafeUnion([&](const LargeSafeUnion& one) {
+        EXPECT_OK(safeunionInterface->newLargeSafeUnion([&](const LargeSafeUnion& two) {
+            EXPECT_FALSE(one == two);
+            EXPECT_TRUE(one != two);
+        }));
+
+        EXPECT_OK(safeunionInterface->setA(one, 1, [&](const LargeSafeUnion& one) {
+            EXPECT_OK(safeunionInterface->newLargeSafeUnion([&](const LargeSafeUnion& two) {
+                EXPECT_FALSE(one == two);
+                EXPECT_TRUE(one != two);
+            }));
+
+            EXPECT_OK(safeunionInterface->newLargeSafeUnion([&](const LargeSafeUnion& two) {
+                EXPECT_OK(safeunionInterface->setB(two, 1, [&](const LargeSafeUnion& two) {
+                    EXPECT_FALSE(one == two);
+                    EXPECT_TRUE(one != two);
+                }));
+            }));
+
+            EXPECT_OK(safeunionInterface->newLargeSafeUnion([&](const LargeSafeUnion& two) {
+                EXPECT_OK(safeunionInterface->setA(two, 2, [&](const LargeSafeUnion& two) {
+                    EXPECT_FALSE(one == two);
+                    EXPECT_TRUE(one != two);
+                }));
+            }));
+
+            EXPECT_OK(safeunionInterface->newLargeSafeUnion([&](const LargeSafeUnion& two) {
+                EXPECT_OK(safeunionInterface->setA(two, 1, [&](const LargeSafeUnion& two) {
+                    EXPECT_TRUE(one == two);
+                    EXPECT_FALSE(one != two);
+                }));
+            }));
+        }));
+    }));
+}
+
 int main(int argc, char **argv) {
     setenv("TREBLE_TESTING_OVERRIDE", "true", true);
 
@@ -622,6 +792,19 @@ int main(int argc, char **argv) {
         return status;
     }
 
-    return defaultPassthroughServiceImplementation<IBaz>("baz");
+    ::android::status_t status;
+    configureRpcThreadpool(1, true);
 
+    status = registerPassthroughServiceImplementation<IBaz>();
+    CHECK(status == ::android::OK) << "IBaz didn't register";
+
+    status = registerPassthroughServiceImplementation<ISafeUnion>();
+    CHECK(status == ::android::OK) << "ISafeUnion didn't register";
+
+    sp<IOtherInterface> otherInterface = new OtherInterface();
+    status = otherInterface->registerAsService();
+    CHECK(status == ::android::OK) << "IOtherInterface didn't register";
+
+    joinRpcThreadpool();
+    return 0;
 }
