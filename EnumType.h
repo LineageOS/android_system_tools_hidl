@@ -52,16 +52,15 @@ struct EnumType : public Scope {
                            bool specifyNamespaces) const override;
 
     std::string getJavaType(bool forInitializer) const override;
+    std::string getJavaTypeClass() const override;
 
     std::string getJavaSuffix() const override;
-
-    std::string getJavaWrapperType() const override;
 
     std::string getVtsType() const override;
 
     std::string getBitfieldCppType(StorageMode mode, bool specifyNamespaces = true) const;
     std::string getBitfieldJavaType(bool forInitializer = false) const;
-    std::string getBitfieldJavaWrapperType() const;
+    std::string getBitfieldJavaTypeClass() const;
 
     // Return the type that corresponds to bitfield<T>.
     const BitFieldType* getBitfieldType() const;
@@ -183,10 +182,9 @@ struct BitFieldType : public TemplatedType {
                            bool specifyNamespaces) const override;
 
     std::string getJavaType(bool forInitializer) const override;
+    std::string getJavaTypeClass() const override;
 
     std::string getJavaSuffix() const override;
-
-    std::string getJavaWrapperType() const override;
 
     std::string getVtsType() const override;
 
