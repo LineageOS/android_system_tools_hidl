@@ -166,7 +166,13 @@ struct Type : DocCommentable {
     // otherwise (and by default), they are omitted, i.e. [][].
     virtual std::string getJavaType(bool forInitializer = false) const;
 
-    virtual std::string getJavaWrapperType() const;
+    // Identical to getJavaType() for most types, except: primitives, in which
+    // case the wrapper type is returned, and generics (such as ArrayList<?>),
+    // where the type specialization is omitted to facilitate use of
+    // instanceof or class.isInstance().
+    virtual std::string getJavaTypeClass() const;
+
+    virtual std::string getJavaTypeCast(const std::string& objName) const;
     virtual std::string getJavaSuffix() const;
 
     virtual std::string getVtsType() const;
@@ -244,6 +250,10 @@ struct Type : DocCommentable {
     virtual void emitJavaFieldInitializer(
             Formatter &out,
             const std::string &fieldName) const;
+
+    virtual void emitJavaFieldDefaultInitialValue(
+            Formatter &out,
+            const std::string &declaredFieldName) const;
 
     virtual void emitJavaFieldReaderWriter(
             Formatter &out,
