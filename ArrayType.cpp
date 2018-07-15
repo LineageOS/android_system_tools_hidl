@@ -156,10 +156,6 @@ std::string ArrayType::getJavaType(bool forInitializer) const {
     return base;
 }
 
-std::string ArrayType::getJavaWrapperType() const {
-    return mElementType->getJavaWrapperType();
-}
-
 std::string ArrayType::getVtsType() const {
     return "TYPE_ARRAY";
 }
@@ -366,7 +362,8 @@ void ArrayType::emitJavaDump(
     out << streamName << ".append(java.util.Arrays."
         << (countDimensions() > 1 ? "deepToString" : "toString")
         << "("
-        << name << "));\n";
+        << name
+        << "));\n";
 }
 
 
@@ -434,15 +431,17 @@ void ArrayType::emitJavaReaderWriter(
 
 void ArrayType::emitJavaFieldInitializer(
         Formatter &out, const std::string &fieldName) const {
-    std::string typeName = getJavaType(false /* forInitializer */);
-    std::string initName = getJavaType(true /* forInitializer */);
+    const std::string typeName = getJavaType(false /* forInitializer */);
+    const std::string fieldDeclaration = "final " + typeName + " " + fieldName;
 
-    out << "final "
-        << typeName
-        << " "
-        << fieldName
+    emitJavaFieldDefaultInitialValue(out, fieldDeclaration);
+}
+
+void ArrayType::emitJavaFieldDefaultInitialValue(
+        Formatter &out, const std::string &declaredFieldName) const {
+    out << declaredFieldName
         << " = new "
-        << initName
+        << getJavaType(true /* forInitializer */)
         << ";\n";
 }
 
@@ -488,15 +487,13 @@ void ArrayType::emitJavaFieldReaderWriter(
         indexString += "[" + iteratorName + "]";
     }
 
-    if (isReader && mElementType->isCompoundType()) {
-        std::string typeName =
-            mElementType->getJavaType(false /* forInitializer */);
+    const bool isIndexed = (loopDimensions > 0);
+    const std::string fieldNameWithCast = isIndexed
+            ? "(" + getJavaTypeCast(fieldName) + ")" + indexString
+            : getJavaTypeCast(fieldName);
 
-        out << fieldName
-            << indexString
-            << " = new "
-            << typeName
-            << "();\n";
+    if (isReader && mElementType->isCompoundType()) {
+        mElementType->emitJavaFieldDefaultInitialValue(out, fieldNameWithCast);
     }
 
     if (!isPrimitiveArray) {
@@ -505,7 +502,7 @@ void ArrayType::emitJavaFieldReaderWriter(
                 depth + 1,
                 parcelName,
                 blobName,
-                fieldName + indexString,
+                fieldNameWithCast,
                 offsetName,
                 isReader);
 
@@ -521,8 +518,7 @@ void ArrayType::emitJavaFieldReaderWriter(
                 << "Array("
                 << offsetName
                 << ", "
-                << fieldName
-                << indexString
+                << fieldNameWithCast
                 << ", "
                 << mSizes.back()->javaValue()
                 << " /* size */);\n";
@@ -533,8 +529,7 @@ void ArrayType::emitJavaFieldReaderWriter(
                 << "Array("
                 << offsetName
                 << ", "
-                << fieldName
-                << indexString
+                << fieldNameWithCast
                 << ");\n";
         }
 

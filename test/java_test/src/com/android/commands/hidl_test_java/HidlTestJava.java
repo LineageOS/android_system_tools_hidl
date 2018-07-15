@@ -22,6 +22,11 @@ import android.hardware.tests.baz.V1_0.IBaz;
 import android.hardware.tests.baz.V1_0.IQuux;
 import android.hardware.tests.baz.V1_0.IBaz.NestedStruct;
 import android.hardware.tests.baz.V1_0.IBazCallback;
+import android.hardware.tests.safeunion.V1_0.IOtherInterface;
+import android.hardware.tests.safeunion.V1_0.ISafeUnion;
+import android.hardware.tests.safeunion.V1_0.ISafeUnion.InterfaceTypeSafeUnion;
+import android.hardware.tests.safeunion.V1_0.ISafeUnion.LargeSafeUnion;
+import android.hardware.tests.safeunion.V1_0.ISafeUnion.SmallSafeUnion;
 import android.os.HwBinder;
 import android.os.RemoteException;
 import android.os.HidlSupport;
@@ -214,6 +219,130 @@ public final class HidlTestJava {
         ExpectTrue(!HidlSupport.deepEquals(l, r));
     }
 
+    private void runClientSafeUnionTests() throws RemoteException {
+        ISafeUnion safeunionInterface = ISafeUnion.getService();
+
+        {
+            // SafeUnionNoInitTest
+            LargeSafeUnion safeUnion = safeunionInterface.newLargeSafeUnion();
+            ExpectTrue(
+                safeUnion.getDiscriminator() == LargeSafeUnion.hidl_discriminator.hidl_no_init);
+        }
+        {
+            // SafeUnionSimpleTest
+            LargeSafeUnion safeUnion = safeunionInterface.newLargeSafeUnion();
+
+            safeUnion = safeunionInterface.setA(safeUnion, (byte) -5);
+            ExpectTrue(safeUnion.getDiscriminator() == LargeSafeUnion.hidl_discriminator.a);
+            ExpectTrue(safeUnion.a() == (byte) -5);
+
+            safeUnion = safeunionInterface.setD(safeUnion, Long.MAX_VALUE);
+            ExpectTrue(safeUnion.getDiscriminator() == LargeSafeUnion.hidl_discriminator.d);
+            ExpectTrue(safeUnion.d() == Long.MAX_VALUE);
+        }
+        {
+            // SafeUnionArrayLikeTypesTest
+            long[] testArray = new long[] {1, -2, 3, -4, 5};
+            ArrayList<Long> testVector = new ArrayList<Long>(Arrays.asList(Long.MAX_VALUE));
+
+            LargeSafeUnion safeUnion = safeunionInterface.newLargeSafeUnion();
+            safeUnion = safeunionInterface.setF(safeUnion, testArray);
+            ExpectTrue(safeUnion.getDiscriminator() == LargeSafeUnion.hidl_discriminator.f);
+            ExpectDeepEq(testArray, safeUnion.f());
+
+            safeUnion = safeunionInterface.newLargeSafeUnion();
+            safeUnion = safeunionInterface.setI(safeUnion, testVector);
+            ExpectTrue(safeUnion.getDiscriminator() == LargeSafeUnion.hidl_discriminator.i);
+            ExpectDeepEq(testVector, safeUnion.i());
+        }
+        {
+            // SafeUnionStringTypeTest
+            String testString = "This is an inordinately long test string.";
+
+            LargeSafeUnion safeUnion = safeunionInterface.newLargeSafeUnion();
+            safeUnion = safeunionInterface.setG(safeUnion, testString);
+            ExpectTrue(safeUnion.getDiscriminator() == LargeSafeUnion.hidl_discriminator.g);
+            ExpectDeepEq(testString, safeUnion.g());
+        }
+        {
+            // SafeUnionNestedTest
+            SmallSafeUnion smallSafeUnion = new SmallSafeUnion();
+            smallSafeUnion.a((byte) 1);
+
+            LargeSafeUnion safeUnion = safeunionInterface.newLargeSafeUnion();
+            safeUnion = safeunionInterface.setL(safeUnion, smallSafeUnion);
+            ExpectTrue(safeUnion.getDiscriminator() == LargeSafeUnion.hidl_discriminator.l);
+            ExpectTrue(safeUnion.l().getDiscriminator() == SmallSafeUnion.hidl_discriminator.a);
+            ExpectTrue(safeUnion.l().a() == (byte) 1);
+        }
+        {
+            // SafeUnionInterfaceTest
+            byte[] testArray = new byte[] {-1, -2, -3, 0, 1, 2, 3};
+            String testStringA = "Hello";
+            String testStringB = "World";
+
+            IOtherInterface otherInterface = IOtherInterface.getService();
+
+            InterfaceTypeSafeUnion safeUnion = safeunionInterface.newInterfaceTypeSafeUnion();
+            safeUnion = safeunionInterface.setInterfaceB(safeUnion, testArray);
+            ExpectTrue(safeUnion.getDiscriminator() == InterfaceTypeSafeUnion.hidl_discriminator.b);
+            ExpectDeepEq(testArray, safeUnion.b());
+
+            safeUnion.c(otherInterface);
+            ExpectTrue(safeUnion.getDiscriminator() == InterfaceTypeSafeUnion.hidl_discriminator.c);
+            String result = safeUnion.c().concatTwoStrings(testStringA, testStringB);
+            Expect(result, testStringA + testStringB);
+        }
+        {
+            // SafeUnionEqualityTest
+            LargeSafeUnion one = safeunionInterface.newLargeSafeUnion();
+            LargeSafeUnion two = safeunionInterface.newLargeSafeUnion();
+            ExpectFalse(one.equals(two));
+
+            one = safeunionInterface.setA(one, (byte) 1);
+            ExpectFalse(one.equals(two));
+
+            two = safeunionInterface.setB(two, (byte) 1);
+            ExpectFalse(one.equals(two));
+
+            two = safeunionInterface.setA(two, (byte) 2);
+            ExpectFalse(one.equals(two));
+
+            two = safeunionInterface.setA(two, (byte) 1);
+            ExpectTrue(one.equals(two));
+        }
+        {
+            // SafeUnionDeepEqualityTest
+            ArrayList<Long> testVectorA = new ArrayList(Arrays.asList(1L, 2L, 3L));
+            ArrayList<Long> testVectorB = new ArrayList(Arrays.asList(2L, 1L, 3L));
+
+            LargeSafeUnion one = safeunionInterface.newLargeSafeUnion();
+            LargeSafeUnion two = safeunionInterface.newLargeSafeUnion();
+
+            one = safeunionInterface.setI(one, testVectorA);
+            two = safeunionInterface.setI(two, testVectorB);
+            ExpectFalse(one.equals(two));
+
+            two = safeunionInterface.setI(two, (ArrayList<Long>) testVectorA.clone());
+            ExpectTrue(one.equals(two));
+        }
+        {
+            // SafeUnionHashCodeTest
+            ArrayList<Boolean> testVector =
+                new ArrayList(Arrays.asList(true, false, false, true, true));
+
+            LargeSafeUnion one = safeunionInterface.newLargeSafeUnion();
+            LargeSafeUnion two = safeunionInterface.newLargeSafeUnion();
+
+            one = safeunionInterface.setH(one, testVector);
+            two = safeunionInterface.setA(two, (byte) -5);
+            ExpectFalse(one.hashCode() == two.hashCode());
+
+            two = safeunionInterface.setH(two, (ArrayList<Boolean>) testVector.clone());
+            ExpectTrue(one.hashCode() == two.hashCode());
+        }
+    }
+
     private void client() throws RemoteException {
 
         ExpectDeepEq(null, null);
@@ -271,7 +400,7 @@ public final class HidlTestJava {
 
         {
             // Test access through base interface binder.
-            IBase baseProxy = IBase.getService("baz");
+            IBase baseProxy = IBase.getService();
             baseProxy.someBaseMethod();
 
             IBaz bazProxy = IBaz.castFrom(baseProxy);
@@ -285,13 +414,13 @@ public final class HidlTestJava {
 
         {
             // Test waiting API
-            IBase baseProxyA = IBaz.getService("baz", true /* retry */);
+            IBase baseProxyA = IBaz.getService(true /* retry */);
             ExpectTrue(baseProxyA != null);
-            IBase baseProxyB = IBaz.getService("baz", false /* retry */);
+            IBase baseProxyB = IBaz.getService(false /* retry */);
             ExpectTrue(baseProxyB != null);
         }
 
-        IBaz proxy = IBaz.getService("baz");
+        IBaz proxy = IBaz.getService();
 
         proxy.ping();
 
@@ -757,9 +886,9 @@ public final class HidlTestJava {
             // testProxyEquals
             // TODO(b/68727931): test passthrough services as well.
 
-            IBase proxy1 = IBase.getService("baz");
-            IBase proxy2 = IBase.getService("baz");
-            IBaz proxy3 = IBaz.getService("baz");
+            IBase proxy1 = IBase.getService();
+            IBase proxy2 = IBase.getService();
+            IBaz proxy3 = IBaz.getService();
             IBazCallback callback1 = new BazCallback();
             IBazCallback callback2 = new BazCallback();
             IServiceManager manager = IServiceManager.getService();
@@ -789,7 +918,7 @@ public final class HidlTestJava {
             ExpectFalse(set.contains(manager));
         }
         {
-            IBaz baz = IBaz.getService("baz");
+            IBaz baz = IBaz.getService();
             ExpectTrue(baz != null);
             IBaz.StructWithInterface swi = new IBaz.StructWithInterface();
             swi.dummy = baz;
@@ -800,6 +929,8 @@ public final class HidlTestJava {
             ExpectTrue(HidlSupport.interfacesEqual(baz, swi_back.dummy));
             ExpectTrue(swi_back.number == 12345678);
         }
+
+        runClientSafeUnionTests();
 
         // --- DEATH RECIPIENT TESTING ---
         // This must always be done last, since it will kill the native server process
@@ -1087,11 +1218,160 @@ public final class HidlTestJava {
         }
     }
 
+    class SafeUnion extends ISafeUnion.Stub {
+        @Override
+        public LargeSafeUnion newLargeSafeUnion() {
+            Log.d(TAG, "SERVER: newLargeSafeUnion");
+            return new LargeSafeUnion();
+        }
+
+        @Override
+        public LargeSafeUnion setA(LargeSafeUnion safeUnion, byte a) {
+            Log.d(TAG, "SERVER: setA(" + a + ")");
+            safeUnion.a(a);
+
+            return safeUnion;
+        }
+
+        @Override
+        public LargeSafeUnion setB(LargeSafeUnion safeUnion, short b) {
+            Log.d(TAG, "SERVER: setB(" + b + ")");
+            safeUnion.b(b);
+
+            return safeUnion;
+        }
+
+        @Override
+        public LargeSafeUnion setC(LargeSafeUnion safeUnion, int c) {
+            Log.d(TAG, "SERVER: setC(" + c + ")");
+            safeUnion.c(c);
+
+            return safeUnion;
+        }
+
+        @Override
+        public LargeSafeUnion setD(LargeSafeUnion safeUnion, long d) {
+            Log.d(TAG, "SERVER: setD(" + d + ")");
+            safeUnion.d(d);
+
+            return safeUnion;
+        }
+
+        @Override
+        public LargeSafeUnion setE(LargeSafeUnion safeUnion, byte[/* 13 */] e) {
+            Log.d(TAG, "SERVER: setE(" + e + ")");
+            safeUnion.e(e);
+
+            return safeUnion;
+        }
+
+        @Override
+        public LargeSafeUnion setF(LargeSafeUnion safeUnion, long[/* 5 */] f) {
+            Log.d(TAG, "SERVER: setF(" + f + ")");
+            safeUnion.f(f);
+
+            return safeUnion;
+        }
+
+        @Override
+        public LargeSafeUnion setG(LargeSafeUnion safeUnion, String g) {
+            Log.d(TAG, "SERVER: setG(" + g + ")");
+            safeUnion.g(g);
+
+            return safeUnion;
+        }
+
+        @Override
+        public LargeSafeUnion setH(LargeSafeUnion safeUnion, ArrayList<Boolean> h) {
+            Log.d(TAG, "SERVER: setH(" + h + ")");
+            safeUnion.h(h);
+
+            return safeUnion;
+        }
+
+        @Override
+        public LargeSafeUnion setI(LargeSafeUnion safeUnion, ArrayList<Long> i) {
+            Log.d(TAG, "SERVER: setI(" + i + ")");
+            safeUnion.i(i);
+
+            return safeUnion;
+        }
+
+        @Override
+        public LargeSafeUnion setJ(LargeSafeUnion safeUnion, ISafeUnion.J j) {
+            Log.d(TAG, "SERVER: setJ(" + j + ")");
+            safeUnion.j(j);
+
+            return safeUnion;
+        }
+
+        @Override
+        public LargeSafeUnion setK(LargeSafeUnion safeUnion, LargeSafeUnion.K k) {
+            Log.d(TAG, "SERVER: setK(" + k + ")");
+            safeUnion.k(k);
+
+            return safeUnion;
+        }
+
+        @Override
+        public LargeSafeUnion setL(LargeSafeUnion safeUnion, SmallSafeUnion l) {
+            Log.d(TAG, "SERVER: setL(" + l + ")");
+            safeUnion.l(l);
+
+            return safeUnion;
+        }
+
+        @Override
+        public InterfaceTypeSafeUnion newInterfaceTypeSafeUnion() {
+            Log.d(TAG, "SERVER: newInterfaceTypeSafeUnion");
+            return new InterfaceTypeSafeUnion();
+        }
+
+        @Override
+        public InterfaceTypeSafeUnion setInterfaceA(InterfaceTypeSafeUnion safeUnion, int a) {
+            Log.d(TAG, "SERVER: setInterfaceA(" + a + ")");
+            safeUnion.a(a);
+
+            return safeUnion;
+        }
+
+        @Override
+        public InterfaceTypeSafeUnion setInterfaceB(
+            InterfaceTypeSafeUnion safeUnion, byte[/* 7 */] b) {
+            Log.d(TAG, "SERVER: setInterfaceB(" + b + ")");
+            safeUnion.b(b);
+
+            return safeUnion;
+        }
+
+        @Override
+        public InterfaceTypeSafeUnion setInterfaceC(
+            InterfaceTypeSafeUnion safeUnion, IOtherInterface c) {
+            Log.d(TAG, "SERVER: setInterfaceC(" + c + ")");
+            safeUnion.c(c);
+
+            return safeUnion;
+        }
+    }
+
+    class OtherInterface extends IOtherInterface.Stub {
+        @Override
+        public String concatTwoStrings(String a, String b) {
+            return a.concat(b);
+        }
+    }
+
     private void server() throws RemoteException {
         HwBinder.configureRpcThreadpool(1, true);
 
         Baz baz = new Baz();
-        baz.registerAsService("baz");
+        baz.registerAsService("default");
+
+        SafeUnion safeunionInterface = new SafeUnion();
+        safeunionInterface.registerAsService("default");
+
+        OtherInterface otherInterface = new OtherInterface();
+        otherInterface.registerAsService("default");
 
         HwBinder.joinRpcThreadpool();
     }
