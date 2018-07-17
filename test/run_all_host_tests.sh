@@ -14,6 +14,7 @@ function run() {
 
     local RUN_TIME_TESTS=(\
         libhidl-gen-utils_test \
+        libhidl-gen-host-utils_test \
         hidl-gen-host_test \
     )
 
