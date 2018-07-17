@@ -2,6 +2,7 @@
 #define HIDL_TEST_H_
 
 #include <android/hardware/tests/bar/1.0/IBar.h>
+#include <android/hardware/tests/baz/1.0/IBaz.h>
 #include <android/hardware/tests/hash/1.0/IHash.h>
 #include <android/hardware/tests/inheritance/1.0/IChild.h>
 #include <android/hardware/tests/inheritance/1.0/IFetcher.h>
@@ -16,6 +17,7 @@
 template <template <typename Type> class Service>
 void runOnEachServer(void) {
     using ::android::hardware::tests::bar::V1_0::IBar;
+    using ::android::hardware::tests::baz::V1_0::IBaz;
     using ::android::hardware::tests::hash::V1_0::IHash;
     using ::android::hardware::tests::inheritance::V1_0::IChild;
     using ::android::hardware::tests::inheritance::V1_0::IFetcher;
@@ -31,6 +33,7 @@ void runOnEachServer(void) {
     Service<IChild>::run("child");
     Service<IParent>::run("parent");
     Service<IFetcher>::run("fetcher");
+    Service<IBaz>::run("baz");
     Service<IBar>::run("foo");
     Service<IHash>::run("default");
     Service<IGraph>::run("graph");
