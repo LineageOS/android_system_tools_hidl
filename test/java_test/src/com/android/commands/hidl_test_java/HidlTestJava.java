@@ -278,6 +278,7 @@ public final class HidlTestJava {
         {
             // SafeUnionInterfaceTest
             byte[] testArray = new byte[] {-1, -2, -3, 0, 1, 2, 3};
+            ArrayList<String> testVector = new ArrayList(Arrays.asList("So", "Many", "Words"));
             String testStringA = "Hello";
             String testStringB = "World";
 
@@ -290,8 +291,17 @@ public final class HidlTestJava {
 
             safeUnion.c(otherInterface);
             ExpectTrue(safeUnion.getDiscriminator() == InterfaceTypeSafeUnion.hidl_discriminator.c);
+            ExpectTrue(HidlSupport.interfacesEqual(otherInterface, safeUnion.c()));
             String result = safeUnion.c().concatTwoStrings(testStringA, testStringB);
             Expect(result, testStringA + testStringB);
+
+            safeUnion = safeunionInterface.setInterfaceD(safeUnion, testStringA);
+            ExpectTrue(safeUnion.getDiscriminator() == InterfaceTypeSafeUnion.hidl_discriminator.d);
+            Expect(testStringA, safeUnion.d());
+
+            safeUnion = safeunionInterface.setInterfaceE(safeUnion, testVector);
+            ExpectTrue(safeUnion.getDiscriminator() == InterfaceTypeSafeUnion.hidl_discriminator.e);
+            ExpectDeepEq(testVector, safeUnion.e());
         }
         {
             // SafeUnionEqualityTest
@@ -1349,6 +1359,23 @@ public final class HidlTestJava {
             InterfaceTypeSafeUnion safeUnion, IOtherInterface c) {
             Log.d(TAG, "SERVER: setInterfaceC(" + c + ")");
             safeUnion.c(c);
+
+            return safeUnion;
+        }
+
+        @Override
+        public InterfaceTypeSafeUnion setInterfaceD(InterfaceTypeSafeUnion safeUnion, String d) {
+            Log.d(TAG, "SERVER: setInterfaceD(" + d + ")");
+            safeUnion.d(d);
+
+            return safeUnion;
+        }
+
+        @Override
+        public InterfaceTypeSafeUnion setInterfaceE(
+            InterfaceTypeSafeUnion safeUnion, ArrayList<String> e) {
+            Log.d(TAG, "SERVER: setInterfaceE(" + e + ")");
+            safeUnion.e(e);
 
             return safeUnion;
         }

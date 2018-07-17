@@ -432,7 +432,7 @@ void ArrayType::emitJavaReaderWriter(
 void ArrayType::emitJavaFieldInitializer(
         Formatter &out, const std::string &fieldName) const {
     const std::string typeName = getJavaType(false /* forInitializer */);
-    const std::string fieldDeclaration = "final " + typeName + " " + fieldName;
+    const std::string fieldDeclaration = typeName + " " + fieldName;
 
     emitJavaFieldDefaultInitialValue(out, fieldDeclaration);
 }
