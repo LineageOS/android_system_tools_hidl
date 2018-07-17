@@ -16,10 +16,9 @@
 
 #include "FQName.h"
 
-#include "StringHelper.h"
-
 #include <android-base/logging.h>
 #include <android-base/parseint.h>
+#include <android-base/strings.h>
 #include <iostream>
 #include <regex>
 #include <sstream>
@@ -374,13 +373,12 @@ std::string FQName::tokenName() const {
     getPackageAndVersionComponents(&components, true /* cpp_compatible */);
 
     if (!mName.empty()) {
-        std::vector<std::string> nameComponents;
-        StringHelper::SplitString(mName, '.', &nameComponents);
+        std::vector<std::string> nameComponents = base::Split(mName, ".");
 
         components.insert(components.end(), nameComponents.begin(), nameComponents.end());
     }
 
-    return StringHelper::JoinStrings(components, "_");
+    return base::Join(components, "_");
 }
 
 std::string FQName::cppNamespace() const {
@@ -388,26 +386,24 @@ std::string FQName::cppNamespace() const {
     getPackageAndVersionComponents(&components, true /* cpp_compatible */);
 
     std::string out = "::";
-    out += StringHelper::JoinStrings(components, "::");
+    out += base::Join(components, "::");
 
     return out;
 }
 
 std::string FQName::cppLocalName() const {
-    std::vector<std::string> components;
-    StringHelper::SplitString(mName, '.', &components);
+    std::vector<std::string> components = base::Split(mName, ".");
 
-    return StringHelper::JoinStrings(components, "::")
+    return base::Join(components, "::")
             + (mValueName.empty() ? "" : ("::" + mValueName));
 }
 
 std::string FQName::cppName() const {
     std::string out = cppNamespace();
 
-    std::vector<std::string> components;
-    StringHelper::SplitString(name(), '.', &components);
+    std::vector<std::string> components = base::Split(name(), ".");
     out += "::";
-    out += StringHelper::JoinStrings(components, "::");
+    out += base::Join(components, "::");
     if (!mValueName.empty()) {
         out  += "::" + mValueName;
     }
@@ -419,7 +415,7 @@ std::string FQName::javaPackage() const {
     std::vector<std::string> components;
     getPackageAndVersionComponents(&components, true /* cpp_compatible */);
 
-    return StringHelper::JoinStrings(components, ".");
+    return base::Join(components, ".");
 }
 
 std::string FQName::javaName() const {
@@ -428,7 +424,7 @@ std::string FQName::javaName() const {
 }
 
 void FQName::getPackageComponents(std::vector<std::string> *components) const {
-    StringHelper::SplitString(package(), '.', components);
+    *components = base::Split(package(), ".");
 }
 
 void FQName::getPackageAndVersionComponents(
@@ -513,8 +509,7 @@ bool FQName::inPackage(const std::string &package) const {
     std::vector<std::string> components;
     getPackageComponents(&components);
 
-    std::vector<std::string> inComponents;
-    StringHelper::SplitString(package, '.', &inComponents);
+    std::vector<std::string> inComponents = base::Split(package, ".");
 
     if (inComponents.size() > components.size()) {
         return false;
