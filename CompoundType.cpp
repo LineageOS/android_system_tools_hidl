@@ -258,10 +258,10 @@ void CompoundType::emitSafeUnionReaderWriterForInterfaces(
                         out << name
                             << "."
                             << field->name()
-                            << "("
+                            << "(std::move("
                             << derefOperator
                             << tempFieldName
-                            << ");\n";
+                            << "));\n";
                     } else {
                         const std::string fieldValue = name + "." + field->name() + "()";
                         out << field->type().getCppArgumentType()
@@ -596,22 +596,37 @@ void CompoundType::emitSafeUnionTypeDeclarations(Formatter& out) const {
     });
     out << ";\n\n";
 
-    out << localName() << "();\n"
-        << "~" << localName() << "();\n"
-        << localName() << "(const " << localName() << "&);\n\n";
+    out << localName() << "();\n"  // Constructor
+        << "~" << localName() << "();\n"  // Destructor
+        << localName() << "(" << localName() << "&&);\n"  // Move constructor
+        << localName() << "(const " << localName() << "&);\n"  // Copy constructor
+        << localName() << "& operator=(" << localName() << "&&);\n"  // Move assignment
+        << localName() << "& operator=(const " << localName() << "&);\n\n";  // Copy assignment
 
     for (const auto& field : *mFields) {
+        // Setter (copy)
         out << "void "
             << field->name()
             << "("
             << field->type().getCppArgumentType()
             << ");\n";
 
+        if (!field->type().isScalar()) {
+            // Setter (move)
+            out << "void "
+                << field->name()
+                << "("
+                << field->type().getCppStackType()
+                << "&&);\n";
+        }
+
+        // Getter (mutable)
         out << field->type().getCppStackType()
             << "& "
             << field->name()
             << "();\n";
 
+        // Getter (immutable)
         out << field->type().getCppArgumentType()
             << " "
             << field->name()
@@ -941,8 +956,57 @@ void CompoundType::emitPackageHwDeclarations(Formatter& out) const {
     }
 }
 
-void emitSafeUnionGetterDefinition(const std::string& fieldName,
-                                   Formatter& out) {
+static void emitSafeUnionFieldConstructor(Formatter& out,
+                                          const NamedReference<Type>* field,
+                                          const std::string& initializerObjectName) {
+    out << "new (&hidl_u."
+        << field->name()
+        << ") "
+        << field->type().getCppStackType()
+        << "("
+        << initializerObjectName
+        << ");\n";
+}
+
+static void emitSafeUnionSetterDefinition(Formatter& out,
+                                          const NamedReference<Type>* field,
+                                          const std::string& parameterName,
+                                          bool usesMoveSemantics) {
+    out.block([&] {
+        out << "if (hidl_d != hidl_discriminator::"
+            << field->name()
+            << ") ";
+
+        const std::string argumentName = usesMoveSemantics
+                                         ? ("std::move(" + parameterName + ")")
+                                         : parameterName;
+        out.block([&] {
+            out << "hidl_destructUnion();\n"
+                << "::std::memset(&hidl_u, 0, sizeof(hidl_u));\n\n";
+
+            emitSafeUnionFieldConstructor(out, field, argumentName);
+            out << "hidl_d = hidl_discriminator::"
+                << field->name()
+                << ";\n";
+        }).endl();
+
+        out << "else if (&(hidl_u."
+            << field->name()
+            << ") != &"
+            << parameterName
+            << ") ";
+
+        out.block([&] {
+            out << "hidl_u."
+                << field->name()
+                << " = "
+                << argumentName
+                << ";\n";
+        }).endl();
+    }).endl().endl();
+}
+
+static void emitSafeUnionGetterDefinition(Formatter& out, const std::string& fieldName) {
     out.block([&] {
         out << "if (CC_UNLIKELY(hidl_d != hidl_discriminator::"
             << fieldName
@@ -955,6 +1019,65 @@ void emitSafeUnionGetterDefinition(const std::string& fieldName,
         out << "return hidl_u."
             << fieldName
             << ";\n";
+    }).endl().endl();
+}
+
+void CompoundType::emitSafeUnionCopyAndAssignDefinition(Formatter& out,
+                                                        const std::string& parameterName,
+                                                        bool isCopyConstructor,
+                                                        bool usesMoveSemantics) const {
+    out.block([&] {
+        if (!isCopyConstructor) {
+            out << "if (this == &"
+            << parameterName
+            << ") { return *this; }\n\n";
+        }
+
+        out << "switch ("
+            << parameterName
+            << ".hidl_d) ";
+
+        out.block([&] {
+            for (const auto& field : *mFields) {
+                const std::string parameterFieldName = (parameterName + ".hidl_u." +
+                                                        field->name());
+
+                const std::string argumentName = usesMoveSemantics
+                                                 ? ("std::move(" + parameterFieldName + ")")
+                                                 : parameterFieldName;
+
+                out << "case hidl_discriminator::"
+                    << field->name()
+                    << ": ";
+
+                if (isCopyConstructor) {
+                    out.block([&] {
+                        emitSafeUnionFieldConstructor(out, field, argumentName);
+                        out << "break;\n";
+                    }).endl();
+                } else {
+                    out.block([&] {
+                        out << field->name()
+                            << "("
+                            << argumentName
+                            << ");\n"
+                            << "break;\n";
+                    }).endl();
+                }
+            }
+
+            out << "case hidl_discriminator::hidl_no_init: { break; }\n";
+            out << "default: { details::logAlwaysFatal("
+                << "\"Unknown union discriminator.\"); }\n";
+        }).endl();
+
+        if (isCopyConstructor) {
+            out << "\nhidl_d = "
+                << parameterName
+                << ".hidl_d;\n";
+        } else {
+            out << "return *this;\n";
+        }
     }).endl().endl();
 }
 
@@ -991,6 +1114,17 @@ void CompoundType::emitSafeUnionTypeConstructors(Formatter& out) const {
         out << "hidl_destructUnion();\n";
     }).endl().endl();
 
+    // Move constructor
+    out << fullName()
+        << "::"
+        << localName()
+        << "("
+        << localName()
+        << "&& other) ";
+
+    emitSafeUnionCopyAndAssignDefinition(
+            out, "other", true /* isCopyConstructor */, true /* usesMoveSemantics */);
+
     // Copy constructor
     out << fullName()
         << "::"
@@ -999,34 +1133,30 @@ void CompoundType::emitSafeUnionTypeConstructors(Formatter& out) const {
         << localName()
         << "& other) ";
 
-    out.block([&] {
-        out << "switch (other.hidl_d) ";
-        out.block([&] {
+    emitSafeUnionCopyAndAssignDefinition(
+        out, "other", true /* isCopyConstructor */, false /* usesMoveSemantics */);
 
-            for (const auto& field : *mFields) {
-                out << "case hidl_discriminator::"
-                    << field->name()
-                    << ": ";
+    // Move assignment operator
+    out << fullName()
+        << "& ("
+        << fullName()
+        << "::operator=)("
+        << localName()
+        << "&& other) ";
 
-                out.block([&] {
-                    out << "new (&hidl_u."
-                        << field->name()
-                        << ") "
-                        << field->type().getCppStackType()
-                        << "(other.hidl_u."
-                        << field->name()
-                        << ");\n"
-                        << "break;\n";
-                }).endl();
-            }
+    emitSafeUnionCopyAndAssignDefinition(
+            out, "other", false /* isCopyConstructor */, true /* usesMoveSemantics */);
 
-            out << "case hidl_discriminator::hidl_no_init: { break; }\n";
-            out << "default: { details::logAlwaysFatal("
-                << "\"Unknown union discriminator.\"); }\n";
-        }).endl().endl();
+    // Copy assignment operator
+    out << fullName()
+        << "& ("
+        << fullName()
+        << "::operator=)(const "
+        << localName()
+        << "& other) ";
 
-        out << "hidl_d = other.hidl_d;\n";
-    }).endl().endl();
+    emitSafeUnionCopyAndAssignDefinition(
+            out, "other", false /* isCopyConstructor */, false /* usesMoveSemantics */);
 }
 
 void CompoundType::emitSafeUnionTypeDefinitions(Formatter& out) const {
@@ -1063,7 +1193,7 @@ void CompoundType::emitSafeUnionTypeDefinitions(Formatter& out) const {
     }).endl().endl();
 
     for (const NamedReference<Type>* field : *mFields) {
-        // Setter
+        // Setter (copy)
         out << "void "
             << fullName()
             << "::"
@@ -1072,36 +1202,20 @@ void CompoundType::emitSafeUnionTypeDefinitions(Formatter& out) const {
             << field->type().getCppArgumentType()
             << " o) ";
 
-        out.block([&] {
-            out << "if (hidl_d != hidl_discriminator::"
+        emitSafeUnionSetterDefinition(out, field, "o", false /* usesMoveSemantics */);
+
+        if (!field->type().isScalar()) {
+            // Setter (move)
+            out << "void "
+                << fullName()
+                << "::"
                 << field->name()
-                << ") ";
+                << "("
+                << field->type().getCppStackType()
+                << "&& o) ";
 
-            out.block([&] {
-                out << "hidl_destructUnion();\n"
-                    << "::std::memset(&hidl_u, 0, sizeof(hidl_u));\n\n";
-
-                out << "new (&hidl_u."
-                    << field->name()
-                    << ") "
-                    << field->type().getCppStackType()
-                    << "(o);\n";
-
-                out << "hidl_d = hidl_discriminator::"
-                    << field->name()
-                    << ";\n";
-            }).endl();
-
-            out << "else if (&(hidl_u."
-                << field->name()
-                << ") != &o) ";
-
-            out.block([&] {
-                out << "hidl_u."
-                    << field->name()
-                    << " = o;\n";
-            }).endl();
-        }).endl().endl();
+            emitSafeUnionSetterDefinition(out, field, "o", true /* usesMoveSemantics */);
+        }
 
         // Getter (mutable)
         out << field->type().getCppStackType()
@@ -1111,7 +1225,7 @@ void CompoundType::emitSafeUnionTypeDefinitions(Formatter& out) const {
             << field->name()
             << ")() ";
 
-        emitSafeUnionGetterDefinition(field->name(), out);
+        emitSafeUnionGetterDefinition(out, field->name());
 
         // Getter (immutable)
         out << field->type().getCppArgumentType()
@@ -1121,7 +1235,7 @@ void CompoundType::emitSafeUnionTypeDefinitions(Formatter& out) const {
             << field->name()
             << ")() const ";
 
-        emitSafeUnionGetterDefinition(field->name(), out);
+        emitSafeUnionGetterDefinition(out, field->name());
     }
 
     // Trivial constructor/destructor for internal union

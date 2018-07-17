@@ -175,6 +175,11 @@ private:
     void emitSafeUnionTypeDeclarations(Formatter& out) const;
     std::unique_ptr<ScalarType> getUnionDiscriminatorType() const;
 
+    void emitSafeUnionCopyAndAssignDefinition(Formatter& out,
+                                              const std::string& parameterName,
+                                              bool isCopyConstructor,
+                                              bool usesMoveSemantics) const;
+
     CompoundLayout getCompoundAlignmentAndSize() const;
 
     void emitSafeUnionReaderWriterForInterfaces(
