@@ -675,6 +675,7 @@ TEST_F(HidlTest, SafeUnionNestedTest) {
 
 TEST_F(HidlTest, SafeUnionInterfaceTest) {
     const std::array<int8_t, 7> testArray{-1, -2, -3, 0, 1, 2, 3};
+    const hidl_vec<hidl_string> testVector{"So", "Many", "Words"};
     const std::string testStringA = "Hello";
     const std::string testStringB = "World";
 
@@ -691,6 +692,20 @@ TEST_F(HidlTest, SafeUnionInterfaceTest) {
                     for (size_t i = 0; i < testArray.size(); i++) {
                         EXPECT_EQ(testArray[i], safeUnion.b()[i]);
                     }
+                }));
+
+            EXPECT_OK(safeunionInterface->setInterfaceD(
+                safeUnion, testStringA, [&](const InterfaceTypeSafeUnion& safeUnion) {
+                    EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::d,
+                              safeUnion.getDiscriminator());
+                    EXPECT_EQ(testStringA, safeUnion.d());
+                }));
+
+            EXPECT_OK(safeunionInterface->setInterfaceE(
+                safeUnion, testVector, [&](const InterfaceTypeSafeUnion& safeUnion) {
+                    EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::e,
+                              safeUnion.getDiscriminator());
+                    EXPECT_EQ(testVector, safeUnion.e());
                 }));
         }));
 
