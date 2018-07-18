@@ -1939,7 +1939,7 @@ TEST_F(HidlTest, SafeUnionStringTypeTest) {
     }));
 }
 
-TEST_F(HidlTest, SafeUnionCopyTest) {
+TEST_F(HidlTest, SafeUnionCopyConstructorTest) {
     const hidl_vec<bool> testVector{true, false, true, false, false, false, true,  false,
                                     true, true,  true, false, false, true,  false, true};
 
@@ -1952,6 +1952,52 @@ TEST_F(HidlTest, SafeUnionCopyTest) {
                 EXPECT_EQ(testVector, safeUnionCopy.h());
             }));
     }));
+}
+
+TEST_F(HidlTest, SafeUnionMoveConstructorTest) {
+    sp<IOtherInterface> otherInterface = new OtherInterface();
+    ASSERT_EQ(1, otherInterface->getStrongCount());
+
+    InterfaceTypeSafeUnion safeUnion;
+    safeUnion.c(otherInterface);
+    EXPECT_EQ(2, otherInterface->getStrongCount());
+
+    InterfaceTypeSafeUnion anotherSafeUnion(std::move(safeUnion));
+    EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::c,
+              anotherSafeUnion.getDiscriminator());
+    EXPECT_EQ(2, otherInterface->getStrongCount());
+}
+
+TEST_F(HidlTest, SafeUnionCopyAssignmentTest) {
+    const hidl_vec<hidl_string> testVector{"So", "Many", "Words"};
+    InterfaceTypeSafeUnion safeUnion;
+    safeUnion.e(testVector);
+
+    InterfaceTypeSafeUnion anotherSafeUnion;
+    anotherSafeUnion = safeUnion;
+
+    EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::e, anotherSafeUnion.getDiscriminator());
+    EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::e, safeUnion.getDiscriminator());
+    EXPECT_NE(&(safeUnion.e()), &(anotherSafeUnion.e()));
+    EXPECT_EQ(testVector, anotherSafeUnion.e());
+    EXPECT_EQ(testVector, safeUnion.e());
+}
+
+TEST_F(HidlTest, SafeUnionMoveAssignmentTest) {
+    sp<IOtherInterface> otherInterface = new OtherInterface();
+    ASSERT_EQ(1, otherInterface->getStrongCount());
+
+    InterfaceTypeSafeUnion safeUnion;
+    safeUnion.c(otherInterface);
+    EXPECT_EQ(2, otherInterface->getStrongCount());
+
+    InterfaceTypeSafeUnion anotherSafeUnion;
+    anotherSafeUnion.a(255);
+    anotherSafeUnion = std::move(safeUnion);
+
+    EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::c,
+              anotherSafeUnion.getDiscriminator());
+    EXPECT_EQ(2, otherInterface->getStrongCount());
 }
 
 TEST_F(HidlTest, SafeUnionMutateTest) {
