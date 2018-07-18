@@ -912,6 +912,7 @@ void Interface::emitVtsMethodDeclaration(Formatter& out) const {
         for (const auto &result : method->results()) {
             out << "return_type_hidl: {\n";
             out.indent();
+            out << "name: \"" << result->name() << "\"\n";
             result->type().emitVtsAttributeType(out);
             out.unindent();
             out << "}\n";
@@ -920,6 +921,7 @@ void Interface::emitVtsMethodDeclaration(Formatter& out) const {
         for (const auto &arg : method->args()) {
             out << "arg: {\n";
             out.indent();
+            out << "name: \"" << arg->name() << "\"\n";
             arg->type().emitVtsAttributeType(out);
             out.unindent();
             out << "}\n";
