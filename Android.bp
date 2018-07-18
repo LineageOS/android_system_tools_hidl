@@ -49,26 +49,6 @@ java_defaults {
     },
 }
 
-//
-// libhidl-gen-hash
-//
-cc_library {
-    name: "libhidl-gen-hash",
-    host_supported: true,
-    defaults: ["hidl-gen-defaults"],
-    srcs: ["Hash.cpp"],
-    local_include_dirs: ["include_hash/hidl-hash"],
-    export_include_dirs: ["include_hash"],
-    shared_libs: [
-        "libbase",
-        "libcrypto",
-        "libssl",
-    ],
-}
-
-//
-// libhidl-gen
-//
 cc_library_host_shared {
     name: "libhidl-gen",
     defaults: ["hidl-gen-defaults"],
@@ -112,10 +92,6 @@ cc_library_host_shared {
     export_include_dirs: ["."], // for tests
 }
 
-//
-// libhidl-gen-ast
-//
-
 cc_library_host_shared {
     name: "libhidl-gen-ast",
     defaults: ["hidl-gen-defaults"],
@@ -145,9 +121,6 @@ cc_library_host_shared {
     export_include_dirs: ["."], // for tests
 }
 
-//
-// hidl-gen
-//
 cc_binary_host {
     name: "hidl-gen",
     defaults: ["hidl-gen-defaults"],

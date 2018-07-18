@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "Hash.h"
+#include <hidl-hash/Hash.h>
 
 #include <algorithm>
 #include <fstream>
@@ -50,7 +50,7 @@ void Hash::clearHash(const std::string& path) {
     getMutableHash(path).mHash = kEmptyHash;
 }
 
-static std::vector<uint8_t> sha256File(const std::string &path) {
+static std::vector<uint8_t> sha256File(const std::string& path) {
     std::ifstream stream(path);
     std::stringstream fileStream;
     fileStream << stream.rdbuf();
@@ -58,17 +58,14 @@ static std::vector<uint8_t> sha256File(const std::string &path) {
 
     std::vector<uint8_t> ret = std::vector<uint8_t>(SHA256_DIGEST_LENGTH);
 
-    SHA256(reinterpret_cast<const uint8_t *>(fileContent.c_str()),
-            fileContent.size(), ret.data());
+    SHA256(reinterpret_cast<const uint8_t*>(fileContent.c_str()), fileContent.size(), ret.data());
 
     return ret;
 }
 
-Hash::Hash(const std::string &path)
-  : mPath(path),
-    mHash(sha256File(path)) {}
+Hash::Hash(const std::string& path) : mPath(path), mHash(sha256File(path)) {}
 
-std::string Hash::hexString(const std::vector<uint8_t> &hash) {
+std::string Hash::hexString(const std::vector<uint8_t>& hash) {
     std::ostringstream s;
     s << std::hex << std::setfill('0');
     for (uint8_t i : hash) {
@@ -81,11 +78,11 @@ std::string Hash::hexString() const {
     return hexString(mHash);
 }
 
-const std::vector<uint8_t> &Hash::raw() const {
+const std::vector<uint8_t>& Hash::raw() const {
     return mHash;
 }
 
-const std::string &Hash::getPath() const {
+const std::string& Hash::getPath() const {
     return mPath;
 }
 
@@ -94,14 +91,11 @@ const std::string &Hash::getPath() const {
 #define SPACES " +"
 #define MAYBE_SPACES " *"
 #define OPTIONAL_COMMENT "(?:#.*)?"
-static const std::regex kHashLine(
-    "(?:"
-        MAYBE_SPACES HASH SPACES FQNAME MAYBE_SPACES
-    ")?"
-    OPTIONAL_COMMENT);
+static const std::regex kHashLine("(?:" MAYBE_SPACES HASH SPACES FQNAME MAYBE_SPACES
+                                  ")?" OPTIONAL_COMMENT);
 
 struct HashFile {
-    static const HashFile *parse(const std::string &path, std::string *err) {
+    static const HashFile* parse(const std::string& path, std::string* err) {
         static std::map<std::string, HashFile*> hashfiles;
         auto it = hashfiles.find(path);
 
@@ -112,7 +106,7 @@ struct HashFile {
         return it->second;
     }
 
-    std::vector<std::string> lookup(const std::string &fqName) const {
+    std::vector<std::string> lookup(const std::string& fqName) const {
         auto it = hashes.find(fqName);
 
         if (it == hashes.end()) {
@@ -122,18 +116,18 @@ struct HashFile {
         return it->second;
     }
 
-private:
-    static HashFile *readHashFile(const std::string &path, std::string *err) {
+   private:
+    static HashFile* readHashFile(const std::string& path, std::string* err) {
         std::ifstream stream(path);
         if (!stream) {
             return nullptr;
         }
 
-        HashFile *file = new HashFile();
+        HashFile* file = new HashFile();
         file->path = path;
 
         std::string line;
-        while(std::getline(stream, line)) {
+        while (std::getline(stream, line)) {
             std::smatch match;
             bool valid = std::regex_match(line, match, kHashLine);
 
@@ -164,13 +158,13 @@ private:
     }
 
     std::string path;
-    std::map<std::string,std::vector<std::string>> hashes;
+    std::map<std::string, std::vector<std::string>> hashes;
 };
 
 std::vector<std::string> Hash::lookupHash(const std::string& path, const std::string& interfaceName,
                                           std::string* err, bool* fileExists) {
     *err = "";
-    const HashFile *file = HashFile::parse(path, err);
+    const HashFile* file = HashFile::parse(path, err);
 
     if (file == nullptr || err->size() > 0) {
         if (fileExists != nullptr) *fileExists = false;
@@ -182,4 +176,4 @@ std::vector<std::string> Hash::lookupHash(const std::string& path, const std::st
     return file->lookup(interfaceName);
 }
 
-}  // android
+}  // namespace android
