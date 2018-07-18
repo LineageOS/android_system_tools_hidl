@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef HIDL_GEN_HASH_HASH_H_
-#define HIDL_GEN_HASH_HASH_H_
+#pragma once
 
 #include <string>
 #include <vector>
@@ -26,7 +25,7 @@ struct Hash {
     static const std::vector<uint8_t> kEmptyHash;
 
     // path to .hal file
-    static const Hash &getHash(const std::string &path);
+    static const Hash& getHash(const std::string& path);
     static void clearHash(const std::string& path);
 
     // returns matching hashes of interfaceName in path
@@ -36,14 +35,14 @@ struct Hash {
                                                const std::string& interfaceName, std::string* err,
                                                bool* fileExists = nullptr);
 
-    static std::string hexString(const std::vector<uint8_t> &hash);
+    static std::string hexString(const std::vector<uint8_t>& hash);
     std::string hexString() const;
 
-    const std::vector<uint8_t> &raw() const;
-    const std::string &getPath() const;
+    const std::vector<uint8_t>& raw() const;
+    const std::string& getPath() const;
 
-private:
-    Hash(const std::string &path);
+   private:
+    Hash(const std::string& path);
 
     static Hash& getMutableHash(const std::string& path);
 
@@ -52,6 +51,3 @@ private:
 };
 
 }  // namespace android
-
-#endif  // HIDL_GEN_HASH_HASH_H_
-
