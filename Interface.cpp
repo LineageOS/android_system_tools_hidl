@@ -918,7 +918,7 @@ void Interface::emitVtsAttributeDeclaration(Formatter& out) const {
     }
 }
 
-void Interface::emitVtsMethodDeclaration(Formatter& out) const {
+void Interface::emitVtsMethodDeclaration(Formatter& out, bool isInherited) const {
     for (const auto &method : methods()) {
         if (method->isHidlReserved()) {
             continue;
@@ -927,6 +927,7 @@ void Interface::emitVtsMethodDeclaration(Formatter& out) const {
         out << "api: {\n";
         out.indent();
         out << "name: \"" << method->name() << "\"\n";
+        out << "is_inherited: " << (isInherited ? "true" : "false") << "\n";
         // Generate declaration for each return value.
         for (const auto &result : method->results()) {
             out << "return_type_hidl: {\n";
