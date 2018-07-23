@@ -127,7 +127,7 @@ struct Interface : public Scope {
     void emitVtsAttributeType(Formatter& out) const override;
 
     void emitVtsAttributeDeclaration(Formatter& out) const;
-    void emitVtsMethodDeclaration(Formatter& out) const;
+    void emitVtsMethodDeclaration(Formatter& out, bool isInherited) const;
 
     bool hasOnewayMethods() const;
 
