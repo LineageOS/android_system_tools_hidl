@@ -29,7 +29,7 @@ namespace android {
 
 CompoundType::CompoundType(Style style, const char* localName, const FQName& fullName,
                            const Location& location, Scope* parent)
-    : Scope(localName, fullName, location, parent), mStyle(style), mFields(NULL) {}
+    : Scope(localName, fullName, location, parent), mStyle(style), mFields(nullptr) {}
 
 CompoundType::Style CompoundType::style() const {
     return mStyle;
@@ -2257,7 +2257,7 @@ std::unique_ptr<ScalarType> CompoundType::getUnionDiscriminatorType() const {
         }
     }
 
-    return std::unique_ptr<ScalarType>(new ScalarType(kind, NULL));
+    return std::unique_ptr<ScalarType>(new ScalarType(kind, nullptr));
 }
 
 size_t CompoundType::Layout::getPad(size_t offset, size_t align) {

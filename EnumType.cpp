@@ -210,7 +210,7 @@ void EnumType::emitReaderWriter(
         bool isReader,
         ErrorMode mode) const {
     const ScalarType *scalarType = mStorageType->resolveToScalarType();
-    CHECK(scalarType != NULL);
+    CHECK(scalarType != nullptr);
 
     scalarType->emitReaderWriterWithCast(
             out,
@@ -417,7 +417,7 @@ void EnumType::emitPackageTypeDeclarations(Formatter& out) const {
             << " o);\n\n";
     out << "#else\n";
     const ScalarType *scalarType = mStorageType->resolveToScalarType();
-    CHECK(scalarType != NULL);
+    CHECK(scalarType != nullptr);
 
     out << "template<typename>\n"
         << "static inline std::string toString(" << resolveToScalarType()->getCppArgumentType()
@@ -475,7 +475,7 @@ void EnumType::emitTypeDefinitions(Formatter& out, const std::string& /* prefix 
     // TODO(b/65200821): remove toString from .cpp once all prebuilts are rebuilt
 
     const ScalarType *scalarType = mStorageType->resolveToScalarType();
-    CHECK(scalarType != NULL);
+    CHECK(scalarType != nullptr);
 
     out << "template<>\n"
         << "std::string toString<" << getCppStackType() << ">("
@@ -533,7 +533,7 @@ void EnumType::emitTypeDefinitions(Formatter& out, const std::string& /* prefix 
 
 void EnumType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) const {
     const ScalarType *scalarType = mStorageType->resolveToScalarType();
-    CHECK(scalarType != NULL);
+    CHECK(scalarType != nullptr);
 
     out << "public "
         << (atTopLevel ? "" : "static ")

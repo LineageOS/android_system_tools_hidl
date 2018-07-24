@@ -246,7 +246,7 @@ void AST::generateInterfaceHeader(Formatter& out) const {
 
         const Interface *superType = iface->superType();
 
-        if (superType == NULL) {
+        if (superType == nullptr) {
             out << " : virtual public ::android::RefBase";
         } else {
             out << " : public "
