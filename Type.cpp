@@ -319,13 +319,13 @@ status_t Type::checkForwardReferenceRestrictions(const Reference<Type>& ref) con
 }
 
 const ScalarType *Type::resolveToScalarType() const {
-    return NULL;
+    return nullptr;
 }
 
 bool Type::isValidEnumStorageType() const {
     const ScalarType *scalarType = resolveToScalarType();
 
-    if (scalarType == NULL) {
+    if (scalarType == nullptr) {
         return false;
     }
 
