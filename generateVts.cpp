@@ -78,17 +78,15 @@ void AST::generateVts(Formatter& out) const {
         out << "interface: {\n";
         out.indent();
 
-        std::vector<const Interface *> chain = iface->typeChain();
-
         // Generate all the attribute declarations first.
         emitVtsTypeDeclarations(out);
 
         // Generate all the method declarations.
-        for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
-            const Interface *superInterface = *it;
-            superInterface->emitVtsMethodDeclaration(out);
+        for (const Interface* superInterface : iface->superTypeChain()) {
+            superInterface->emitVtsMethodDeclaration(out, true /*isInhereted*/);
         }
 
+        iface->emitVtsMethodDeclaration(out, false /*isInhereted*/);
         out.unindent();
         out << "}\n";
     } else {
