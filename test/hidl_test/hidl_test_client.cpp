@@ -1241,7 +1241,7 @@ TEST_F(HidlTest, FooHaveATypeFromAnotherFileTest) {
     EXPECT_OK(foo->haveATypeFromAnotherFile(abcParam));
     ALOGI("CLIENT haveATypeFromAnotherFile returned.");
     native_handle_delete(handle);
-    abcParam.z = NULL;
+    abcParam.z = nullptr;
 }
 
 TEST_F(HidlTest, FooHaveSomeStringsTest) {
@@ -2554,9 +2554,9 @@ int main(int argc, char **argv) {
     bool b = false;
     bool p = false;
     bool d = false;
-    struct option longopts[] = {{0,0,0,0}};
+    struct option longopts[] = {{nullptr,0,nullptr,0}};
     int res;
-    while ((res = getopt_long(argc, argv, "hbpd", longopts, NULL)) >= 0) {
+    while ((res = getopt_long(argc, argv, "hbpd", longopts, nullptr)) >= 0) {
         switch (res) {
             case 'h': {
                 usage(me);

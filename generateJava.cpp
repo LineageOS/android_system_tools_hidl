@@ -130,7 +130,7 @@ void AST::generateJava(Formatter& out, const std::string& limitToType) const {
 
     out << "public interface " << ifaceName << " extends ";
 
-    if (superType != NULL) {
+    if (superType != nullptr) {
         out << superType->fullJavaName();
     } else {
         out << "android.os.IHwInterface";
