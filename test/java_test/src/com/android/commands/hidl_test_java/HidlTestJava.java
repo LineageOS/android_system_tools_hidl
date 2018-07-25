@@ -949,7 +949,12 @@ public final class HidlTestJava {
 
         final int cookie1 = 0x1481;
         final int cookie2 = 0x1482;
+        final int cookie3 = 0x1483;
         ExpectTrue(proxy.linkToDeath(recipient1, cookie1));
+
+        ExpectTrue(proxy.linkToDeath(recipient1, cookie3));
+        ExpectTrue(proxy.unlinkToDeath(recipient1));
+
         ExpectTrue(proxy.linkToDeath(recipient2, cookie2));
         ExpectTrue(proxy.unlinkToDeath(recipient2));
         try {
