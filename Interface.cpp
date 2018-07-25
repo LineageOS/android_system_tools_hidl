@@ -171,13 +171,13 @@ bool Interface::fillUnlinkToDeathMethod(Method *method) const {
                 {IMPL_PROXY,
                     [](auto &out) {
                         out << "std::unique_lock<std::mutex> lock(_hidl_mMutex);\n"
-                            << "for (auto it = _hidl_mDeathRecipients.begin();"
-                            << "it != _hidl_mDeathRecipients.end();"
+                            << "for (auto it = _hidl_mDeathRecipients.rbegin();"
+                            << "it != _hidl_mDeathRecipients.rend();"
                             << "++it) {\n";
                         out.indent([&] {
                             out.sIf("(*it)->getRecipient() == recipient", [&] {
                                 out << "::android::status_t status = remote()->unlinkToDeath(*it);\n"
-                                    << "_hidl_mDeathRecipients.erase(it);\n"
+                                    << "_hidl_mDeathRecipients.erase(it.base()-1);\n"
                                     << "return status == ::android::OK;\n";
                                 });
                             }).endl();
