@@ -111,7 +111,7 @@ struct AtomExpression : Expression {
 
         Define *define = ast.getDefinesScope().lookup(mValue);
 
-        if (define == NULL) {
+        if (define == nullptr) {
             return Type::UNKNOWN;
         }
 
@@ -228,7 +228,7 @@ struct FunctionCall : Expression {
     : mId(id), mArgs(args)
     {}
     ~FunctionCall() {
-        if(mArgs != NULL) {
+        if(mArgs != nullptr) {
             for(auto* args : *mArgs) {
                 delete args;
             }
