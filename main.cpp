@@ -551,7 +551,7 @@ static status_t generateAndroidBpForPackage(Formatter& out, const FQName& packag
     for (const auto& fqName : packageInterfaces) {
         AST* ast = coordinator->parse(fqName);
 
-        if (ast == NULL) {
+        if (ast == nullptr) {
             fprintf(stderr, "ERROR: Could not parse %s. Aborting.\n", fqName.string().c_str());
 
             return UNKNOWN_ERROR;
@@ -666,7 +666,7 @@ static status_t generateAndroidBpImplForPackage(Formatter& out, const FQName& pa
     for (const auto &fqName : packageInterfaces) {
         AST *ast = coordinator->parse(fqName);
 
-        if (ast == NULL) {
+        if (ast == nullptr) {
             fprintf(stderr,
                     "ERROR: Could not parse %s. Aborting.\n",
                     fqName.string().c_str());
@@ -801,7 +801,7 @@ FileGenerator::GenerationFunction generateExportHeaderForPackage(bool forJava) {
         for (const auto &fqName : packageInterfaces) {
             AST *ast = coordinator->parse(fqName);
 
-            if (ast == NULL) {
+            if (ast == nullptr) {
                 fprintf(stderr,
                         "ERROR: Could not parse %s. Aborting.\n",
                         fqName.string().c_str());
@@ -871,7 +871,7 @@ static status_t generateHashOutput(Formatter& out, const FQName& fqName,
     AST* ast = coordinator->parse(fqName, {} /* parsed */,
                                   Coordinator::Enforce::NO_HASH /* enforcement */);
 
-    if (ast == NULL) {
+    if (ast == nullptr) {
         fprintf(stderr, "ERROR: Could not parse %s. Aborting.\n", fqName.string().c_str());
 
         return UNKNOWN_ERROR;

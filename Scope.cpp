@@ -81,7 +81,7 @@ NamedType *Scope::lookupType(const FQName &fqName) const {
 }
 
 LocalIdentifier *Scope::lookupIdentifier(const std::string & /*name*/) const {
-    return NULL;
+    return nullptr;
 }
 
 bool Scope::isScope() const {
@@ -93,7 +93,7 @@ Interface *Scope::getInterface() const {
         return static_cast<Interface *>(mTypes[0]);
     }
 
-    return NULL;
+    return nullptr;
 }
 
 bool Scope::definesInterfaces() const {
