@@ -60,11 +60,6 @@ type hidlInterfaceProperties struct {
 	// Whether to generate a Java library containing constants
 	// expressed by @export annotations in the hal files.
 	Gen_java_constants bool
-
-	// Don't generate "android.hidl.foo@1.0" C library. Instead
-	// only generate the genrules so that this package can be
-	// included in libhidltransport.
-	Core_interface bool
 }
 
 type hidlInterface struct {
@@ -159,14 +154,7 @@ func removeCoreDependencies(mctx android.LoadHookContext, dependencies []string)
 	hasError := false
 
 	for _, i := range dependencies {
-		interfaceObject := lookupInterface(i)
-		if interfaceObject == nil {
-			mctx.PropertyErrorf("interfaces", "Cannot find interface "+i)
-			hasError = true
-			continue
-		}
-
-		if !interfaceObject.properties.Core_interface {
+		if !isCorePackage(i) {
 			ret = append(ret, i)
 		}
 	}
@@ -206,7 +194,7 @@ func hidlInterfaceMutator(mctx android.LoadHookContext, i *hidlInterface) {
 		return
 	}
 
-	shouldGenerateLibrary := !i.properties.Core_interface
+	shouldGenerateLibrary := !isCorePackage(name.string())
 	// explicitly true if not specified to give early warning to devs
 	shouldGenerateJava := i.properties.Gen_java == nil || *i.properties.Gen_java
 	shouldGenerateJavaConstants := i.properties.Gen_java_constants
@@ -449,6 +437,21 @@ var doubleLoadablePackageNames = []string{
 
 func isDoubleLoadable(name string) bool {
 	for _, pkgname := range doubleLoadablePackageNames {
+		if strings.HasPrefix(name, pkgname) {
+			return true
+		}
+	}
+	return false
+}
+
+// packages in libhidltransport
+var coreDependencyPackageNames = []string{
+	"android.hidl.base@",
+	"android.hidl.manager@",
+}
+
+func isCorePackage(name string) bool {
+	for _, pkgname := range coreDependencyPackageNames {
 		if strings.HasPrefix(name, pkgname) {
 			return true
 		}
