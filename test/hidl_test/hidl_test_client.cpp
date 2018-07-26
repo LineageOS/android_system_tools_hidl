@@ -571,28 +571,6 @@ TEST_F(HidlTest, TryGetServiceTest) {
     ASSERT_NE(manager, nullptr);
 }
 
-TEST_F(HidlTest, HashTest) {
-    static constexpr uint64_t kHashSize = 32u;
-    // unreleased interface has an empty hash
-    uint8_t ihash[kHashSize] = {0};
-    uint8_t ibase[kHashSize] = {189, 218, 182, 24,  77,  122, 52,  109, 166, 160, 125,
-                                192, 130, 140, 241, 154, 105, 111, 76,  170, 54,  17,
-                                197, 31,  46,  20,  86,  90,  20,  180, 15,  217};
-    auto service = IHash::getService(mode == PASSTHROUGH /* getStub */);
-    EXPECT_OK(service->getHashChain([&](const auto& chain) {
-        ASSERT_EQ(chain.size(), 2u);
-        EXPECT_EQ(chain[0].size(), kHashSize);
-        EXPECT_ARRAYEQ(ihash, chain[0], kHashSize);
-        EXPECT_EQ(chain[1].size(), kHashSize);
-        EXPECT_ARRAYEQ(ibase, chain[1], kHashSize);
-    }));
-    EXPECT_OK(manager->getHashChain([&](const auto& managerChain) {
-        EXPECT_EQ(managerChain[managerChain.size() - 1].size(), kHashSize);
-        EXPECT_ARRAYEQ(ibase, managerChain[managerChain.size() - 1], kHashSize)
-            << "Hash for IBase doesn't match!";
-    }));
-}
-
 TEST_F(HidlTest, ServiceListTest) {
     static const std::set<std::string> binderizedSet = {
         "android.hardware.tests.pointer@1.0::IPointer/pointer",
@@ -1241,7 +1219,7 @@ TEST_F(HidlTest, FooHaveATypeFromAnotherFileTest) {
     EXPECT_OK(foo->haveATypeFromAnotherFile(abcParam));
     ALOGI("CLIENT haveATypeFromAnotherFile returned.");
     native_handle_delete(handle);
-    abcParam.z = NULL;
+    abcParam.z = nullptr;
 }
 
 TEST_F(HidlTest, FooHaveSomeStringsTest) {
@@ -1613,6 +1591,10 @@ TEST_F(HidlTest, DeathRecipientTest) {
     sp<HidlDeathRecipient> recipient2 = new HidlDeathRecipient();
 
     EXPECT_TRUE(dyingBaz->linkToDeath(recipient, 0x1481));
+
+    EXPECT_TRUE(dyingBaz->linkToDeath(recipient, 0x1482));
+    EXPECT_TRUE(dyingBaz->unlinkToDeath(recipient));
+
     EXPECT_TRUE(dyingBaz->linkToDeath(recipient2, 0x2592));
     EXPECT_TRUE(dyingBaz->unlinkToDeath(recipient2));
 
@@ -2554,9 +2536,9 @@ int main(int argc, char **argv) {
     bool b = false;
     bool p = false;
     bool d = false;
-    struct option longopts[] = {{0,0,0,0}};
+    struct option longopts[] = {{nullptr,0,nullptr,0}};
     int res;
-    while ((res = getopt_long(argc, argv, "hbpd", longopts, NULL)) >= 0) {
+    while ((res = getopt_long(argc, argv, "hbpd", longopts, nullptr)) >= 0) {
         switch (res) {
             case 'h': {
                 usage(me);

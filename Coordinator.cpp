@@ -33,7 +33,7 @@
 
 static bool existdir(const char *name) {
     DIR *dir = opendir(name);
-    if (dir == NULL) {
+    if (dir == nullptr) {
         return false;
     }
     closedir(dir);
@@ -262,7 +262,7 @@ status_t Coordinator::parseOptional(const FQName& fqName, AST** ast, std::set<AS
 
     *ast = new AST(this, &Hash::getHash(path));
 
-    if (typesAST != NULL) {
+    if (typesAST != nullptr) {
         // If types.hal for this AST's package existed, make it's defined
         // types available to the (about to be parsed) AST right away.
         (*ast)->addImportedAST(typesAST);
@@ -452,14 +452,14 @@ status_t Coordinator::getPackageInterfaceFiles(
     const std::string path = makeAbsolute(packagePath);
     DIR* dir = opendir(path.c_str());
 
-    if (dir == NULL) {
+    if (dir == nullptr) {
         fprintf(stderr, "ERROR: Could not open package path %s for package %s:\n%s\n",
                 packagePath.c_str(), package.string().c_str(), path.c_str());
         return -errno;
     }
 
     struct dirent *ent;
-    while ((ent = readdir(dir)) != NULL) {
+    while ((ent = readdir(dir)) != nullptr) {
         // filesystems may not support d_type and return DT_UNKNOWN
         if (ent->d_type == DT_UNKNOWN) {
             struct stat sb;
@@ -488,7 +488,7 @@ status_t Coordinator::getPackageInterfaceFiles(
     }
 
     closedir(dir);
-    dir = NULL;
+    dir = nullptr;
 
     std::sort(fileNames->begin(), fileNames->end(),
               [](const std::string& lhs, const std::string& rhs) -> bool {

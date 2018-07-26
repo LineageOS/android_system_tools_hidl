@@ -210,7 +210,7 @@ void EnumType::emitReaderWriter(
         bool isReader,
         ErrorMode mode) const {
     const ScalarType *scalarType = mStorageType->resolveToScalarType();
-    CHECK(scalarType != NULL);
+    CHECK(scalarType != nullptr);
 
     scalarType->emitReaderWriterWithCast(
             out,
@@ -400,7 +400,7 @@ void EnumType::emitPackageTypeDeclarations(Formatter& out) const {
     emitBitFieldBitwiseAssignmentOperator(out, "&");
 
     const ScalarType *scalarType = mStorageType->resolveToScalarType();
-    CHECK(scalarType != NULL);
+    CHECK(scalarType != nullptr);
 
     out << "template<typename>\n"
         << "static inline std::string toString(" << resolveToScalarType()->getCppArgumentType()
@@ -455,7 +455,7 @@ void EnumType::emitPackageTypeDeclarations(Formatter& out) const {
 
 void EnumType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) const {
     const ScalarType *scalarType = mStorageType->resolveToScalarType();
-    CHECK(scalarType != NULL);
+    CHECK(scalarType != nullptr);
 
     out << "public "
         << (atTopLevel ? "" : "static ")
