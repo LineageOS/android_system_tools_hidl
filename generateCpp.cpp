@@ -1826,7 +1826,8 @@ void AST::generateCppAtraceCall(Formatter &out,
         // this isn't done for server because the profiled code isn't alone in its scope
         // this isn't done for passthrough becuase the profiled boundary isn't even in the same code
         case CLIENT_API_ENTRY: {
-            out << "::android::ScopedTrace(ATRACE_TAG_HAL, \"" << baseString + "::client\");\n";
+            out << "::android::ScopedTrace PASTE(___tracer, __LINE__) (ATRACE_TAG_HAL, \""
+                << baseString + "::client\");\n";
             break;
         }
         case CLIENT_API_EXIT:
