@@ -38,11 +38,13 @@ using ::android::hardware::tests::safeunion::V1_0::ISafeUnion;
 
 using ::android::hardware::hidl_array;
 using ::android::hardware::hidl_vec;
+using ::android::hardware::hidl_handle;
 using ::android::hardware::hidl_string;
 using ::android::hardware::defaultPassthroughServiceImplementation;
 using ::android::hardware::Return;
 using ::android::hardware::Void;
 
+using HandleTypeSafeUnion = ISafeUnion::HandleTypeSafeUnion;
 using InterfaceTypeSafeUnion = ISafeUnion::InterfaceTypeSafeUnion;
 using LargeSafeUnion = ISafeUnion::LargeSafeUnion;
 using SmallSafeUnion = ISafeUnion::SmallSafeUnion;
@@ -120,6 +122,14 @@ struct HidlTest : public ::testing::Test {
 template <typename T>
 static void EXPECT_OK(const ::android::hardware::Return<T> &ret) {
     EXPECT_TRUE(ret.isOk());
+}
+
+template<typename T, typename S>
+static inline bool isArrayEqual(const T arr1, const S arr2, size_t size) {
+    for(size_t i = 0; i < size; i++)
+        if(arr1[i] != arr2[i])
+            return false;
+    return true;
 }
 
 TEST_F(HidlTest, GetDescriptorTest) {
@@ -673,11 +683,48 @@ TEST_F(HidlTest, SafeUnionNestedTest) {
     }));
 }
 
+static void checkNativeHandlesEquality(const native_handle_t* reference,
+                                       const native_handle_t* result) {
+    if (reference == nullptr || result == nullptr) {
+        EXPECT_EQ(reference == nullptr, result == nullptr);
+        return;
+    }
+
+    EXPECT_EQ(reference->version, result->version);
+    EXPECT_EQ(reference->numInts, result->numInts);
+    EXPECT_EQ(reference->numFds, result->numFds);
+
+    int numDataElements = reference->numFds + reference->numInts;
+    EXPECT_TRUE(isArrayEqual(reference->data, result->data, numDataElements));
+}
+
+TEST_F(HidlTest, SafeUnionInterfaceNullHandleTest) {
+    InterfaceTypeSafeUnion safeUnion;
+
+    EXPECT_OK(safeunionInterface->setInterfaceF(
+        safeUnion, hidl_handle(nullptr), [&](const InterfaceTypeSafeUnion& safeUnion) {
+            EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::f,
+                      safeUnion.getDiscriminator());
+
+            checkNativeHandlesEquality(nullptr, safeUnion.f().getNativeHandle());
+        }));
+}
+
 TEST_F(HidlTest, SafeUnionInterfaceTest) {
     const std::array<int8_t, 7> testArray{-1, -2, -3, 0, 1, 2, 3};
     const hidl_vec<hidl_string> testVector{"So", "Many", "Words"};
     const std::string testStringA = "Hello";
     const std::string testStringB = "World";
+
+    const std::array<int, 6> testHandleData{2, -32, 10, -4329454, 11, 24};
+    native_handle_t* h = native_handle_create(0, testHandleData.size());
+    CHECK(sizeof(testHandleData) == testHandleData.size() * sizeof(int));
+    std::memcpy(h->data, testHandleData.data(), sizeof(testHandleData));
+
+    std::vector<hidl_handle> testHandlesVector(256);
+    for (size_t i = 0; i < testHandlesVector.size(); i++) {
+        testHandlesVector[i].setTo(native_handle_clone(h), true /* shouldOwn */);
+    }
 
     EXPECT_OK(
         safeunionInterface->newInterfaceTypeSafeUnion([&](const InterfaceTypeSafeUnion& safeUnion) {
@@ -707,6 +754,25 @@ TEST_F(HidlTest, SafeUnionInterfaceTest) {
                               safeUnion.getDiscriminator());
                     EXPECT_EQ(testVector, safeUnion.e());
                 }));
+
+            EXPECT_OK(safeunionInterface->setInterfaceF(
+                safeUnion, hidl_handle(h), [&](const InterfaceTypeSafeUnion& safeUnion) {
+                    EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::f,
+                              safeUnion.getDiscriminator());
+
+                    const native_handle_t* result = safeUnion.f().getNativeHandle();
+                    checkNativeHandlesEquality(h, result);
+                }));
+
+            EXPECT_OK(safeunionInterface->setInterfaceG(
+                safeUnion, testHandlesVector, [&](const InterfaceTypeSafeUnion& safeUnion) {
+                    EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::g,
+                              safeUnion.getDiscriminator());
+
+                    for (size_t i = 0; i < testHandlesVector.size(); i++) {
+                        checkNativeHandlesEquality(h, safeUnion.g()[i].getNativeHandle());
+                    }
+                }));
         }));
 
     // Same-process interface calls are not supported in Java, so we use
@@ -720,6 +786,70 @@ TEST_F(HidlTest, SafeUnionInterfaceTest) {
         hidl_string(testStringA), hidl_string(testStringB), [&](const hidl_string& result) {
             EXPECT_EQ(testStringA + testStringB, std::string(result));
         }));
+
+    native_handle_delete(h);
+}
+
+TEST_F(HidlTest, SafeUnionNullHandleTest) {
+    HandleTypeSafeUnion safeUnion;
+
+    EXPECT_OK(safeunionInterface->setHandleA(
+        safeUnion, hidl_handle(nullptr), [&](const HandleTypeSafeUnion& safeUnion) {
+            EXPECT_EQ(HandleTypeSafeUnion::hidl_discriminator::a,
+                      safeUnion.getDiscriminator());
+
+            checkNativeHandlesEquality(nullptr, safeUnion.a().getNativeHandle());
+        }));
+}
+
+TEST_F(HidlTest, SafeUnionHandleTest) {
+    const std::array<int, 6> testData{2, -32, 10, -4329454, 11, 24};
+    native_handle_t* h = native_handle_create(0, testData.size());
+    CHECK(sizeof(testData) == testData.size() * sizeof(int));
+    std::memcpy(h->data, testData.data(), sizeof(testData));
+
+    std::array<hidl_handle, 5> testArray;
+    for (size_t i = 0; i < testArray.size(); i++) {
+        testArray[i].setTo(native_handle_clone(h), true /* shouldOwn */);
+    }
+
+    std::vector<hidl_handle> testVector(256);
+    for (size_t i = 0; i < testVector.size(); i++) {
+        testVector[i].setTo(native_handle_clone(h), true /* shouldOwn */);
+    }
+
+    EXPECT_OK(
+        safeunionInterface->newHandleTypeSafeUnion([&](const HandleTypeSafeUnion& safeUnion) {
+            EXPECT_OK(safeunionInterface->setHandleA(
+                safeUnion, hidl_handle(h), [&](const HandleTypeSafeUnion& safeUnion) {
+                    EXPECT_EQ(HandleTypeSafeUnion::hidl_discriminator::a,
+                              safeUnion.getDiscriminator());
+
+                    checkNativeHandlesEquality(h, safeUnion.a().getNativeHandle());
+                }));
+
+            EXPECT_OK(safeunionInterface->setHandleB(
+                safeUnion, testArray, [&](const HandleTypeSafeUnion& safeUnion) {
+                    EXPECT_EQ(HandleTypeSafeUnion::hidl_discriminator::b,
+                              safeUnion.getDiscriminator());
+
+                    for (size_t i = 0; i < testArray.size(); i++) {
+                        checkNativeHandlesEquality(h, safeUnion.b()[i].getNativeHandle());
+                    }
+                }));
+
+            EXPECT_OK(safeunionInterface->setHandleC(
+                safeUnion, testVector, [&](const HandleTypeSafeUnion& safeUnion) {
+                    EXPECT_EQ(HandleTypeSafeUnion::hidl_discriminator::c,
+                              safeUnion.getDiscriminator());
+
+                    for (size_t i = 0; i < testVector.size(); i++) {
+                        checkNativeHandlesEquality(h, safeUnion.c()[i].getNativeHandle());
+                    }
+                }));
+        }));
+
+    native_handle_delete(h);
 }
 
 TEST_F(HidlTest, SafeUnionEqualityTest) {

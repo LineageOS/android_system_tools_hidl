@@ -472,10 +472,6 @@ bool Type::useParentInEmitResolveReferencesEmbedded() const {
     return needsResolveReferences();
 }
 
-bool Type::useNameInEmitReaderWriterEmbedded(bool) const {
-    return needsEmbeddedReadWrite();
-}
-
 void Type::emitReaderWriterEmbedded(
         Formatter &,
         size_t,
