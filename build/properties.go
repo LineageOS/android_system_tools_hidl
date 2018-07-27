@@ -24,16 +24,6 @@ type fileGroupProperties struct {
 	Srcs  []string
 }
 
-type genruleProperties struct {
-	Name    *string
-	Owner   *string
-	Tools   []string
-	Cmd     *string
-	Srcs    []string
-	Out     []string
-	Depfile *bool
-}
-
 type ccProperties struct {
 	Name                      *string
 	Owner                     *string
