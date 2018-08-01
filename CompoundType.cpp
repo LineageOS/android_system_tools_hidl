@@ -589,10 +589,19 @@ void CompoundType::emitSafeUnionTypeDeclarations(Formatter& out) const {
         << " ";
 
     out.block([&] {
-        for (const auto& field : *mFields) {
-            out << field->name() << ",\n";
+        const auto elements = getSafeUnionEnumElements(true /* useCppTypeName */);
+        for (size_t i = 0; i < elements.size(); i++) {
+            out << elements[i].fieldName
+                << " = "
+                << i
+                << ",";
+
+            if (!elements[i].fieldTypeName.empty()) {
+                out << "  // "
+                    << elements[i].fieldTypeName;
+            }
+            out << "\n";
         }
-        out << "hidl_no_init\n";
     });
     out << ";\n\n";
 
@@ -1036,6 +1045,22 @@ static void emitSafeUnionGetterDefinition(Formatter& out, const std::string& fie
     }).endl().endl();
 }
 
+std::vector<CompoundType::SafeUnionEnumElement> CompoundType::getSafeUnionEnumElements(
+    bool useCppTypeName) const {
+    std::vector<SafeUnionEnumElement> elements;
+    elements.push_back({"hidl_no_init", ""});
+
+    for (const auto& field : *mFields) {
+        const std::string fieldTypeName = useCppTypeName
+            ? field->type().getCppStackType(true /* specifyNamespaces */)
+            : field->type().getJavaType(true /* forInitializer */);
+
+        elements.push_back({field->name(), fieldTypeName});
+    }
+
+    return elements;
+}
+
 void CompoundType::emitSafeUnionCopyAndAssignDefinition(Formatter& out,
                                                         const std::string& parameterName,
                                                         bool isCopyConstructor,
@@ -1353,20 +1378,21 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
 
         out << "public static final class hidl_discriminator ";
         out.block([&] {
-            std::vector<std::string> enumNames;
-            for (const auto& field : *mFields) {
-                enumNames.push_back(field->name());
-            }
-            enumNames.push_back("hidl_no_init");
-
-            for (size_t idx = 0; idx < enumNames.size(); idx++) {
+            const auto elements = getSafeUnionEnumElements(false /* useCppTypeName */);
+            for (size_t idx = 0; idx < elements.size(); idx++) {
                 out << "public static final "
                     << discriminatorStorageType
                     << " "
-                    << enumNames[idx]
+                    << elements[idx].fieldName
                     << " = "
                     << idx
-                    << ";\n";
+                    << ";";
+
+                if (!elements[idx].fieldTypeName.empty()) {
+                    out << "  // "
+                        << elements[idx].fieldTypeName;
+                }
+                out << "\n";
             }
 
             out << "\n"
@@ -1377,11 +1403,11 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
             out.block([&] {
                 out << "switch (value) ";
                 out.block([&] {
-                    for (size_t idx = 0; idx < enumNames.size(); idx++) {
+                    for (size_t idx = 0; idx < elements.size(); idx++) {
                         out << "case "
                             << idx
                             << ": { return \""
-                            << enumNames[idx]
+                            << elements[idx].fieldName
                             << "\"; }\n";
                     }
                     out << "default: { return \"Unknown\"; }\n";
