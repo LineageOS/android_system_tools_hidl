@@ -1374,9 +1374,6 @@ int main(int argc, char **argv) {
             exit(1);
         }
 
-        // TODO(b/65200821): remove
-        gCurrentCompileName = "_" + StringHelper::Uppercase(fqName.tokenName());
-
         // Dump extra verbose output
         if (coordinator.isVerbose()) {
             status_t err =
