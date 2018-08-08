@@ -781,6 +781,8 @@ void AST::generateCppSource(Formatter& out) const {
     out << "#include <android/log.h>\n";
     out << "#include <cutils/trace.h>\n";
     out << "#include <hidl/HidlTransportSupport.h>\n\n";
+    out << "#include <hidl/Static.h>\n";
+    out << "#include <hwbinder/ProcessState.h>\n";
     out << "#include <utils/Trace.h>\n";
     if (iface) {
         // This is a no-op for IServiceManager itself.
