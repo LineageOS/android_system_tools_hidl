@@ -140,10 +140,9 @@ struct EnumValue : public LocalIdentifier, DocCommentable {
     EnumValue(const char* name, ConstantExpression* value, const Location& location);
 
     std::string name() const;
-    std::string value(ScalarType::Kind castKind) const;
+    std::string rawValue(ScalarType::Kind castKind) const;
     std::string cppValue(ScalarType::Kind castKind) const;
     std::string javaValue(ScalarType::Kind castKind) const;
-    std::string comment() const;
     void autofill(const EnumType* prevType, EnumValue* prevValue, const ScalarType* type);
     ConstantExpression* constExpr() const override;
 
