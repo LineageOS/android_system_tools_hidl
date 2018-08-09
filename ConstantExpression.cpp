@@ -173,7 +173,7 @@ LiteralConstantExpression::LiteralConstantExpression(
 
     CHECK(!expr.empty());
     CHECK(isSupported(kind));
-    mTrivialDescription = true;
+    mTrivialDescription = std::to_string(value) == expr;
     mExpr = expr;
     mValueKind = kind;
     mValue = value;

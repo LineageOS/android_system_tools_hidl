@@ -162,13 +162,11 @@ struct ConstantExpression {
 
 struct LiteralConstantExpression : public ConstantExpression {
     LiteralConstantExpression(ScalarType::Kind kind, uint64_t value);
+    LiteralConstantExpression(ScalarType::Kind kind, uint64_t value, const std::string& expr);
     void evaluate() override;
     std::vector<const ConstantExpression*> getConstantExpressions() const override;
 
     static LiteralConstantExpression* tryParse(const std::string& value);
-
-private:
-    LiteralConstantExpression(ScalarType::Kind kind, uint64_t value, const std::string& expr);
 };
 
 struct UnaryConstantExpression : public ConstantExpression {
