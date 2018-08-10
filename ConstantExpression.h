@@ -93,11 +93,11 @@ struct ConstantExpression {
 
     /* Returns true iff the value has already been evaluated. */
     bool isEvaluated() const;
-    /* Evaluated result in a string form. */
+    /* Evaluated result in a string form with comment if applicable. */
     std::string value() const;
-    /* Evaluated result in a string form. */
+    /* Evaluated result in a string form with comment if applicable. */
     std::string cppValue() const;
-    /* Evaluated result in a string form. */
+    /* Evaluated result in a string form with comment if applicable. */
     std::string javaValue() const;
     /* Evaluated result in a string form, with given contextual kind. */
     std::string value(ScalarType::Kind castKind) const;
@@ -105,10 +105,10 @@ struct ConstantExpression {
     std::string cppValue(ScalarType::Kind castKind) const;
     /* Evaluated result in a string form, with given contextual kind. */
     std::string javaValue(ScalarType::Kind castKind) const;
-    /* Formatted expression with type. */
-    const std::string& description() const;
-    /* See mTrivialDescription */
-    bool descriptionIsTrivial() const;
+
+    /* The expression representing this value for use in comments when the value is not needed */
+    const std::string& expression() const;
+
     /* Return a ConstantExpression that is 1 plus the original. */
     std::unique_ptr<ConstantExpression> addOne(ScalarType::Kind baseKind);
 
@@ -117,6 +117,14 @@ struct ConstantExpression {
     // Marks that package proceeding is completed
     // Post parse passes must be proceeded during owner package parsin
     void setPostParseCompleted();
+
+    /*
+     * Helper function for all cpp/javaValue methods.
+     * Returns a plain string (without any prefixes or suffixes, just the
+     * digits) converted from mValue.
+     */
+    std::string rawValue() const;
+    std::string rawValue(ScalarType::Kind castKind) const;
 
    private:
     /* If the result value has been evaluated. */
@@ -133,11 +141,9 @@ struct ConstantExpression {
     bool mIsPostParseCompleted = false;
 
     /*
-     * Helper function for all cpp/javaValue methods.
-     * Returns a plain string (without any prefixes or suffixes, just the
-     * digits) converted from mValue.
+     * Helper function, gives suffix comment to add to value/cppValue/javaValue
      */
-    std::string rawValue(ScalarType::Kind castKind) const;
+    std::string descriptionSuffix() const;
 
     /*
      * Return the value casted to the given type.
@@ -156,13 +162,11 @@ struct ConstantExpression {
 
 struct LiteralConstantExpression : public ConstantExpression {
     LiteralConstantExpression(ScalarType::Kind kind, uint64_t value);
+    LiteralConstantExpression(ScalarType::Kind kind, uint64_t value, const std::string& expr);
     void evaluate() override;
     std::vector<const ConstantExpression*> getConstantExpressions() const override;
 
     static LiteralConstantExpression* tryParse(const std::string& value);
-
-private:
-    LiteralConstantExpression(ScalarType::Kind kind, uint64_t value, const std::string& expr);
 };
 
 struct UnaryConstantExpression : public ConstantExpression {
