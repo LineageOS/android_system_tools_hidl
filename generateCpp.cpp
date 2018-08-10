@@ -1093,7 +1093,7 @@ void AST::generateStaticProxyMethodSource(Formatter& out, const std::string& kla
         << " */, _hidl_data, &_hidl_reply";
 
     if (method->isOneway()) {
-        out << ", " << Interface::FLAG_ONEWAY << " /* oneway */";
+        out << ", " << Interface::FLAG_ONE_WAY->cppValue();
     }
     out << ");\n";
 
@@ -1324,8 +1324,8 @@ void AST::generateStubSource(Formatter& out, const Interface* iface) const {
 
         out.indent();
 
-        out << "bool _hidl_is_oneway = _hidl_flags & " << Interface::FLAG_ONEWAY
-            << " /* oneway */;\n";
+        out << "bool _hidl_is_oneway = _hidl_flags & " << Interface::FLAG_ONE_WAY->cppValue()
+            << ";\n";
         out << "if (_hidl_is_oneway != " << (method->isOneway() ? "true" : "false") << ") ";
         out.block([&] { out << "return ::android::UNKNOWN_ERROR;\n"; }).endl().endl();
 

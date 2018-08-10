@@ -260,16 +260,7 @@ void EnumType::emitTypeDeclarations(Formatter& out) const {
 
             std::string value = entry->cppValue(scalarType->getKind());
             CHECK(!value.empty()); // use autofilled values for c++.
-            out << " = " << value;
-
-            out << ",";
-
-            std::string comment = entry->comment();
-            if (!comment.empty()) {
-                out << " // " << comment;
-            }
-
-            out << "\n";
+            out << " = " << value << ",\n";
         }
     }
 
@@ -485,16 +476,7 @@ void EnumType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) const {
             // javaValue will make the number signed.
             std::string value = entry->javaValue(scalarType->getKind());
             CHECK(!value.empty()); // use autofilled values for java.
-            out << value;
-
-            out << ";";
-
-            std::string comment = entry->comment();
-            if (!comment.empty()) {
-                out << " // " << comment;
-            }
-
-            out << "\n";
+            out << value << ";\n";
         }
     }
 
@@ -562,7 +544,7 @@ void EnumType::emitVtsTypeDeclarations(Formatter& out) const {
             out << "scalar_value: {\n";
             out.indent();
             // use autofilled values for vts.
-            std::string value = entry->value(scalarType->getKind());
+            std::string value = entry->rawValue(scalarType->getKind());
             CHECK(!value.empty());
             out << mStorageType->resolveToScalarType()->getVtsScalarType()
                 << ": "
@@ -703,16 +685,7 @@ void EnumType::emitExportedHeader(Formatter& out, bool forJava) const {
                 // javaValue will make the number signed.
                 std::string value = entry->javaValue(scalarType->getKind());
                 CHECK(!value.empty()); // use autofilled values for java.
-                out << value;
-
-                out << ";";
-
-                std::string comment = entry->comment();
-                if (!comment.empty()) {
-                    out << " // " << comment;
-                }
-
-                out << "\n";
+                out << value << ";\n";
             }
         }
 
@@ -741,16 +714,7 @@ void EnumType::emitExportedHeader(Formatter& out, bool forJava) const {
 
             std::string value = entry->cppValue(scalarType->getKind());
             CHECK(!value.empty()); // use autofilled values for c++.
-            out << " = " << value;
-
-            out << ",";
-
-            std::string comment = entry->comment();
-            if (!comment.empty()) {
-                out << " // " << comment;
-            }
-
-            out << "\n";
+            out << " = " << value << ",\n";
         }
     }
 
@@ -773,9 +737,9 @@ std::string EnumValue::name() const {
     return mName;
 }
 
-std::string EnumValue::value(ScalarType::Kind castKind) const {
+std::string EnumValue::rawValue(ScalarType::Kind castKind) const {
     CHECK(mValue != nullptr);
-    return mValue->value(castKind);
+    return mValue->rawValue(castKind);
 }
 
 std::string EnumValue::cppValue(ScalarType::Kind castKind) const {
@@ -785,12 +749,6 @@ std::string EnumValue::cppValue(ScalarType::Kind castKind) const {
 std::string EnumValue::javaValue(ScalarType::Kind castKind) const {
     CHECK(mValue != nullptr);
     return mValue->javaValue(castKind);
-}
-
-std::string EnumValue::comment() const {
-    CHECK(mValue != nullptr);
-    if (mValue->descriptionIsTrivial()) return "";
-    return mValue->description();
 }
 
 ConstantExpression *EnumValue::constExpr() const {
