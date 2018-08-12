@@ -22,6 +22,7 @@
 
 #include <hidl-hash/Hash.h>
 
+#include "ConstantExpression.h"
 #include "Reference.h"
 #include "Scope.h"
 
@@ -31,10 +32,7 @@ struct Method;
 struct InterfaceAndMethod;
 
 struct Interface : public Scope {
-    enum {
-        /////////////////// Flag(s) - DO NOT CHANGE
-        FLAG_ONEWAY = 0x00000001,
-    };
+    const static std::unique_ptr<ConstantExpression> FLAG_ONE_WAY;
 
     Interface(const char* localName, const FQName& fullName, const Location& location,
               Scope* parent, const Reference<Type>& superType, const Hash* fileHash);

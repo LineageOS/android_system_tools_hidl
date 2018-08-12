@@ -97,14 +97,7 @@ std::string ArrayType::getCppType(StorageMode mode,
     std::string arrayType = space + "hidl_array<" + base;
 
     for (size_t i = 0; i < mSizes.size(); ++i) {
-        arrayType += ", ";
-        arrayType += mSizes[i]->cppValue();
-
-        if (!mSizes[i]->descriptionIsTrivial()) {
-            arrayType += " /* ";
-            arrayType += mSizes[i]->description();
-            arrayType += " */";
-        }
+        arrayType += ", " + mSizes[i]->cppValue();
     }
 
     arrayType += ">";
@@ -142,12 +135,8 @@ std::string ArrayType::getJavaType(bool forInitializer) const {
 
         if (forInitializer) {
             base += mSizes[i]->javaValue();
-        }
-
-        if (!forInitializer || !mSizes[i]->descriptionIsTrivial()) {
-            if (forInitializer)
-                base += " ";
-            base += "/* " + mSizes[i]->description() + " */";
+        } else {
+            base += "/* " + mSizes[i]->expression() + " */";
         }
 
         base += "]";
@@ -555,7 +544,7 @@ void ArrayType::emitJavaFieldReaderWriter(
 
 void ArrayType::emitVtsTypeDeclarations(Formatter& out) const {
     out << "type: " << getVtsType() << "\n";
-    out << "vector_size: " << mSizes[0]->value() << "\n";
+    out << "vector_size: " << mSizes[0]->rawValue() << "\n";
     out << "vector_value: {\n";
     out.indent();
     // Simple array case.
@@ -564,7 +553,7 @@ void ArrayType::emitVtsTypeDeclarations(Formatter& out) const {
     } else {  // Multi-dimension array case.
         for (size_t index = 1; index < mSizes.size(); index++) {
             out << "type: " << getVtsType() << "\n";
-            out << "vector_size: " << mSizes[index]->value() << "\n";
+            out << "vector_size: " << mSizes[index]->rawValue() << "\n";
             out << "vector_value: {\n";
             out.indent();
             if (index == mSizes.size() - 1) {
