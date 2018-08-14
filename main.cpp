@@ -594,9 +594,6 @@ static status_t generateAndroidBpForPackage(Formatter& out, const FQName& packag
             out << "owner: \"" << coordinator->getOwner() << "\",\n";
         }
         out << "root: \"" << packageRoot << "\",\n";
-        if (isHidlTransportPackage(packageFQName)) {
-            out << "core_interface: true,\n";
-        }
         if (isVndk) {
             out << "vndk: ";
             out.block([&]() {
