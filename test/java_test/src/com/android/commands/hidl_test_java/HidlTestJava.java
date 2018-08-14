@@ -35,6 +35,11 @@ import android.os.RemoteException;
 import android.os.HidlSupport;
 import android.util.Log;
 
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
@@ -54,7 +59,7 @@ public final class HidlTestJava {
         System.exit(exitCode);
     }
 
-    public int run(String[] args) throws RemoteException {
+    public int run(String[] args) throws RemoteException, IOException {
         if (args[0].equals("-c")) {
             client();
         } else if (args[0].equals("-s")) {
@@ -222,7 +227,7 @@ public final class HidlTestJava {
         ExpectTrue(!HidlSupport.deepEquals(l, r));
     }
 
-    private void runClientSafeUnionTests() throws RemoteException {
+    private void runClientSafeUnionTests() throws RemoteException, IOException {
         ISafeUnion safeunionInterface = ISafeUnion.getService();
 
         {
@@ -324,7 +329,7 @@ public final class HidlTestJava {
             ExpectTrue(safeUnion.g().size() == testHandlesVector.size());
 
             for (int i = 0; i < testHandlesVector.size(); i++) {
-                ExpectFalse(safeUnion.g().get(i).getFd().valid());
+                ExpectFalse(safeUnion.g().get(i).hasSingleFileDescriptor());
             }
         }
         {
@@ -348,14 +353,14 @@ public final class HidlTestJava {
             HandleTypeSafeUnion safeUnion = safeunionInterface.newHandleTypeSafeUnion();
             safeUnion = safeunionInterface.setHandleA(safeUnion, new NativeHandle());
             ExpectTrue(safeUnion.getDiscriminator() == HandleTypeSafeUnion.hidl_discriminator.a);
-            ExpectFalse(safeUnion.a().getFd().valid());
+            ExpectFalse(safeUnion.a().hasSingleFileDescriptor());
 
             safeUnion = safeunionInterface.setHandleB(safeUnion, testHandlesArray);
             ExpectTrue(safeUnion.getDiscriminator() == HandleTypeSafeUnion.hidl_discriminator.b);
             ExpectTrue(safeUnion.b().length == testHandlesArray.length);
 
             for (int i = 0; i < testHandlesArray.length; i++) {
-                ExpectFalse(safeUnion.b()[i].getFd().valid());
+                ExpectFalse(safeUnion.b()[i].hasSingleFileDescriptor());
             }
 
             safeUnion = safeunionInterface.setHandleC(safeUnion, testHandlesList);
@@ -363,8 +368,63 @@ public final class HidlTestJava {
             ExpectTrue(safeUnion.c().size() == testHandlesList.size());
 
             for (int i = 0; i < testHandlesList.size(); i++) {
-                ExpectFalse(safeUnion.c().get(i).getFd().valid());
+                ExpectFalse(safeUnion.c().get(i).hasSingleFileDescriptor());
             }
+        }
+        {
+            // SafeUnionNativeHandleWithFdTest
+            final String testFileName = "/data/local/tmp/SafeUnionNativeHandleWithFdTest";
+            final String[] testStrings = {"This ", "is ", "so ", "much ", "data!\n"};
+            File file = new File(testFileName);
+
+            if (file.exists()) { ExpectTrue(file.delete()); }
+            ExpectTrue(file.createNewFile());
+
+            StringBuilder builder = new StringBuilder();
+            for (String testString : testStrings) {
+                builder.append(testString);
+            }
+            final String goldenResult = builder.toString();
+
+            ArrayList<NativeHandle> testHandlesList = new ArrayList<NativeHandle>();
+            FileOutputStream fos = new FileOutputStream(file);
+            for (int i = 0; i < testStrings.length; i++) {
+                testHandlesList.add(new NativeHandle(fos.getFD(), false /*own*/));
+            }
+
+            HandleTypeSafeUnion safeUnion = safeunionInterface.newHandleTypeSafeUnion();
+            safeUnion = safeunionInterface.setHandleC(safeUnion, testHandlesList);
+            for (int i = 0; i < safeUnion.c().size(); i++) {
+                ExpectTrue(safeUnion.c().get(i).hasSingleFileDescriptor());
+
+                // If you want to copy it out of the binder buffer or save it, it needs to be duped.
+                // This isn't necessary for the test since it is kept open for the binder window.
+                NativeHandle handle = safeUnion.c().get(i);
+                if (i%2 == 0) handle = handle.dup();
+
+                // Original fd is duped if not dup'd above
+                FileDescriptor resultFd = handle.getFileDescriptor();
+                ExpectTrue(resultFd.getInt$() != fos.getFD().getInt$());
+
+                FileOutputStream otherFos = new FileOutputStream(resultFd);
+                otherFos.write(testStrings[i].getBytes());
+                otherFos.flush();
+
+                otherFos.close();
+
+                if (i%2 == 0) handle.close();
+            }
+
+            byte[] resultData = new byte[(int) file.length()];
+            FileInputStream fis = new FileInputStream(file);
+            fis.read(resultData);
+
+            String result = new String(resultData);
+            Expect(result, goldenResult);
+
+            fis.close();
+            fos.close();
+            ExpectTrue(file.delete());
         }
         {
             // SafeUnionEqualityTest
@@ -416,7 +476,7 @@ public final class HidlTestJava {
         }
     }
 
-    private void client() throws RemoteException {
+    private void client() throws RemoteException, IOException {
 
         ExpectDeepEq(null, null);
         ExpectDeepNe(null, new String());
