@@ -20,14 +20,17 @@ import android.hidl.manager.V1_0.IServiceManager;
 import android.hardware.tests.baz.V1_0.IBase;
 import android.hardware.tests.baz.V1_0.IBaz;
 import android.hardware.tests.baz.V1_0.IQuux;
+import android.hardware.tests.baz.V1_0.IBaz.MyHandle;
 import android.hardware.tests.baz.V1_0.IBaz.NestedStruct;
 import android.hardware.tests.baz.V1_0.IBazCallback;
 import android.hardware.tests.safeunion.V1_0.IOtherInterface;
 import android.hardware.tests.safeunion.V1_0.ISafeUnion;
+import android.hardware.tests.safeunion.V1_0.ISafeUnion.HandleTypeSafeUnion;
 import android.hardware.tests.safeunion.V1_0.ISafeUnion.InterfaceTypeSafeUnion;
 import android.hardware.tests.safeunion.V1_0.ISafeUnion.LargeSafeUnion;
 import android.hardware.tests.safeunion.V1_0.ISafeUnion.SmallSafeUnion;
 import android.os.HwBinder;
+import android.os.NativeHandle;
 import android.os.RemoteException;
 import android.os.HidlSupport;
 import android.util.Log;
@@ -276,6 +279,14 @@ public final class HidlTestJava {
             ExpectTrue(safeUnion.l().a() == (byte) 1);
         }
         {
+            // SafeUnionInterfaceNullNativeHandleTest
+            InterfaceTypeSafeUnion safeUnion = new InterfaceTypeSafeUnion();
+
+            safeUnion = safeunionInterface.setInterfaceF(safeUnion, null);
+            ExpectTrue(safeUnion.getDiscriminator() == InterfaceTypeSafeUnion.hidl_discriminator.f);
+            ExpectTrue(safeUnion.f() == null);
+        }
+        {
             // SafeUnionInterfaceTest
             byte[] testArray = new byte[] {-1, -2, -3, 0, 1, 2, 3};
             ArrayList<String> testVector = new ArrayList(Arrays.asList("So", "Many", "Words"));
@@ -283,6 +294,11 @@ public final class HidlTestJava {
             String testStringB = "World";
 
             IOtherInterface otherInterface = IOtherInterface.getService();
+
+            ArrayList<NativeHandle> testHandlesVector = new ArrayList<>();
+            for (int i = 0; i < 128; i++) {
+                testHandlesVector.add(new NativeHandle());
+            }
 
             InterfaceTypeSafeUnion safeUnion = safeunionInterface.newInterfaceTypeSafeUnion();
             safeUnion = safeunionInterface.setInterfaceB(safeUnion, testArray);
@@ -302,6 +318,53 @@ public final class HidlTestJava {
             safeUnion = safeunionInterface.setInterfaceE(safeUnion, testVector);
             ExpectTrue(safeUnion.getDiscriminator() == InterfaceTypeSafeUnion.hidl_discriminator.e);
             ExpectDeepEq(testVector, safeUnion.e());
+
+            safeUnion = safeunionInterface.setInterfaceG(safeUnion, testHandlesVector);
+            ExpectTrue(safeUnion.getDiscriminator() == InterfaceTypeSafeUnion.hidl_discriminator.g);
+            ExpectTrue(safeUnion.g().size() == testHandlesVector.size());
+
+            for (int i = 0; i < testHandlesVector.size(); i++) {
+                ExpectFalse(safeUnion.g().get(i).getFd().valid());
+            }
+        }
+        {
+            // SafeUnionNullNativeHandleTest
+            HandleTypeSafeUnion safeUnion = new HandleTypeSafeUnion();
+
+            safeUnion = safeunionInterface.setHandleA(safeUnion, null);
+            ExpectTrue(safeUnion.getDiscriminator() == HandleTypeSafeUnion.hidl_discriminator.a);
+            ExpectTrue(safeUnion.a() == null);
+        }
+        {
+            // SafeUnionDefaultNativeHandleTest
+            NativeHandle[] testHandlesArray = new NativeHandle[5];
+            for (int i = 0; i < testHandlesArray.length; i++) {
+                testHandlesArray[i] = new NativeHandle();
+            }
+
+            ArrayList<NativeHandle> testHandlesList = new ArrayList<NativeHandle>(
+                Arrays.asList(testHandlesArray));
+
+            HandleTypeSafeUnion safeUnion = safeunionInterface.newHandleTypeSafeUnion();
+            safeUnion = safeunionInterface.setHandleA(safeUnion, new NativeHandle());
+            ExpectTrue(safeUnion.getDiscriminator() == HandleTypeSafeUnion.hidl_discriminator.a);
+            ExpectFalse(safeUnion.a().getFd().valid());
+
+            safeUnion = safeunionInterface.setHandleB(safeUnion, testHandlesArray);
+            ExpectTrue(safeUnion.getDiscriminator() == HandleTypeSafeUnion.hidl_discriminator.b);
+            ExpectTrue(safeUnion.b().length == testHandlesArray.length);
+
+            for (int i = 0; i < testHandlesArray.length; i++) {
+                ExpectFalse(safeUnion.b()[i].getFd().valid());
+            }
+
+            safeUnion = safeunionInterface.setHandleC(safeUnion, testHandlesList);
+            ExpectTrue(safeUnion.getDiscriminator() == HandleTypeSafeUnion.hidl_discriminator.c);
+            ExpectTrue(safeUnion.c().size() == testHandlesList.size());
+
+            for (int i = 0; i < testHandlesList.size(); i++) {
+                ExpectFalse(safeUnion.c().get(i).getFd().valid());
+            }
         }
         {
             // SafeUnionEqualityTest
@@ -891,7 +954,6 @@ public final class HidlTestJava {
             ArrayList<double[]> out = proxy.testDoubleVecs(in);
             ExpectTrue(in.equals(out));
         }
-
         {
             // testProxyEquals
             // TODO(b/68727931): test passthrough services as well.
@@ -1381,6 +1443,55 @@ public final class HidlTestJava {
             InterfaceTypeSafeUnion safeUnion, ArrayList<String> e) {
             Log.d(TAG, "SERVER: setInterfaceE(" + e + ")");
             safeUnion.e(e);
+
+            return safeUnion;
+        }
+
+        @Override
+        public InterfaceTypeSafeUnion setInterfaceF(
+            InterfaceTypeSafeUnion safeUnion, NativeHandle f) {
+            Log.d(TAG, "SERVER: setInterfaceF(" + f + ")");
+            safeUnion.f(f);
+
+            return safeUnion;
+        }
+
+        @Override
+        public InterfaceTypeSafeUnion setInterfaceG(
+            InterfaceTypeSafeUnion safeUnion, ArrayList<NativeHandle> g) {
+            Log.d(TAG, "SERVER: setInterfaceG(" + g + ")");
+            safeUnion.g(g);
+
+            return safeUnion;
+        }
+
+        @Override
+        public HandleTypeSafeUnion newHandleTypeSafeUnion() {
+            Log.d(TAG, "SERVER: newHandleTypeSafeUnion");
+            return new HandleTypeSafeUnion();
+        }
+
+        @Override
+        public HandleTypeSafeUnion setHandleA(HandleTypeSafeUnion safeUnion, NativeHandle a) {
+            Log.d(TAG, "SERVER: setHandleA(" + a + ")");
+            safeUnion.a(a);
+
+            return safeUnion;
+        }
+
+        @Override
+        public HandleTypeSafeUnion setHandleB(HandleTypeSafeUnion safeUnion, NativeHandle[] b) {
+            Log.d(TAG, "SERVER: setHandleB(" + b + ")");
+            safeUnion.b(b);
+
+            return safeUnion;
+        }
+
+        @Override
+        public HandleTypeSafeUnion setHandleC(HandleTypeSafeUnion safeUnion,
+                                              ArrayList<NativeHandle> c) {
+            Log.d(TAG, "SERVER: setHandleC(" + c + ")");
+            safeUnion.c(c);
 
             return safeUnion;
         }

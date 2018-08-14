@@ -239,8 +239,6 @@ struct Type : DocCommentable {
 
     virtual bool useParentInEmitResolveReferencesEmbedded() const;
 
-    virtual bool useNameInEmitReaderWriterEmbedded(bool isReader) const;
-
     virtual void emitJavaReaderWriter(
             Formatter &out,
             const std::string &parcelObj,
