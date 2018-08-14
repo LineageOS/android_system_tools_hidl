@@ -1829,18 +1829,7 @@ void CompoundType::emitStructReaderWriter(
 
     out.indent(2);
 
-    bool useName = false;
-    for (const auto &field : *mFields) {
-        if (field->type().useNameInEmitReaderWriterEmbedded(isReader)) {
-            useName = true;
-            break;
-        }
-    }
-    std::string name = useName ? "obj" : "/* obj */";
-    // if not useName, then obj  should not be used at all,
-    // then the #error should not be emitted.
-    std::string error = useName ? "" : "\n#error\n";
-
+    const std::string name = "obj";
     if (isReader) {
         out << "const " << space << localName() << " &" << name << ",\n";
         out << "const ::android::hardware::Parcel &parcel,\n";
@@ -1876,8 +1865,8 @@ void CompoundType::emitStructReaderWriter(
         }
 
         const std::string fieldName = (mStyle == STYLE_SAFE_UNION)
-                                        ? (name + "." + field->name() + "()" + error)
-                                        : (name + "." + field->name() + error);
+                                        ? (name + "." + field->name() + "()")
+                                        : (name + "." + field->name());
 
         const std::string fieldOffset = (mStyle == STYLE_SAFE_UNION)
                                         ? (name + ".hidl_getUnionOffset() " +
