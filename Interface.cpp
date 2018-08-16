@@ -424,20 +424,18 @@ bool Interface::fillDebugMethod(Method *method) const {
         return false;
     }
 
-    method->fillImplementation(
-        HIDL_DEBUG_TRANSACTION,
-        {
-            {IMPL_INTERFACE,
-                [](auto &out) {
-                    out << "(void)fd;\n"
-                        << "(void)options;\n"
-                        << "return ::android::hardware::Void();\n";
-                }
-            },
-        }, /* cppImpl */
-        {
-            /* unused, as the debug method is hidden from Java */
-        } /* javaImpl */
+    method->fillImplementation(HIDL_DEBUG_TRANSACTION,
+                               {
+                                   {IMPL_INTERFACE,
+                                    [](auto& out) {
+                                        out << "(void)fd;\n"
+                                            << "(void)options;\n"
+                                            << "return ::android::hardware::Void();\n";
+                                    }},
+                               }, /* cppImpl */
+                               {
+                                   {IMPL_INTERFACE, [](auto& out) { out << "return;\n"; }},
+                               } /* javaImpl */
     );
 
     return true;
