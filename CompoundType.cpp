@@ -620,7 +620,7 @@ void CompoundType::emitSafeUnionTypeDeclarations(Formatter& out) const {
             << field->type().getCppArgumentType()
             << ");\n";
 
-        if (!field->type().isScalar()) {
+        if (field->type().resolveToScalarType() == nullptr) {
             // Setter (move)
             out << "void "
                 << field->name()
@@ -1229,7 +1229,7 @@ void CompoundType::emitSafeUnionTypeDefinitions(Formatter& out) const {
 
         emitSafeUnionSetterDefinition(out, field, "o", false /* usesMoveSemantics */);
 
-        if (!field->type().isScalar()) {
+        if (field->type().resolveToScalarType() == nullptr) {
             // Setter (move)
             out << "void "
                 << fullName()
