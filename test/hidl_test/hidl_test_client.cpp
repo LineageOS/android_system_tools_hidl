@@ -2015,6 +2015,26 @@ TEST_F(HidlTest, SafeUnionNestedTest) {
     }));
 }
 
+TEST_F(HidlTest, SafeUnionEnumTest) {
+    EXPECT_OK(safeunionInterface->newLargeSafeUnion([&](const LargeSafeUnion& safeUnion) {
+        EXPECT_OK(safeunionInterface->setM(
+            safeUnion, ISafeUnion::BitField::V1, [&](const LargeSafeUnion& safeUnion) {
+                EXPECT_EQ(LargeSafeUnion::hidl_discriminator::m, safeUnion.getDiscriminator());
+                EXPECT_EQ(ISafeUnion::BitField::V1, safeUnion.m());
+            }));
+    }));
+}
+
+TEST_F(HidlTest, SafeUnionBitFieldTest) {
+    EXPECT_OK(safeunionInterface->newLargeSafeUnion([&](const LargeSafeUnion& safeUnion) {
+        EXPECT_OK(safeunionInterface->setN(
+            safeUnion, 0 | ISafeUnion::BitField::V1, [&](const LargeSafeUnion& safeUnion) {
+                EXPECT_EQ(LargeSafeUnion::hidl_discriminator::n, safeUnion.getDiscriminator());
+                EXPECT_EQ(0 | ISafeUnion::BitField::V1, safeUnion.n());
+            }));
+    }));
+}
+
 TEST_F(HidlTest, SafeUnionInterfaceTest) {
     const std::array<int8_t, 7> testArray{-1, -2, -3, 0, 1, 2, 3};
     const hidl_vec<hidl_string> testVector{"So", "Many", "Words"};
