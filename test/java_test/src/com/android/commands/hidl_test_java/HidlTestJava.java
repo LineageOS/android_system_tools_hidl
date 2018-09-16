@@ -284,6 +284,20 @@ public final class HidlTestJava {
             ExpectTrue(safeUnion.l().a() == (byte) 1);
         }
         {
+            // SafeUnionEnumTest
+            LargeSafeUnion safeUnion = safeunionInterface.newLargeSafeUnion();
+            safeUnion = safeunionInterface.setM(safeUnion, ISafeUnion.BitField.V1);
+            ExpectTrue(safeUnion.getDiscriminator() == LargeSafeUnion.hidl_discriminator.m);
+            ExpectTrue(safeUnion.m() == ISafeUnion.BitField.V1);
+        }
+        {
+            // SafeUnionBitFieldTest
+            LargeSafeUnion safeUnion = safeunionInterface.newLargeSafeUnion();
+            safeUnion = safeunionInterface.setN(safeUnion, ISafeUnion.BitField.V1);
+            ExpectTrue(safeUnion.getDiscriminator() == LargeSafeUnion.hidl_discriminator.n);
+            ExpectTrue(safeUnion.n() == ISafeUnion.BitField.V1);
+        }
+        {
             // SafeUnionInterfaceNullNativeHandleTest
             InterfaceTypeSafeUnion safeUnion = new InterfaceTypeSafeUnion();
 
@@ -1454,6 +1468,22 @@ public final class HidlTestJava {
         public LargeSafeUnion setL(LargeSafeUnion safeUnion, SmallSafeUnion l) {
             Log.d(TAG, "SERVER: setL(" + l + ")");
             safeUnion.l(l);
+
+            return safeUnion;
+        }
+
+        @Override
+        public LargeSafeUnion setM(LargeSafeUnion safeUnion, byte m) {
+            Log.d(TAG, "SERVER: setM(" + m + ")");
+            safeUnion.m(m);
+
+            return safeUnion;
+        }
+
+        @Override
+        public LargeSafeUnion setN(LargeSafeUnion safeUnion, byte n) {
+            Log.d(TAG, "SERVER: setN(" + n + ")");
+            safeUnion.n(n);
 
             return safeUnion;
         }
