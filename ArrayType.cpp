@@ -512,13 +512,38 @@ void ArrayType::emitJavaFieldReaderWriter(
                 << mSizes.back()->javaValue()
                 << " /* size */);\n";
         } else {
+            std::string elemName = "_hidl_array_item_" + std::to_string(depth);
+
+            out << mElementType->getJavaType(false /* forInitializer */)
+                << "[] "
+                << elemName
+                << " = "
+                << fieldNameWithCast
+                << ";\n\n";
+
+            out << "if ("
+                << elemName
+                << " == null || "
+                << elemName
+                << ".length != "
+                << mSizes.back()->javaValue()
+                << ") {\n";
+
+            out.indent();
+
+            out << "throw new IllegalArgumentException("
+                << "\"Array element is not of the expected length\");\n";
+
+            out.unindent();
+            out << "}\n\n";
+
             out << blobName
                 << ".put"
                 << mElementType->getJavaSuffix()
                 << "Array("
                 << offsetName
                 << ", "
-                << fieldNameWithCast
+                << elemName
                 << ");\n";
         }
 

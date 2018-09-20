@@ -981,7 +981,7 @@ public final class HidlTestJava {
             ArrayList<byte[]> in = new ArrayList<byte[]>();
 
             int k = 0;
-            for (int i = 0; i < in.size(); ++i) {
+            for (int i = 0; i < 8; ++i) {
                 byte[] elem = new byte[128];
                 for (int j = 0; j < 128; ++j, ++k) {
                     elem[j] = (byte)k;
@@ -990,7 +990,34 @@ public final class HidlTestJava {
             }
 
             ArrayList<byte[]> out = proxy.testByteVecs(in);
-            ExpectTrue(in.equals(out));
+
+            ExpectDeepEq(in, out);
+        }
+
+        {
+            // testByteVecs w/ mismatched element lengths.
+
+            ArrayList<byte[]> in = new ArrayList<byte[]>();
+
+            int k = 0;
+            for (int i = 0; i < 8; ++i) {
+                byte[] elem = new byte[128 - i];
+                for (int j = 0; j < (128 - i); ++j, ++k) {
+                    elem[j] = (byte)k;
+                }
+                in.add(elem);
+            }
+
+            boolean failedAsItShould = false;
+
+            try {
+                ArrayList<byte[]> out = proxy.testByteVecs(in);
+            }
+            catch (IllegalArgumentException e) {
+                failedAsItShould = true;
+            }
+
+            ExpectTrue(failedAsItShould);
         }
 
         {
@@ -999,7 +1026,7 @@ public final class HidlTestJava {
             ArrayList<boolean[]> in = new ArrayList<boolean[]>();
 
             int k = 0;
-            for (int i = 0; i < in.size(); ++i) {
+            for (int i = 0; i < 8; ++i) {
                 boolean[] elem = new boolean[128];
                 for (int j = 0; j < 128; ++j, ++k) {
                     elem[j] = (k & 4) != 0;
@@ -1008,7 +1035,7 @@ public final class HidlTestJava {
             }
 
             ArrayList<boolean[]> out = proxy.testBooleanVecs(in);
-            ExpectTrue(in.equals(out));
+            ExpectDeepEq(in, out);
         }
 
         {
@@ -1017,7 +1044,7 @@ public final class HidlTestJava {
             ArrayList<double[]> in = new ArrayList<double[]>();
 
             int k = 0;
-            for (int i = 0; i < in.size(); ++i) {
+            for (int i = 0; i < 8; ++i) {
                 double[] elem = new double[128];
                 for (int j = 0; j < 128; ++j, ++k) {
                     elem[j] = k;
@@ -1026,7 +1053,7 @@ public final class HidlTestJava {
             }
 
             ArrayList<double[]> out = proxy.testDoubleVecs(in);
-            ExpectTrue(in.equals(out));
+            ExpectDeepEq(in, out);
         }
         {
             // testProxyEquals
