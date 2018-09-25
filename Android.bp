@@ -16,11 +16,14 @@ cc_defaults {
     name: "hidl-gen-defaults",
     cpp_std: "experimental",
     cflags: [
-        "-O0",
-        "-g",
         "-Wall",
         "-Werror",
     ],
+    target: {
+        host: {
+            cflags: ["-O0", "-g"],
+        }
+    }
 }
 
 // This configuration is inherited by all hidl-gen-generated modules.
