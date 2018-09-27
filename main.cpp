@@ -674,6 +674,7 @@ static status_t generateAndroidBpImplForPackage(Formatter& out, const FQName& pa
         ast->getImportedPackages(&importedPackages);
     }
 
+    out << "// FIXME: your file license if you have one\n\n";
     out << "cc_library_shared {\n";
     out.indent([&] {
         out << "// FIXME: this should only be -impl for a passthrough hal.\n"
