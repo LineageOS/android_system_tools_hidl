@@ -79,6 +79,7 @@ void AST::generateCppImplHeader(Formatter& out) const {
 
     const std::string guard = makeHeaderGuard(baseName, false /* indicateGenerated */);
 
+    out << "// FIXME: your file license if you have one\n\n";
     out << "#ifndef " << guard << "\n";
     out << "#define " << guard << "\n\n";
 
@@ -144,6 +145,7 @@ void AST::generateCppImplSource(Formatter& out) const {
     const Interface* iface = mRootScope.getInterface();
     const std::string baseName = iface->getBaseName();
 
+    out << "// FIXME: your file license if you have one\n\n";
     out << "#include \"" << baseName << ".h\"\n\n";
 
     enterLeaveNamespace(out, true /* enter */);
