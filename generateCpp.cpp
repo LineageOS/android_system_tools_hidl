@@ -417,7 +417,7 @@ static void wrapPassthroughArg(Formatter& out, const NamedReference<Type>* arg,
     }).endl().endl();
 }
 
-void AST::generatePassthroughMethod(Formatter& out, const Method* method) const {
+void AST::generatePassthroughMethod(Formatter& out, const Method* method, const Interface* superInterface) const {
     method->generateCppSignature(out);
 
     out << " {\n";
@@ -441,7 +441,8 @@ void AST::generatePassthroughMethod(Formatter& out, const Method* method) const 
     generateCppInstrumentationCall(
             out,
             InstrumentationEvent::PASSTHROUGH_ENTRY,
-            method);
+            method,
+            superInterface);
 
 
     for (const auto &arg : method->args()) {
@@ -496,7 +497,8 @@ void AST::generatePassthroughMethod(Formatter& out, const Method* method) const 
         generateCppInstrumentationCall(
                 out,
                 InstrumentationEvent::PASSTHROUGH_EXIT,
-                method);
+                method,
+                superInterface);
 
         for (const auto &arg : method->results()) {
             wrapPassthroughArg(out, arg, true /* addPrefixToName */, [&] {
@@ -530,7 +532,8 @@ void AST::generatePassthroughMethod(Formatter& out, const Method* method) const 
         generateCppInstrumentationCall(
                 out,
                 InstrumentationEvent::PASSTHROUGH_EXIT,
-                method);
+                method,
+                superInterface);
     }
 
     if (method->isOneway()) {
@@ -1000,7 +1003,7 @@ void AST::generateProxyMethodSource(Formatter& out, const std::string& klassName
 }
 
 void AST::generateStaticProxyMethodSource(Formatter& out, const std::string& klassName,
-                                          const Method* method) const {
+                                          const Method* method, const Interface* superInterface) const {
     if (method->isHidlReserved() && method->overridesCppImpl(IMPL_PROXY)) {
         return;
     }
@@ -1039,7 +1042,8 @@ void AST::generateStaticProxyMethodSource(Formatter& out, const std::string& kla
     generateCppInstrumentationCall(
             out,
             InstrumentationEvent::CLIENT_API_ENTRY,
-            method);
+            method,
+            superInterface);
 
     out << "::android::hardware::Parcel _hidl_data;\n";
     out << "::android::hardware::Parcel _hidl_reply;\n";
@@ -1146,7 +1150,8 @@ void AST::generateStaticProxyMethodSource(Formatter& out, const std::string& kla
     generateCppInstrumentationCall(
             out,
             InstrumentationEvent::CLIENT_API_EXIT,
-            method);
+            method,
+            superInterface);
 
     if (elidedReturn != nullptr) {
         out << "_hidl_status.setFromStatusT(_hidl_err);\n";
@@ -1200,8 +1205,8 @@ void AST::generateProxySource(Formatter& out, const FQName& fqName) const {
     out << "}\n\n";
 
     generateMethods(out,
-                    [&](const Method* method, const Interface*) {
-                        generateStaticProxyMethodSource(out, klassName, method);
+                    [&](const Method* method, const Interface* superInterface) {
+                        generateStaticProxyMethodSource(out, klassName, method, superInterface);
                     },
                     false /* include parents */);
 
@@ -1276,8 +1281,8 @@ void AST::generateStubSource(Formatter& out, const Interface* iface) const {
     }).endl().endl();
 
     generateMethods(out,
-                    [&](const Method* method, const Interface*) {
-                        return generateStaticStubMethodSource(out, iface->fqName(), method);
+                    [&](const Method* method, const Interface* superInterface) {
+                        return generateStaticStubMethodSource(out, iface->fqName(), method, superInterface);
                     },
                     false /* include parents */);
 
@@ -1395,7 +1400,7 @@ void AST::generateStubSourceForMethod(Formatter& out, const Method* method,
 }
 
 void AST::generateStaticStubMethodSource(Formatter& out, const FQName& fqName,
-                                         const Method* method) const {
+                                         const Method* method, const Interface* superInterface) const {
     if (method->isHidlReserved() && method->overridesCppImpl(IMPL_STUB)) {
         return;
     }
@@ -1460,7 +1465,8 @@ void AST::generateStaticStubMethodSource(Formatter& out, const FQName& fqName,
     generateCppInstrumentationCall(
             out,
             InstrumentationEvent::SERVER_API_ENTRY,
-            method);
+            method,
+            superInterface);
 
     const bool returnsValue = !method->results().empty();
     const NamedReference<Type>* elidedReturn = method->canElideCallback();
@@ -1512,7 +1518,8 @@ void AST::generateStaticStubMethodSource(Formatter& out, const FQName& fqName,
         generateCppInstrumentationCall(
                 out,
                 InstrumentationEvent::SERVER_API_EXIT,
-                method);
+                method,
+            superInterface);
 
         out << "_hidl_cb(*_hidl_reply);\n";
     } else {
@@ -1582,7 +1589,8 @@ void AST::generateStaticStubMethodSource(Formatter& out, const FQName& fqName,
             generateCppInstrumentationCall(
                     out,
                     InstrumentationEvent::SERVER_API_EXIT,
-                    method);
+                    method,
+                    superInterface);
 
             out << "_hidl_cb(*_hidl_reply);\n";
 
@@ -1594,7 +1602,8 @@ void AST::generateStaticStubMethodSource(Formatter& out, const FQName& fqName,
             generateCppInstrumentationCall(
                     out,
                     InstrumentationEvent::SERVER_API_EXIT,
-                    method);
+                    method,
+                    superInterface);
         }
 
         if (returnsValue) {
@@ -1670,8 +1679,8 @@ void AST::generatePassthroughHeader(Formatter& out) const {
     generateTemplatizationLink(out);
     generateCppTag(out, "android::hardware::details::bs_tag");
 
-    generateMethods(out, [&](const Method* method, const Interface*) {
-        generatePassthroughMethod(out, method);
+    generateMethods(out, [&](const Method* method, const Interface* superInterface) {
+        generatePassthroughMethod(out, method, superInterface);
     });
 
     out.unindent();
@@ -1846,7 +1855,8 @@ void AST::generateCppAtraceCall(Formatter &out,
 void AST::generateCppInstrumentationCall(
         Formatter &out,
         InstrumentationEvent event,
-        const Method *method) const {
+        const Method *method,
+        const Interface* superInterface) const {
     generateCppAtraceCall(out, event, method);
 
     out << "#ifdef __ANDROID_DEBUGGABLE__\n";
@@ -1924,18 +1934,16 @@ void AST::generateCppInstrumentationCall(
         }
     }
 
-    const Interface* iface = mRootScope.getInterface();
-
     out << "for (const auto &callback: mInstrumentationCallbacks) {\n";
     out.indent();
     out << "callback("
         << event_str
         << ", \""
-        << mPackage.package()
+        << superInterface->fqName().package()
         << "\", \""
-        << mPackage.version()
+        << superInterface->fqName().version()
         << "\", \""
-        << iface->localName()
+        << superInterface->localName()
         << "\", \""
         << method->name()
         << "\", &_hidl_args);\n";
