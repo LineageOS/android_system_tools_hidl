@@ -260,9 +260,9 @@ struct AST {
                          bool includeParents = true) const;
     void generateStubImplMethod(Formatter& out, const std::string& className,
                                 const Method* method) const;
-    void generatePassthroughMethod(Formatter& out, const Method* method) const;
+    void generatePassthroughMethod(Formatter& out, const Method* method, const Interface* superInterface) const;
     void generateStaticProxyMethodSource(Formatter& out, const std::string& className,
-                                         const Method* method) const;
+                                         const Method* method, const Interface* superInterface) const;
     void generateProxyMethodSource(Formatter& out, const std::string& className,
                                    const Method* method, const Interface* superInterface) const;
     void generateAdapterMethod(Formatter& out, const Method* method) const;
@@ -276,7 +276,7 @@ struct AST {
     void generateStubSourceForMethod(Formatter& out, const Method* method,
                                      const Interface* superInterface) const;
     void generateStaticStubMethodSource(Formatter& out, const FQName& fqName,
-                                        const Method* method) const;
+                                        const Method* method, const Interface* superInterface) const;
 
     void generatePassthroughSource(Formatter& out) const;
 
@@ -303,7 +303,8 @@ struct AST {
     void generateCppInstrumentationCall(
             Formatter &out,
             InstrumentationEvent event,
-            const Method *method) const;
+            const Method *method,
+            const Interface* superInterface) const;
 
     void declareCppReaderLocals(Formatter& out, const std::vector<NamedReference<Type>*>& arg,
                                 bool forResults) const;
