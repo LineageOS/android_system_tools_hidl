@@ -294,7 +294,7 @@ bool isValidTypeName(const std::string& identifier, std::string *errorMsg) {
 %type<constantExpression> const_expr
 %type<enumValue> enum_value commentable_enum_value
 %type<enumValues> enum_values enum_declaration_body
-%type<typedVars> typed_vars
+%type<typedVars> typed_vars non_empty_typed_vars
 %type<typedVar> typed_var
 %type<method> method_declaration commentable_method_declaration
 %type<compoundStyle> struct_or_union_keyword
@@ -844,7 +844,14 @@ typed_vars
       {
           $$ = new TypedVarVector();
       }
-    | typed_var
+    | non_empty_typed_vars
+      {
+          $$ = $1;
+      }
+    ;
+
+non_empty_typed_vars
+    : typed_var
       {
           $$ = new TypedVarVector();
           if (!$$->add($1)) {
@@ -853,7 +860,7 @@ typed_vars
               ast->addSyntaxError();
           }
       }
-    | typed_vars ',' typed_var
+    | non_empty_typed_vars ',' typed_var
       {
           $$ = $1;
           if (!$$->add($3)) {
