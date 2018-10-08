@@ -474,20 +474,19 @@ TEST_F(HidlTest, ToStringTest) {
     auto handle2 = native_handle_create(0, 1);
     handle->data[0] = 5;
     handle2->data[0] = 6;
-    IFoo::Everything e {
-        .u = {.p = reinterpret_cast<void *>(0x5)},
+    IFoo::Everything e{
+        .u = {.number = 3},
         .number = 10,
         .h = handle,
         .descSync = {std::vector<GrantorDescriptor>(), handle, 5},
         .descUnsync = {std::vector<GrantorDescriptor>(), handle2, 6},
         .mem = hidl_memory("mymem", handle, 5),
-        .p = reinterpret_cast<void *>(0x6),
+        .p = reinterpret_cast<void*>(0x6),
         .vs = {"hello", "world"},
         .multidimArray = hidl_vec<hidl_string>{"hello", "great", "awesome", "nice"}.data(),
         .sArray = hidl_vec<hidl_string>{"awesome", "thanks", "you're welcome"}.data(),
         .anotherStruct = {.first = "first", .last = "last"},
-        .bf = IFoo::BitField::V0 | IFoo::BitField::V2
-    };
+        .bf = IFoo::BitField::V0 | IFoo::BitField::V2};
     LOG(INFO) << toString(e);
     LOG(INFO) << toString(foo);
     // toString is for debugging purposes only; no good EXPECT
