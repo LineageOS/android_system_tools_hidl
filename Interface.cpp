@@ -849,6 +849,12 @@ void Interface::emitReaderWriter(
 void Interface::emitPackageTypeDeclarations(Formatter& out) const {
     Scope::emitPackageTypeDeclarations(out);
 
+    out << "static inline std::string toString(" << getCppArgumentType() << " o);\n\n";
+}
+
+void Interface::emitPackageTypeHeaderDefinitions(Formatter& out) const {
+    Scope::emitPackageTypeHeaderDefinitions(out);
+
     out << "static inline std::string toString(" << getCppArgumentType() << " o) ";
 
     out.block([&] {

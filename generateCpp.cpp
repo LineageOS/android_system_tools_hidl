@@ -337,11 +337,22 @@ void AST::generateInterfaceHeader(Formatter& out) const {
         out << "};\n\n";
     }
 
+    out << "//\n";
+    out << "// type declarations for package\n";
+    out << "//\n\n";
     mRootScope.emitPackageTypeDeclarations(out);
+    out << "//\n";
+    out << "// type header definitions for package\n";
+    out << "//\n\n";
+    mRootScope.emitPackageTypeHeaderDefinitions(out);
 
     out << "\n";
     enterLeaveNamespace(out, false /* enter */);
+    out << "\n";
 
+    out << "//\n";
+    out << "// global type declarations for package\n";
+    out << "//\n\n";
     mRootScope.emitGlobalTypeDeclarations(out);
 
     out << "\n#endif  // " << guard << "\n";
