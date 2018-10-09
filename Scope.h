@@ -66,6 +66,7 @@ struct Scope : public NamedType {
     void emitTypeDeclarations(Formatter& out) const override;
     void emitGlobalTypeDeclarations(Formatter& out) const override;
     void emitPackageTypeDeclarations(Formatter& out) const override;
+    void emitPackageTypeHeaderDefinitions(Formatter& out) const override;
     void emitPackageHwDeclarations(Formatter& out) const override;
 
     void emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) const override;

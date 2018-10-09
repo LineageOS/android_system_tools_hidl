@@ -800,6 +800,27 @@ void CompoundType::emitPackageTypeDeclarations(Formatter& out) const {
     out << "static inline std::string toString("
         << getCppArgumentType()
         << (mFields->empty() ? "" : " o")
+        << ");\n";
+
+    if (canCheckEquality()) {
+        out << "static inline bool operator==("
+            << getCppArgumentType() << " lhs, " << getCppArgumentType() << " rhs);\n";
+
+        out << "static inline bool operator!=("
+            << getCppArgumentType() << " lhs, " << getCppArgumentType() << " rhs);\n";
+    } else {
+        out << "// operator== and operator!= are not generated for " << localName() << "\n";
+    }
+
+    out.endl();
+}
+
+void CompoundType::emitPackageTypeHeaderDefinitions(Formatter& out) const {
+    Scope::emitPackageTypeHeaderDefinitions(out);
+
+    out << "static inline std::string toString("
+        << getCppArgumentType()
+        << (mFields->empty() ? "" : " o")
         << ") ";
 
     out.block([&] {
@@ -915,7 +936,7 @@ void CompoundType::emitPackageTypeDeclarations(Formatter& out) const {
         }).endl().endl();
 
         out << "static inline bool operator!=("
-            << getCppArgumentType() << " lhs," << getCppArgumentType() << " rhs)";
+            << getCppArgumentType() << " lhs, " << getCppArgumentType() << " rhs)";
         out.block([&] {
             out << "return !(lhs == rhs);\n";
         }).endl().endl();
