@@ -87,6 +87,10 @@ bool AST::definesInterfaces() const {
     return mRootScope.definesInterfaces();
 }
 
+const std::set<FQName>& AST::getReferencedTypes() const {
+    return mReferencedTypeNames;
+}
+
 status_t AST::postParse() {
     status_t err;
 

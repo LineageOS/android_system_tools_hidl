@@ -1169,6 +1169,21 @@ static const std::vector<OutputHandler> kFormats = {
             },
         }
     },
+    {
+        "dependencies",
+        "Prints all depended types.",
+        OutputMode::NOT_NEEDED,
+        Coordinator::Location::STANDARD_OUT,
+        GenerationGranularity::PER_FILE,
+        validateForSource,
+        {
+            {
+                FileGenerator::alwaysGenerate,
+                nullptr /* file name for fqName */,
+                astGenerationFunction(&AST::generateDependencies),
+            },
+        },
+    },
 };
 // clang-format on
 
