@@ -125,6 +125,7 @@ struct CompoundType : public Scope {
     void emitTypeDeclarations(Formatter& out) const override;
     void emitTypeForwardDeclaration(Formatter& out) const override;
     void emitPackageTypeDeclarations(Formatter& out) const override;
+    void emitPackageTypeHeaderDefinitions(Formatter& out) const override;
     void emitPackageHwDeclarations(Formatter& out) const override;
 
     void emitTypeDefinitions(Formatter& out, const std::string& prefix) const override;
