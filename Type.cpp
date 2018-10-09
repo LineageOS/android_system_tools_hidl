@@ -623,6 +623,8 @@ void Type::emitGlobalTypeDeclarations(Formatter&) const {}
 
 void Type::emitPackageTypeDeclarations(Formatter&) const {}
 
+void Type::emitPackageTypeHeaderDefinitions(Formatter&) const {}
+
 void Type::emitPackageHwDeclarations(Formatter&) const {}
 
 void Type::emitTypeDefinitions(Formatter&, const std::string&) const {}
