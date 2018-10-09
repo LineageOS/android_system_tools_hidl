@@ -177,6 +177,12 @@ void Scope::emitPackageTypeDeclarations(Formatter& out) const {
     }
 }
 
+void Scope::emitPackageTypeHeaderDefinitions(Formatter& out) const {
+    for (const Type* type : mTypes) {
+        type->emitPackageTypeHeaderDefinitions(out);
+    }
+}
+
 void Scope::emitPackageHwDeclarations(Formatter& out) const {
     for (const Type* type : mTypes) {
         type->emitPackageHwDeclarations(out);

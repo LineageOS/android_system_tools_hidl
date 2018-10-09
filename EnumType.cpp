@@ -281,7 +281,7 @@ void EnumType::emitIteratorDeclaration(Formatter& out) const {
         elementCount += type->mValues.size();
     }
 
-    out << "template<> struct hidl_enum_range<" << getCppStackType() << ">\n";
+    out << "template<> struct hidl_enum_range<" << getCppStackType() << "> ";
     out.block([&] {
         out << "const " << getCppStackType() << "* begin() { return static_begin(); }\n";
         out << "const " << getCppStackType() << "* end() { return begin() + " << elementCount
@@ -300,8 +300,8 @@ void EnumType::emitIteratorDeclaration(Formatter& out) const {
                 }
             }) << ";\n";
             out << "return &kVals[0];\n";
-        });
-    }) << ";\n\n";
+        }).endl();
+    }) << ";\n";
 }
 
 void EnumType::emitEnumBitwiseOperator(
@@ -347,7 +347,7 @@ void EnumType::emitEnumBitwiseOperator(
         out << ");\n";
     });
 
-    out << "}\n\n";
+    out << "}\n";
 }
 
 void EnumType::emitBitFieldBitwiseAssignmentOperator(
@@ -366,7 +366,7 @@ void EnumType::emitBitFieldBitwiseAssignmentOperator(
         out << "return v;\n";
     });
 
-    out << "}\n\n";
+    out << "}\n";
 }
 
 void EnumType::emitGlobalTypeDeclarations(Formatter& out) const {
@@ -376,10 +376,15 @@ void EnumType::emitGlobalTypeDeclarations(Formatter& out) const {
     emitIteratorDeclaration(out);
 
     out << "}  // namespace hardware\n";
-    out << "}  // namespace android\n";
+    out << "}  // namespace android\n\n";
 }
 
 void EnumType::emitPackageTypeDeclarations(Formatter& out) const {
+    out << "template<typename>\n"
+        << "static inline std::string toString(" << resolveToScalarType()->getCppArgumentType()
+        << " o);\n";
+    out << "static inline std::string toString(" << getCppArgumentType() << " o);\n\n";
+
     emitEnumBitwiseOperator(out, true  /* lhsIsEnum */, true  /* rhsIsEnum */, "|");
     emitEnumBitwiseOperator(out, false /* lhsIsEnum */, true  /* rhsIsEnum */, "|");
     emitEnumBitwiseOperator(out, true  /* lhsIsEnum */, false /* rhsIsEnum */, "|");
@@ -390,12 +395,13 @@ void EnumType::emitPackageTypeDeclarations(Formatter& out) const {
     emitBitFieldBitwiseAssignmentOperator(out, "|");
     emitBitFieldBitwiseAssignmentOperator(out, "&");
 
+    out.endl();
+}
+
+void EnumType::emitPackageTypeHeaderDefinitions(Formatter& out) const {
     const ScalarType *scalarType = mStorageType->resolveToScalarType();
     CHECK(scalarType != nullptr);
 
-    out << "template<typename>\n"
-        << "static inline std::string toString(" << resolveToScalarType()->getCppArgumentType()
-        << " o);\n";
     out << "template<>\n"
         << "inline std::string toString<" << getCppStackType() << ">("
         << scalarType->getCppArgumentType() << " o) ";

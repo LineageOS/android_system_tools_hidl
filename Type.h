@@ -272,10 +272,19 @@ struct Type : DocCommentable {
     virtual void emitTypeForwardDeclaration(Formatter& out) const;
 
     // Emit any declarations pertaining to this type that have to be
-    // at global scope, i.e. enum class operators.
+    // directly in a namespace, i.e. enum class operators.
     // For android.hardware.foo@1.0::*, this will be in namespace
     // android::hardware::foo::V1_0
     virtual void emitPackageTypeDeclarations(Formatter& out) const;
+
+    // Emit any definitions pertaining to this type that have to be
+    // directly in a namespace. Typically, these are things that are only
+    // used for a small subset of types, so by putting them in the header,
+    // the space cost is moved to the small number of clients that use the
+    // feature.
+    // For android.hardware.foo@1.0::*, this will be in namespace
+    // android::hardware::foo::V1_0
+    virtual void emitPackageTypeHeaderDefinitions(Formatter& out) const;
 
     // Emit any declarations pertaining to this type that have to be
     // at global scope for transport, e.g. read/writeEmbeddedTo/FromParcel
