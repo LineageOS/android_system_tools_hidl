@@ -138,6 +138,8 @@ struct AST {
 
     void generateVts(Formatter& out) const;
 
+    void generateDependencies(Formatter& out) const;
+
     void getImportedPackages(std::set<FQName> *importSet) const;
 
     // Run getImportedPackages on this, then run getImportedPackages on
@@ -187,6 +189,8 @@ struct AST {
     void addReferencedTypes(std::set<FQName> *referencedTypes) const;
 
     void addToImportedNamesGranular(const FQName &fqName);
+
+    const std::set<FQName>& getReferencedTypes() const;
 
    private:
     const Coordinator* mCoordinator;
