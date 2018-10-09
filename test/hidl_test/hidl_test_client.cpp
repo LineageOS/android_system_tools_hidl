@@ -1430,6 +1430,20 @@ TEST_F(HidlTest, FooNullCallbackTest) {
                 }));
 }
 
+TEST_F(HidlTest, StructWithFmq) {
+    using ::android::hardware::GrantorDescriptor;
+
+    auto handle = native_handle_create(0, 1);
+    IFoo::WithFmq w = {
+        .descSync = {std::vector<GrantorDescriptor>(), handle, 5},
+    };
+    EXPECT_OK(foo->repeatWithFmq(w, [&](const IFoo::WithFmq& returned) {
+        EXPECT_EQ(w.descSync.grantors().size(), returned.descSync.grantors().size());
+        EXPECT_EQ(w.descSync.getQuantum(), returned.descSync.getQuantum());
+        EXPECT_EQ(w.descSync.getFlags(), returned.descSync.getFlags());
+    }));
+}
+
 TEST_F(HidlTest, FooNonNullCallbackTest) {
     hidl_array<hidl_string, 5, 3> in;
 
