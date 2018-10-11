@@ -233,8 +233,7 @@ public final class HidlTestJava {
         {
             // SafeUnionNoInitTest
             LargeSafeUnion safeUnion = safeunionInterface.newLargeSafeUnion();
-            ExpectTrue(
-                safeUnion.getDiscriminator() == LargeSafeUnion.hidl_discriminator.hidl_no_init);
+            ExpectTrue(safeUnion.getDiscriminator() == LargeSafeUnion.hidl_discriminator.noinit);
         }
         {
             // SafeUnionSimpleTest
@@ -444,7 +443,7 @@ public final class HidlTestJava {
             // SafeUnionEqualityTest
             LargeSafeUnion one = safeunionInterface.newLargeSafeUnion();
             LargeSafeUnion two = safeunionInterface.newLargeSafeUnion();
-            ExpectFalse(one.equals(two));
+            ExpectTrue(one.equals(two));
 
             one = safeunionInterface.setA(one, (byte) 1);
             ExpectFalse(one.equals(two));
