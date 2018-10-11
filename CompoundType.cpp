@@ -278,13 +278,6 @@ void CompoundType::emitSafeUnionReaderWriterForInterfaces(
                 }).endl();
             }
 
-            out << "case " << fullName() << "::hidl_discriminator::"
-                << "hidl_no_init: ";
-
-            out.block([&] {
-                out << "break;\n";
-            }).endl();
-
             out << "default: ";
             out.block([&] {
                 out << "details::logAlwaysFatal(\"Unknown union discriminator.\");\n";
@@ -657,7 +650,7 @@ void CompoundType::emitSafeUnionTypeDeclarations(Formatter& out) const {
         out << " __attribute__ ((aligned("
             << layout.discriminator.align << "))) ";
     }
-    out << "{hidl_discriminator::hidl_no_init};\n";
+    out << ";\n";
     out << "union hidl_union final {\n";
     out.indent();
 
@@ -858,13 +851,6 @@ void CompoundType::emitPackageTypeHeaderDefinitions(Formatter& out) const {
         }
 
         if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
-            out << "case " << fullName() << "::hidl_discriminator::"
-                << "hidl_no_init: ";
-
-            out.block([&] {
-                out << "break;\n";
-            }).endl();
-
             out << "default: ";
             out.block([&] {
                 out << "details::logAlwaysFatal(\"Unknown union discriminator.\");\n";
@@ -913,13 +899,6 @@ void CompoundType::emitPackageTypeHeaderDefinitions(Formatter& out) const {
             }
 
             if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
-                out << "case " << fullName() << "::hidl_discriminator::"
-                    << "hidl_no_init: ";
-
-                out.block([&] {
-                    out << "return false;\n";
-                }).endl();
-
                 out << "default: ";
                 out.block([&] {
                     out << "details::logAlwaysFatal(\"Unknown union discriminator.\");\n";
@@ -1051,7 +1030,6 @@ static void emitSafeUnionGetterDefinition(Formatter& out, const std::string& fie
 std::vector<CompoundType::SafeUnionEnumElement> CompoundType::getSafeUnionEnumElements(
     bool useCppTypeName) const {
     std::vector<SafeUnionEnumElement> elements;
-    elements.push_back({"hidl_no_init", ""});
 
     for (const auto& field : *mFields) {
         const std::string fieldTypeName = useCppTypeName
@@ -1108,7 +1086,6 @@ void CompoundType::emitSafeUnionCopyAndAssignDefinition(Formatter& out,
                 }
             }
 
-            out << "case hidl_discriminator::hidl_no_init: { break; }\n";
             out << "default: { details::logAlwaysFatal("
                 << "\"Unknown union discriminator.\"); }\n";
         }).endl();
@@ -1144,6 +1121,11 @@ void CompoundType::emitSafeUnionTypeConstructors(Formatter& out) const {
                 << layout.innerStruct.offset
                 << ", \"wrong offset\");\n";
         }
+        out.endl();
+
+        CHECK(!mFields->empty());
+        out << "hidl_d = hidl_discriminator::" << mFields->at(0)->name() << ";\n";
+        emitSafeUnionFieldConstructor(out, mFields->at(0), "");
     }).endl().endl();
 
     // Destructor
@@ -1226,12 +1208,9 @@ void CompoundType::emitSafeUnionTypeDefinitions(Formatter& out) const {
                 }).endl();
             }
 
-            out << "case hidl_discriminator::hidl_no_init: { break; }\n";
             out << "default: { details::logAlwaysFatal("
                 << "\"Unknown union discriminator.\"); }\n";
         }).endl().endl();
-
-        out << "hidl_d = hidl_discriminator::hidl_no_init;\n";
     }).endl().endl();
 
     for (const NamedReference<Type>* field : *mFields) {
@@ -1372,11 +1351,11 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
             out << "private hidl_discriminator() {}\n";
         }).endl().endl();
 
-        out << "private "
-            << discriminatorStorageType
-            << " hidl_d = hidl_discriminator.hidl_no_init;\n";
+        out << "private " << discriminatorStorageType << " hidl_d = 0;\n";
 
-        out << "private Object hidl_o;\n\n";
+        CHECK(!mFields->empty());
+        mFields->at(0)->type().emitJavaFieldDefaultInitialValue(out, "private Object hidl_o");
+        out << "\n";
 
         for (const auto& field : *mFields) {
             // Setter
@@ -1474,9 +1453,6 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
                 out.sIf("this.hidl_d != other.hidl_d", [&] {
                     out << "return false;\n";
                 }).endl();
-                out.sIf("this.hidl_d == hidl_discriminator.hidl_no_init", [&] {
-                    out << "return false;\n";
-                }).endl();
                 out.sIf("!android.os.HidlSupport.deepEquals(this.hidl_o, other.hidl_o)", [&] {
                     out << "return false;\n";
                 }).endl();
@@ -1552,8 +1528,7 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
         }
 
         if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
-            out << "case hidl_discriminator.hidl_no_init: { break; }\n"
-                << "default: { throw new Error(\"Unknown union discriminator.\"); }\n";
+            out << "default: { throw new Error(\"Unknown union discriminator.\"); }\n";
 
             out.unindent();
             out << "}\n";
@@ -1598,8 +1573,7 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
         }
 
         if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
-            out << "case hidl_discriminator.hidl_no_init: { break; }\n"
-                << "default: { throw new Error(\"Unknown union discriminator.\"); }\n";
+            out << "default: { throw new Error(\"Unknown union discriminator.\"); }\n";
 
             out.unindent();
             out << "}\n";
@@ -1691,8 +1665,7 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
         }
 
         if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
-            out << "case hidl_discriminator.hidl_no_init: { break; }\n"
-                << "default: { throw new Error(\"Unknown union discriminator.\"); }\n";
+            out << "default: { throw new Error(\"Unknown union discriminator.\"); }\n";
 
             out.unindent();
             out << "}\n";
@@ -1731,8 +1704,7 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
         }
 
         if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
-            out << "case hidl_discriminator.hidl_no_init: { break; }\n"
-                << "default: { throw new Error(\"Unknown union discriminator.\"); }\n";
+            out << "default: { throw new Error(\"Unknown union discriminator.\"); }\n";
 
             out.unindent();
             out << "}\n";
@@ -1820,8 +1792,7 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
         }
 
         if (mStyle == STYLE_SAFE_UNION && !mFields->empty()) {
-            out << "case hidl_discriminator.hidl_no_init: { break; }\n"
-                << "default: { throw new Error(\"Unknown union discriminator.\"); }\n";
+            out << "default: { throw new Error(\"Unknown union discriminator.\"); }\n";
 
             out.unindent();
             out << "}\n";
@@ -2218,7 +2189,7 @@ std::unique_ptr<ScalarType> CompoundType::getUnionDiscriminatorType() const {
         {32, ScalarType::Kind::KIND_UINT32},
     };
 
-    size_t numFields = mFields->size() + 1;  // +1 for no_init
+    size_t numFields = mFields->size();
     auto kind = ScalarType::Kind::KIND_UINT64;
 
     for (const auto& scalar : scalars) {
