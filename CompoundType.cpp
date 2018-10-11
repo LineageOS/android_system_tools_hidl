@@ -415,12 +415,8 @@ void CompoundType::emitJavaReaderWriter(
         out << "new " << fullJavaName() << "();\n";
     }
 
-    out << argName
-        << "."
-        << (isReader ? "readFromParcel" : "writeToParcel")
-        << "("
-        << parcelObj
-        << ");\n";
+    out << "(" << getJavaTypeCast(argName) << ")."
+        << (isReader ? "readFromParcel" : "writeToParcel") << "(" << parcelObj << ");\n";
 }
 
 void CompoundType::emitJavaFieldInitializer(
