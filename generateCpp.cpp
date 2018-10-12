@@ -401,14 +401,12 @@ void AST::emitTypeDeclarations(Formatter& out) const {
     return mRootScope.emitTypeDeclarations(out);
 }
 
-static void wrapPassthroughArg(Formatter& out, const NamedReference<Type>* arg,
-                               bool addPrefixToName, std::function<void(void)> handleError) {
+static std::string wrapPassthroughArg(Formatter& out, const NamedReference<Type>* arg,
+                                      std::string name, std::function<void(void)> handleError) {
     if (!arg->type().isInterface()) {
-        return;
+        return name;
     }
-    std::string name = (addPrefixToName ? "_hidl_out_" : "") + arg->name();
-    std::string wrappedName = (addPrefixToName ? "_hidl_out_wrapped_" : "_hidl_wrapped_")
-            + arg->name();
+    std::string wrappedName = "_hidl_wrapped_" + name;
     const Interface &iface = static_cast<const Interface &>(arg->type());
     out << iface.getCppStackType() << " " << wrappedName << ";\n";
     // TODO(elsk): b/33754152 Should not wrap this if object is Bs*
@@ -426,12 +424,14 @@ static void wrapPassthroughArg(Formatter& out, const NamedReference<Type>* arg,
     }).sElse([&] {
         out << wrappedName << " = " << name << ";\n";
     }).endl().endl();
+
+    return wrappedName;
 }
 
 void AST::generatePassthroughMethod(Formatter& out, const Method* method, const Interface* superInterface) const {
     method->generateCppSignature(out);
 
-    out << " {\n";
+    out << " override {\n";
     out.indent();
 
     if (method->isHidlReserved()
@@ -455,18 +455,20 @@ void AST::generatePassthroughMethod(Formatter& out, const Method* method, const 
             method,
             superInterface);
 
-
+    std::vector<std::string> wrappedArgNames;
     for (const auto &arg : method->args()) {
-        wrapPassthroughArg(out, arg, false /* addPrefixToName */, [&] {
+        std::string name = wrapPassthroughArg(out, arg, arg->name(), [&] {
             out << "return ::android::hardware::Status::fromExceptionCode(\n";
             out.indent(2, [&] {
                 out << "::android::hardware::Status::EX_TRANSACTION_FAILED,\n"
                     << "\"Cannot wrap passthrough interface.\");\n";
             });
         });
+
+        wrappedArgNames.push_back(name);
     }
 
-    out << "auto _hidl_error = ::android::hardware::Void();\n";
+    out << "::android::hardware::Status _hidl_error = ::android::hardware::Status::ok();\n";
     out << "auto _hidl_return = ";
 
     if (method->isOneway()) {
@@ -475,10 +477,8 @@ void AST::generatePassthroughMethod(Formatter& out, const Method* method, const 
                ", mEnableInstrumentation = this->mEnableInstrumentation, "
                "mInstrumentationCallbacks = this->mInstrumentationCallbacks\n"
             << "#endif // __ANDROID_DEBUGGABLE__\n";
-        for (const auto &arg : method->args()) {
-            out << ", "
-                << (arg->type().isInterface() ? "_hidl_wrapped_" : "")
-                << arg->name();
+        for (const std::string& arg : wrappedArgNames) {
+            out << ", " << arg;
         }
         out << "] {\n";
         out.indent();
@@ -491,6 +491,15 @@ void AST::generatePassthroughMethod(Formatter& out, const Method* method, const 
     out.join(method->args().begin(), method->args().end(), ", ", [&](const auto &arg) {
         out << (arg->type().isInterface() ? "_hidl_wrapped_" : "") << arg->name();
     });
+
+    std::function<void(void)> kHandlePassthroughError = [&] {
+        out << "_hidl_error = ::android::hardware::Status::fromExceptionCode(\n";
+        out.indent(2, [&] {
+            out << "::android::hardware::Status::EX_TRANSACTION_FAILED,\n"
+                << "\"Cannot wrap passthrough interface.\");\n";
+        });
+    };
+
     if (returnsValue && elidedReturn == nullptr) {
         // never true if oneway since oneway methods don't return values
 
@@ -511,34 +520,38 @@ void AST::generatePassthroughMethod(Formatter& out, const Method* method, const 
                 method,
                 superInterface);
 
+        std::vector<std::string> wrappedOutNames;
         for (const auto &arg : method->results()) {
-            wrapPassthroughArg(out, arg, true /* addPrefixToName */, [&] {
-                out << "_hidl_error = ::android::hardware::Status::fromExceptionCode(\n";
-                out.indent(2, [&] {
-                    out << "::android::hardware::Status::EX_TRANSACTION_FAILED,\n"
-                        << "\"Cannot wrap passthrough interface.\");\n";
-                });
-                out << "return;\n";
-            });
+            wrappedOutNames.push_back(
+                wrapPassthroughArg(out, arg, "_hidl_out_" + arg->name(), kHandlePassthroughError));
         }
 
         out << "_hidl_cb(";
-        out.join(method->results().begin(), method->results().end(), ", ", [&](const auto &arg) {
-            out << (arg->type().isInterface() ? "_hidl_out_wrapped_" : "_hidl_out_")
-                << arg->name();
-        });
+        out.join(wrappedOutNames.begin(), wrappedOutNames.end(), ", ",
+                 [&](const std::string& arg) { out << arg; });
         out << ");\n";
         out.unindent();
         out << "});\n\n";
     } else {
         out << ");\n\n";
 
-        // used by generateCppInstrumentationCall
         if (elidedReturn != nullptr) {
-            out << "#ifdef __ANDROID_DEBUGGABLE__\n"
-                << elidedReturn->type().getCppResultType() << " _hidl_out_" << elidedReturn->name()
-                << " = _hidl_return;\n"
-                << "#endif // __ANDROID_DEBUGGABLE__\n";
+            const std::string outName = "_hidl_out_" + elidedReturn->name();
+
+            out << elidedReturn->type().getCppResultType() << " " << outName
+                << " = _hidl_return;\n";
+            out << "(void) " << outName << ";\n";
+
+            const std::string wrappedName =
+                wrapPassthroughArg(out, elidedReturn, outName, kHandlePassthroughError);
+
+            if (outName != wrappedName) {
+                // update the original value since it is used by generateCppInstrumentationCall
+                out << outName << " = " << wrappedName << ";\n\n";
+
+                // update the value to be returned
+                out << "_hidl_return = " << outName << "\n;";
+            }
         }
         generateCppInstrumentationCall(
                 out,
@@ -550,6 +563,8 @@ void AST::generatePassthroughMethod(Formatter& out, const Method* method, const 
     if (method->isOneway()) {
         out.unindent();
         out << "});\n";
+    } else {
+        out << "if (!_hidl_error.isOk()) return _hidl_error;\n";
     }
 
     out << "return _hidl_return;\n";
