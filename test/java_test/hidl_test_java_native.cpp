@@ -618,7 +618,7 @@ TEST_F(HidlTest, BazTestDoubleVecs) {
 
 TEST_F(HidlTest, SafeUnionNoInitTest) {
     EXPECT_OK(safeunionInterface->newLargeSafeUnion([&](const LargeSafeUnion& safeUnion) {
-        EXPECT_EQ(LargeSafeUnion::hidl_discriminator::hidl_no_init, safeUnion.getDiscriminator());
+        EXPECT_EQ(LargeSafeUnion::hidl_discriminator::noinit, safeUnion.getDiscriminator());
     }));
 }
 
@@ -736,7 +736,7 @@ TEST_F(HidlTest, SafeUnionInterfaceTest) {
 
     EXPECT_OK(
         safeunionInterface->newInterfaceTypeSafeUnion([&](const InterfaceTypeSafeUnion& safeUnion) {
-            EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::hidl_no_init,
+            EXPECT_EQ(InterfaceTypeSafeUnion::hidl_discriminator::noinit,
                       safeUnion.getDiscriminator());
 
             EXPECT_OK(safeunionInterface->setInterfaceB(
@@ -973,8 +973,8 @@ TEST_F(HidlTest, SafeUnionHandleWithMultipleFdsTest) {
 TEST_F(HidlTest, SafeUnionEqualityTest) {
     EXPECT_OK(safeunionInterface->newLargeSafeUnion([&](const LargeSafeUnion& one) {
         EXPECT_OK(safeunionInterface->newLargeSafeUnion([&](const LargeSafeUnion& two) {
-            EXPECT_FALSE(one == two);
-            EXPECT_TRUE(one != two);
+            EXPECT_TRUE(one == two);
+            EXPECT_FALSE(one != two);
         }));
 
         EXPECT_OK(safeunionInterface->setA(one, 1, [&](const LargeSafeUnion& one) {
