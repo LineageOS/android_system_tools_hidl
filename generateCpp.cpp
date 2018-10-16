@@ -162,20 +162,7 @@ static void implementServiceManagerInteractions(Formatter &out,
     out << "::android::status_t " << interfaceName << "::registerAsService("
         << "const std::string &serviceName) ";
     out.block([&] {
-        out << "::android::hardware::details::onRegistration(\""
-            << fqName.getPackageAndVersion().string() << "\", \""
-            << interfaceName
-            << "\", serviceName);\n\n";
-        out << "const ::android::sp<::android::hidl::manager::V1_0::IServiceManager> sm\n";
-        out.indent(2, [&] {
-            out << "= ::android::hardware::defaultServiceManager();\n";
-        });
-        out.sIf("sm == nullptr", [&] {
-            out << "return ::android::INVALID_OPERATION;\n";
-        }).endl();
-        out << "::android::hardware::Return<bool> ret = "
-            << "sm->add(serviceName.c_str(), this);\n"
-            << "return ret.isOk() && ret ? ::android::OK : ::android::UNKNOWN_ERROR;\n";
+        out << "return ::android::hardware::details::registerAsServiceInternal(this, serviceName);\n";
     }).endl().endl();
 
     out << "bool " << interfaceName << "::registerForNotifications(\n";
