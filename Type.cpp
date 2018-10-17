@@ -368,7 +368,7 @@ const Scope* Type::parent() const {
 }
 
 std::string Type::getCppType(StorageMode, bool) const {
-    CHECK(!"Should not be here");
+    CHECK(!"Should not be here") << typeName();
     return std::string();
 }
 
@@ -378,7 +378,7 @@ std::string Type::decorateCppName(
 }
 
 std::string Type::getJavaType(bool /* forInitializer */) const {
-    CHECK(!"Should not be here");
+    CHECK(!"Should not be here") << typeName();
     return std::string();
 }
 
@@ -391,17 +391,17 @@ std::string Type::getJavaTypeCast(const std::string& objName) const {
 }
 
 std::string Type::getJavaSuffix() const {
-    CHECK(!"Should not be here");
+    CHECK(!"Should not be here") << typeName();
     return std::string();
 }
 
 std::string Type::getVtsType() const {
-    CHECK(!"Should not be here");
+    CHECK(!"Should not be here") << typeName();
     return std::string();
 }
 
 std::string Type::getVtsValueName() const {
-    CHECK(!"Should not be here");
+    CHECK(!"Should not be here") << typeName();
     return std::string();
 }
 
@@ -412,7 +412,7 @@ void Type::emitReaderWriter(
         bool,
         bool,
         ErrorMode) const {
-    CHECK(!"Should not be here");
+    CHECK(!"Should not be here") << typeName();
 }
 
 void Type::emitResolveReferences(
@@ -423,7 +423,7 @@ void Type::emitResolveReferences(
         bool,
         bool,
         ErrorMode) const {
-    CHECK(!"Should not be here");
+    CHECK(!"Should not be here") << typeName();
 }
 
 void Type::emitResolveReferencesEmbedded(
@@ -438,7 +438,7 @@ void Type::emitResolveReferencesEmbedded(
         ErrorMode,
         const std::string &,
         const std::string &) const {
-    CHECK(!"Should not be here");
+    CHECK(!"Should not be here") << typeName();
 }
 
 void Type::emitDump(
@@ -484,7 +484,7 @@ void Type::emitReaderWriterEmbedded(
         ErrorMode,
         const std::string &,
         const std::string &) const {
-    CHECK(!"Should not be here");
+    CHECK(!"Should not be here") << typeName();
 }
 
 void Type::emitJavaReaderWriter(
@@ -520,7 +520,7 @@ void Type::emitJavaFieldReaderWriter(
         const std::string &,
         const std::string &,
         bool) const {
-    CHECK(!"Should not be here");
+    CHECK(!"Should not be here") << typeName();
 }
 
 void Type::handleError(Formatter &out, ErrorMode mode) const {
