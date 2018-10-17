@@ -720,7 +720,7 @@ TEST_F(HidlTest, ServiceNotificationTest) {
 
     std::unique_lock<std::mutex> lock(notification->mutex);
 
-    notification->condition.wait_for(lock, std::chrono::milliseconds(2), [&notification]() {
+    notification->condition.wait_for(lock, std::chrono::milliseconds(500), [&notification]() {
         return notification->getRegistrations().size() >= 2;
     });
 
@@ -776,7 +776,7 @@ TEST_F(HidlTest, ServiceAllNotificationTest) {
 
     std::unique_lock<std::mutex> lock(notification->mutex);
 
-    notification->condition.wait_for(lock, std::chrono::milliseconds(2), [&notification]() {
+    notification->condition.wait_for(lock, std::chrono::milliseconds(500), [&notification]() {
         return notification->getRegistrations().size() >= 2;
     });
 
