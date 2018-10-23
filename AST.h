@@ -193,8 +193,6 @@ struct AST {
 
     void addToImportedNamesGranular(const FQName &fqName);
 
-    const std::set<FQName>& getReferencedTypes() const;
-
    private:
     const Coordinator* mCoordinator;
     const Hash* mFileHash;
