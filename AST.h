@@ -85,6 +85,9 @@ struct AST {
     status_t constantExpressionRecursivePass(
         const std::function<status_t(ConstantExpression*)>& func, bool processBeforeDependencies);
 
+    // Recursive tree pass that sets ParseStage of all types to newStage.
+    status_t setParseStage(Type::ParseStage oldStage, Type::ParseStage newStage);
+
     // Recursive tree pass that looks up all referenced types
     status_t lookupTypes();
 
