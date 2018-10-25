@@ -1318,6 +1318,12 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
     Scope::emitJavaTypeDeclarations(out, false /* atTopLevel */);
 
     if (mStyle == STYLE_SAFE_UNION) {
+        out << "public " << localName() << "() ";
+        out.block([&] {
+            CHECK(!mFields->empty());
+            mFields->at(0)->type().emitJavaFieldDefaultInitialValue(out, "hidl_o");
+        }).endl().endl();
+
         const std::string discriminatorStorageType = (
                 getUnionDiscriminatorType()->getJavaType(false));
 
@@ -1363,10 +1369,7 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
         }).endl().endl();
 
         out << "private " << discriminatorStorageType << " hidl_d = 0;\n";
-
-        CHECK(!mFields->empty());
-        mFields->at(0)->type().emitJavaFieldDefaultInitialValue(out, "private Object hidl_o");
-        out << "\n";
+        out << "private Object hidl_o = null;\n";
 
         for (const auto& field : *mFields) {
             // Setter
