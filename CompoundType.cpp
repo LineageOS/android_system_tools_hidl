@@ -212,7 +212,7 @@ bool CompoundType::containsInterface() const {
 
 void CompoundType::emitSafeUnionUnknownDiscriminatorError(Formatter& out,
                                                           const std::string& value) const {
-    out << "details::logAlwaysFatal((\n";
+    out << "::android::hardware::details::logAlwaysFatal((\n";
     out.indent(2, [&] {
         out << "\"Unknown union discriminator (value: \" +\n"
             << "std::to_string(" << getUnionDiscriminatorType()->getCppTypeCast(value)
@@ -1023,7 +1023,7 @@ static void emitSafeUnionGetterDefinition(Formatter& out, const std::string& fie
             << ")) ";
 
         out.block([&] {
-            out << "details::logAlwaysFatal(\"Bad safe_union access.\");\n";
+            out << "::android::hardware::details::logAlwaysFatal(\"Bad safe_union access.\");\n";
         }).endl().endl();
 
         out << "return hidl_u."
@@ -1207,7 +1207,7 @@ void CompoundType::emitSafeUnionTypeDefinitions(Formatter& out) const {
                     << ": ";
 
                 out.block([&] {
-                    out << "details::destructElement(&(hidl_u."
+                    out << "::android::hardware::details::destructElement(&(hidl_u."
                         << field->name()
                         << "));\n"
                         << "break;\n";
