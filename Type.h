@@ -79,11 +79,24 @@ struct Type : DocCommentable {
     std::vector<Reference<Type>*> getStrongReferences();
     virtual std::vector<const Reference<Type>*> getStrongReferences() const;
 
+    // Indicate stage of parsing.
+    enum class ParseStage {
+        // Indicate that the source file is being parsed and this object is being filled.
+        PARSE,
+        // Indicate that all source files are parsed, and program is working on type dependencies
+        // and validation.
+        POST_PARSE,
+        // Indicate that parsing is completed, and program is in code-generation stage.
+        COMPLETED,
+    };
+
     // Proceeds recursive pass
     // Makes sure to visit each node only once.
-    status_t recursivePass(const std::function<status_t(Type*)>& func,
+    // If mParseStage < stage, object is not ready for this recursivePass() call
+    // yet, and function will return error.
+    status_t recursivePass(ParseStage stage, const std::function<status_t(Type*)>& func,
                            std::unordered_set<const Type*>* visited);
-    status_t recursivePass(const std::function<status_t(const Type*)>& func,
+    status_t recursivePass(ParseStage stage, const std::function<status_t(const Type*)>& func,
                            std::unordered_set<const Type*>* visited) const;
 
     // Recursive tree pass that completes type declarations
@@ -128,9 +141,9 @@ struct Type : DocCommentable {
     bool canCheckEquality(std::unordered_set<const Type*>* visited) const;
     virtual bool deepCanCheckEquality(std::unordered_set<const Type*>* visited) const;
 
-    // Marks that package proceeding is completed
-    // Post parse passes must be proceeded during owner package parsing
-    void setPostParseCompleted();
+    // ParseStage can only be incremented.
+    ParseStage getParseStage() const;
+    void setParseStage(ParseStage stage);
 
     Scope* parent();
     const Scope* parent() const;
@@ -361,7 +374,7 @@ struct Type : DocCommentable {
             const std::string &name) const;
 
    private:
-    bool mIsPostParseCompleted = false;
+    ParseStage mParseStage = ParseStage::PARSE;
     Scope* const mParent;
 
     DISALLOW_COPY_AND_ASSIGN(Type);
