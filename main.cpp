@@ -1190,7 +1190,7 @@ static const std::vector<OutputHandler> kFormats = {
 static void usage(const char *me) {
     fprintf(stderr,
             "usage: %s [-p <root path>] -o <output path> -L <language> [-O <owner>] (-r <interface "
-            "root>)+ [-v] [-d <depfile>] FQNAME...\n\n",
+            "root>)+ [-R] [-v] [-d <depfile>] FQNAME...\n\n",
             me);
 
     fprintf(stderr,
@@ -1204,6 +1204,7 @@ static void usage(const char *me) {
     fprintf(stderr, "         -O <owner>: The owner of the module for -Landroidbp(-impl)?.\n");
     fprintf(stderr, "         -o <output path>: Location to output files.\n");
     fprintf(stderr, "         -p <root path>: Android build root, defaults to $ANDROID_BUILD_TOP or pwd.\n");
+    fprintf(stderr, "         -R: Do not add default package roots if not specified in -r\n");
     fprintf(stderr, "         -r <package:path root>: E.g., android.hardware:hardware/interfaces.\n");
     fprintf(stderr, "         -v: verbose output.\n");
     fprintf(stderr, "         -d <depfile>: location of depfile to write to.\n");
@@ -1224,9 +1225,10 @@ int main(int argc, char **argv) {
     const OutputHandler* outputFormat = nullptr;
     Coordinator coordinator;
     std::string outputPath;
+    bool suppressDefaultPackagePaths = false;
 
     int res;
-    while ((res = getopt(argc, argv, "hp:o:O:r:L:vd:")) >= 0) {
+    while ((res = getopt(argc, argv, "hp:o:O:r:L:vd:R")) >= 0) {
         switch (res) {
             case 'p': {
                 if (!coordinator.getRootPath().empty()) {
@@ -1283,6 +1285,11 @@ int main(int argc, char **argv) {
                     exit(1);
                 }
 
+                break;
+            }
+
+            case 'R': {
+                suppressDefaultPackagePaths = true;
                 break;
             }
 
@@ -1375,10 +1382,12 @@ int main(int argc, char **argv) {
 
     coordinator.setOutputPath(outputPath);
 
-    coordinator.addDefaultPackagePath("android.hardware", "hardware/interfaces");
-    coordinator.addDefaultPackagePath("android.hidl", "system/libhidl/transport");
-    coordinator.addDefaultPackagePath("android.frameworks", "frameworks/hardware/interfaces");
-    coordinator.addDefaultPackagePath("android.system", "system/hardware/interfaces");
+    if (!suppressDefaultPackagePaths) {
+        coordinator.addDefaultPackagePath("android.hardware", "hardware/interfaces");
+        coordinator.addDefaultPackagePath("android.hidl", "system/libhidl/transport");
+        coordinator.addDefaultPackagePath("android.frameworks", "frameworks/hardware/interfaces");
+        coordinator.addDefaultPackagePath("android.system", "system/hardware/interfaces");
+    }
 
     for (int i = 0; i < argc; ++i) {
         FQName fqName;

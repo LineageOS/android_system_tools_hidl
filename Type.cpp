@@ -158,9 +158,10 @@ std::vector<const Reference<Type>*> Type::getStrongReferences() const {
     return ret;
 }
 
-status_t Type::recursivePass(const std::function<status_t(Type*)>& func,
+status_t Type::recursivePass(ParseStage stage, const std::function<status_t(Type*)>& func,
                              std::unordered_set<const Type*>* visited) {
-    if (mIsPostParseCompleted) return OK;
+    if (mParseStage > stage) return OK;
+    if (mParseStage < stage) return UNKNOWN_ERROR;
 
     if (visited->find(this) != visited->end()) return OK;
     visited->insert(this);
@@ -169,21 +170,22 @@ status_t Type::recursivePass(const std::function<status_t(Type*)>& func,
     if (err != OK) return err;
 
     for (auto* nextType : getDefinedTypes()) {
-        err = nextType->recursivePass(func, visited);
+        err = nextType->recursivePass(stage, func, visited);
         if (err != OK) return err;
     }
 
     for (auto* nextRef : getReferences()) {
-        err = nextRef->shallowGet()->recursivePass(func, visited);
+        err = nextRef->shallowGet()->recursivePass(stage, func, visited);
         if (err != OK) return err;
     }
 
     return OK;
 }
 
-status_t Type::recursivePass(const std::function<status_t(const Type*)>& func,
+status_t Type::recursivePass(ParseStage stage, const std::function<status_t(const Type*)>& func,
                              std::unordered_set<const Type*>* visited) const {
-    if (mIsPostParseCompleted) return OK;
+    if (mParseStage > stage) return OK;
+    if (mParseStage < stage) return UNKNOWN_ERROR;
 
     if (visited->find(this) != visited->end()) return OK;
     visited->insert(this);
@@ -192,12 +194,12 @@ status_t Type::recursivePass(const std::function<status_t(const Type*)>& func,
     if (err != OK) return err;
 
     for (const auto* nextType : getDefinedTypes()) {
-        err = nextType->recursivePass(func, visited);
+        err = nextType->recursivePass(stage, func, visited);
         if (err != OK) return err;
     }
 
     for (const auto* nextRef : getReferences()) {
-        err = nextRef->shallowGet()->recursivePass(func, visited);
+        err = nextRef->shallowGet()->recursivePass(stage, func, visited);
         if (err != OK) return err;
     }
 
@@ -354,9 +356,13 @@ bool Type::deepCanCheckEquality(std::unordered_set<const Type*>* /* visited */) 
     return false;
 }
 
-void Type::setPostParseCompleted() {
-    CHECK(!mIsPostParseCompleted);
-    mIsPostParseCompleted = true;
+Type::ParseStage Type::getParseStage() const {
+    return mParseStage;
+}
+
+void Type::setParseStage(ParseStage stage) {
+    CHECK(mParseStage < stage);
+    mParseStage = stage;
 }
 
 Scope* Type::parent() {

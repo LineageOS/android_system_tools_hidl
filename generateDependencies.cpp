@@ -21,13 +21,22 @@
 #include <string>
 #include <vector>
 
+#include "NamedType.h"
+#include "Type.h"
+
 namespace android {
 
 void AST::generateDependencies(Formatter& out) const {
-    std::set<FQName> allImportSet = getReferencedTypes();
-    for (const auto& name : allImportSet) {
-        out << name.string() << "\n";
-    }
+    std::unordered_set<const Type*> visited;
+    (void)mRootScope.recursivePass(
+        Type::ParseStage::COMPLETED,
+        [&](const Type* type) {
+            if (type != &mRootScope && type->isNamedType()) {
+                out << static_cast<const NamedType*>(type)->fqName().string() << "\n";
+            }
+            return OK;
+        },
+        &visited);
 }
 
 }  // namespace android
