@@ -677,6 +677,30 @@ TEST_F(HidlTest, ServiceListByInterfaceTest) {
         }));
 }
 
+TEST_F(HidlTest, ServiceListManifestByInterfaceTest) {
+    // system service
+    EXPECT_OK(manager->listManifestByInterface(IServiceManager::descriptor,
+                                               [](const hidl_vec<hidl_string>& registered) {
+                                                   ASSERT_EQ(1, registered.size());
+                                                   EXPECT_EQ("default", registered[0]);
+                                               }));
+    // vendor service (this is required on all devices)
+    EXPECT_OK(
+        manager->listManifestByInterface("android.hardware.configstore@1.0::ISurfaceFlingerConfigs",
+                                         [](const hidl_vec<hidl_string>& registered) {
+                                             ASSERT_EQ(1, registered.size());
+                                             EXPECT_EQ("default", registered[0]);
+                                         }));
+    // test service that will never be in a manifest
+    EXPECT_OK(manager->listManifestByInterface(
+        IParent::descriptor,
+        [](const hidl_vec<hidl_string>& registered) { ASSERT_EQ(0, registered.size()); }));
+    // invalid service
+    EXPECT_OK(manager->listManifestByInterface(
+        "!(*#&$ASDASLKDJasdlkjfads",
+        [](const hidl_vec<hidl_string>& registered) { ASSERT_EQ(0, registered.size()); }));
+}
+
 TEST_F(HidlTest, SubInterfaceServiceRegistrationTest) {
     using ::android::hardware::interfacesEqual;
 
