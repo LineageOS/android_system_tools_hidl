@@ -54,6 +54,8 @@ struct FQName {
     std::string sanitizedVersion() const;
     // Return true only if version is present.
     bool hasVersion() const;
+    // Return pair of (major, minor) version. Defaults to 0, 0.
+    std::pair<size_t, size_t> getVersion() const;
 
     FQName withVersion(size_t major, size_t minor) const;
 
