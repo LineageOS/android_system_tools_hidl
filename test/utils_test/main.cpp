@@ -22,6 +22,7 @@
 #include <vector>
 
 using ::android::FqInstance;
+using ::android::FQName;
 
 class LibHidlGenUtilsTest : public ::testing::Test {};
 
@@ -99,6 +100,20 @@ TEST_F(LibHidlGenUtilsTest, FqInstanceSetToByComponent) {
     EXPECT_EQ("@1.0::IFoo", e.string());
     ASSERT_TRUE(e.setTo("IFoo", "default"));
     EXPECT_EQ("IFoo/default", e.string());
+}
+
+TEST_F(LibHidlGenUtilsTest, FqDefaultVersion) {
+    FQName n;
+    FqInstance i;
+
+    ASSERT_TRUE(FQName::parse("IFoo.test", &n));
+    EXPECT_EQ((std::make_pair<size_t, size_t>(0u, 0u)), n.getVersion());
+    ASSERT_TRUE(i.setTo("IFoo.test"));
+    EXPECT_EQ((std::make_pair<size_t, size_t>(0u, 0u)), i.getVersion());
+    ASSERT_TRUE(FQName::parse("package@1.2::IFoo", &n));
+    EXPECT_EQ((std::make_pair<size_t, size_t>(1u, 2u)), n.getVersion());
+    ASSERT_TRUE(i.setTo("package@1.2::IFoo"));
+    EXPECT_EQ((std::make_pair<size_t, size_t>(1u, 2u)), i.getVersion());
 }
 
 int main(int argc, char **argv) {
