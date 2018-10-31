@@ -666,10 +666,6 @@ bool Interface::isInterface() const {
     return true;
 }
 
-bool Interface::isBinder() const {
-    return true;
-}
-
 const std::vector<Method *> &Interface::userDefinedMethods() const {
     return mUserMethods;
 }
