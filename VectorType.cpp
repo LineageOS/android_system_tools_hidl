@@ -75,7 +75,7 @@ bool VectorType::isVector() const {
 }
 
 bool VectorType::isVectorOfBinders() const {
-    return mElementType->isBinder();
+    return mElementType->isInterface();
 }
 
 bool VectorType::deepCanCheckEquality(std::unordered_set<const Type*>* visited) const {
