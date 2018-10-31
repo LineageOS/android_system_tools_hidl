@@ -541,13 +541,22 @@ TEST_F(HidlTest, EnumIteratorTest) {
 
     for (const auto value : hidl_enum_range<Empty>()) {
         (void)value;
-        EXPECT_TRUE(false) << "Empty iterator should not iterate";
+        ADD_FAILURE() << "Empty range should not iterate";
     }
+
+    EXPECT_EQ(hidl_enum_range<Grandchild>().begin(), hidl_enum_range<Grandchild>().cbegin());
+    EXPECT_EQ(hidl_enum_range<Grandchild>().end(), hidl_enum_range<Grandchild>().cend());
+    EXPECT_EQ(hidl_enum_range<Grandchild>().rbegin(), hidl_enum_range<Grandchild>().crbegin());
+    EXPECT_EQ(hidl_enum_range<Grandchild>().rend(), hidl_enum_range<Grandchild>().crend());
 
     auto it1 = hidl_enum_range<Grandchild>().begin();
     EXPECT_EQ(Grandchild::A, *it1++);
     EXPECT_EQ(Grandchild::B, *it1++);
     EXPECT_EQ(hidl_enum_range<Grandchild>().end(), it1);
+    auto it1r = hidl_enum_range<Grandchild>().rbegin();
+    EXPECT_EQ(Grandchild::B, *it1r++);
+    EXPECT_EQ(Grandchild::A, *it1r++);
+    EXPECT_EQ(hidl_enum_range<Grandchild>().rend(), it1r);
 
     auto it2 = hidl_enum_range<SkipsValues>().begin();
     EXPECT_EQ(SkipsValues::A, *it2++);
@@ -556,6 +565,13 @@ TEST_F(HidlTest, EnumIteratorTest) {
     EXPECT_EQ(SkipsValues::D, *it2++);
     EXPECT_EQ(SkipsValues::E, *it2++);
     EXPECT_EQ(hidl_enum_range<SkipsValues>().end(), it2);
+    auto it2r = hidl_enum_range<SkipsValues>().rbegin();
+    EXPECT_EQ(SkipsValues::E, *it2r++);
+    EXPECT_EQ(SkipsValues::D, *it2r++);
+    EXPECT_EQ(SkipsValues::C, *it2r++);
+    EXPECT_EQ(SkipsValues::B, *it2r++);
+    EXPECT_EQ(SkipsValues::A, *it2r++);
+    EXPECT_EQ(hidl_enum_range<SkipsValues>().rend(), it2r);
 
     auto it3 = hidl_enum_range<MultipleValues>().begin();
     EXPECT_EQ(MultipleValues::A, *it3++);
@@ -563,6 +579,12 @@ TEST_F(HidlTest, EnumIteratorTest) {
     EXPECT_EQ(MultipleValues::C, *it3++);
     EXPECT_EQ(MultipleValues::D, *it3++);
     EXPECT_EQ(hidl_enum_range<MultipleValues>().end(), it3);
+    auto it3r = hidl_enum_range<MultipleValues>().rbegin();
+    EXPECT_EQ(MultipleValues::D, *it3r++);
+    EXPECT_EQ(MultipleValues::C, *it3r++);
+    EXPECT_EQ(MultipleValues::B, *it3r++);
+    EXPECT_EQ(MultipleValues::A, *it3r++);
+    EXPECT_EQ(hidl_enum_range<MultipleValues>().rend(), it3r);
 }
 
 TEST_F(HidlTest, EnumToStringTest) {
@@ -675,6 +697,30 @@ TEST_F(HidlTest, ServiceListByInterfaceTest) {
             EXPECT_EQ(difference.size(), 0u)
                 << "service(s) not registered " << to_string(difference);
         }));
+}
+
+TEST_F(HidlTest, ServiceListManifestByInterfaceTest) {
+    // system service
+    EXPECT_OK(manager->listManifestByInterface(IServiceManager::descriptor,
+                                               [](const hidl_vec<hidl_string>& registered) {
+                                                   ASSERT_EQ(1, registered.size());
+                                                   EXPECT_EQ("default", registered[0]);
+                                               }));
+    // vendor service (this is required on all devices)
+    EXPECT_OK(
+        manager->listManifestByInterface("android.hardware.configstore@1.0::ISurfaceFlingerConfigs",
+                                         [](const hidl_vec<hidl_string>& registered) {
+                                             ASSERT_EQ(1, registered.size());
+                                             EXPECT_EQ("default", registered[0]);
+                                         }));
+    // test service that will never be in a manifest
+    EXPECT_OK(manager->listManifestByInterface(
+        IParent::descriptor,
+        [](const hidl_vec<hidl_string>& registered) { ASSERT_EQ(0, registered.size()); }));
+    // invalid service
+    EXPECT_OK(manager->listManifestByInterface(
+        "!(*#&$ASDASLKDJasdlkjfads",
+        [](const hidl_vec<hidl_string>& registered) { ASSERT_EQ(0, registered.size()); }));
 }
 
 TEST_F(HidlTest, SubInterfaceServiceRegistrationTest) {
