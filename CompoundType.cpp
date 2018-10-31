@@ -56,7 +56,7 @@ status_t CompoundType::validate() const {
         }
 
         if (mStyle == STYLE_UNION) {
-            if (type.isBinder()) {
+            if (type.isInterface()) {
                 std::cerr << "ERROR: Union cannot contain interfaces at " << field->location()
                           << "\n";
                 return UNKNOWN_ERROR;
