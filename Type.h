@@ -42,7 +42,6 @@ struct Type : DocCommentable {
     virtual ~Type();
 
     virtual bool isArray() const;
-    virtual bool isBinder() const;
     virtual bool isBitField() const;
     virtual bool isCompoundType() const;
     virtual bool isEnum() const;

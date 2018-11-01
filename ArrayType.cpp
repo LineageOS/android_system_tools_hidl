@@ -80,7 +80,7 @@ status_t ArrayType::resolveInheritance() {
 status_t ArrayType::validate() const {
     CHECK(!mElementType->isArray());
 
-    if (mElementType->isBinder()) {
+    if (mElementType->isInterface()) {
         std::cerr << "ERROR: Arrays of interface types are not supported"
                   << " at " << mElementType.location() << "\n";
 
