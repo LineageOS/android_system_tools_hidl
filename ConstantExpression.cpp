@@ -355,6 +355,38 @@ void ReferenceConstantExpression::evaluate() {
     mIsEvaluated = true;
 }
 
+status_t AttributeConstantExpression::validate() const {
+    if (mTag == "len") {
+        if (!mReference->isEnum()) {
+            std::cerr << "ERROR: " << mExpr << " refers to " << mReference->typeName()
+                      << " but should refer to an enum." << std::endl;
+            return UNKNOWN_ERROR;
+        }
+    } else {
+        std::cerr << "ERROR: " << mExpr << " is not a supported tag" << std::endl;
+        return UNKNOWN_ERROR;
+    }
+
+    return OK;
+}
+
+void AttributeConstantExpression::evaluate() {
+    if (isEvaluated()) return;
+
+    CHECK(mTag == "len");
+    CHECK(mReference->isEnum());
+
+    EnumType* enumType = static_cast<EnumType*>(mReference.get());
+    mValue = enumType->numValueNames();
+
+    if (mValue <= INT32_MAX)
+        mValueKind = SK(INT32);
+    else
+        mValueKind = SK(INT64);
+
+    mIsEvaluated = true;
+}
+
 std::unique_ptr<ConstantExpression> ConstantExpression::addOne(ScalarType::Kind baseKind) {
     auto ret = std::make_unique<BinaryConstantExpression>(
         this, "+", ConstantExpression::One(baseKind).release());
@@ -479,6 +511,10 @@ bool ConstantExpression::isReferenceConstantExpression() const {
     return false;
 }
 
+status_t ConstantExpression::validate() const {
+    return OK;
+}
+
 std::vector<ConstantExpression*> ConstantExpression::getConstantExpressions() {
     const auto& constRet = static_cast<const ConstantExpression*>(this)->getConstantExpressions();
     std::vector<ConstantExpression*> ret(constRet.size());
@@ -496,6 +532,18 @@ std::vector<Reference<LocalIdentifier>*> ConstantExpression::getReferences() {
 }
 
 std::vector<const Reference<LocalIdentifier>*> ConstantExpression::getReferences() const {
+    return {};
+}
+
+std::vector<Reference<Type>*> ConstantExpression::getTypeReferences() {
+    const auto& constRet = static_cast<const ConstantExpression*>(this)->getTypeReferences();
+    std::vector<Reference<Type>*> ret(constRet.size());
+    std::transform(constRet.begin(), constRet.end(), ret.begin(),
+                   [](const auto* ce) { return const_cast<Reference<Type>*>(ce); });
+    return ret;
+}
+
+std::vector<const Reference<Type>*> ConstantExpression::getTypeReferences() const {
     return {};
 }
 
@@ -675,6 +723,22 @@ std::vector<const ConstantExpression*> ReferenceConstantExpression::getConstantE
 }
 
 std::vector<const Reference<LocalIdentifier>*> ReferenceConstantExpression::getReferences() const {
+    return {&mReference};
+}
+
+AttributeConstantExpression::AttributeConstantExpression(const Reference<Type>& value,
+                                                         const std::string& fqname,
+                                                         const std::string& tag)
+    : mReference(value), mTag(tag) {
+    mExpr = fqname + "#" + tag;
+}
+
+std::vector<const ConstantExpression*> AttributeConstantExpression::getConstantExpressions() const {
+    // Returns reference instead
+    return {};
+}
+
+std::vector<const Reference<Type>*> AttributeConstantExpression::getTypeReferences() const {
     return {&mReference};
 }
 

@@ -49,6 +49,14 @@ void EnumType::forEachValueFromRoot(const std::function<void(EnumValue*)> f) con
     }
 }
 
+size_t EnumType::numValueNames() const {
+    size_t count = 0;
+    for (const auto it : typeChain()) {
+        count += it->values().size();
+    }
+    return count;
+}
+
 void EnumType::addValue(EnumValue* value) {
     CHECK(value != nullptr);
     mValues.push_back(value);
