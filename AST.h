@@ -84,6 +84,9 @@ struct AST {
     // Recursive pass on constant expression tree
     status_t constantExpressionRecursivePass(
         const std::function<status_t(ConstantExpression*)>& func, bool processBeforeDependencies);
+    status_t constantExpressionRecursivePass(
+        const std::function<status_t(const ConstantExpression*)>& func,
+        bool processBeforeDependencies) const;
 
     // Recursive tree pass that sets ParseStage of all types to newStage.
     status_t setParseStage(Type::ParseStage oldStage, Type::ParseStage newStage);
@@ -92,7 +95,8 @@ struct AST {
     status_t lookupTypes();
 
     // Recursive tree pass that looks up all referenced local identifiers
-    status_t lookupLocalIdentifiers();
+    // and types referenced by constant expressions
+    status_t lookupConstantExpressions();
 
     // Recursive tree pass that validates that all defined types
     // have unique names in their scopes.
@@ -102,8 +106,11 @@ struct AST {
     // that depend on super types
     status_t resolveInheritance();
 
+    // Recursive tree pass that validates constant expressions
+    status_t validateConstantExpressions() const;
+
     // Recursive tree pass that evaluates constant expressions
-    status_t evaluate();
+    status_t evaluateConstantExpressions();
 
     // Recursive tree pass that validates all type-related
     // syntax restrictions
