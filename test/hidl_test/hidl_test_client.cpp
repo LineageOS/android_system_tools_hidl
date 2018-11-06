@@ -20,6 +20,7 @@
 #include <android/hardware/tests/bar/1.0/IComplicated.h>
 #include <android/hardware/tests/bar/1.0/IImportRules.h>
 #include <android/hardware/tests/baz/1.0/IBaz.h>
+#include <android/hardware/tests/expression/1.0/IExpression.h>
 #include <android/hardware/tests/foo/1.0/BnHwSimple.h>
 #include <android/hardware/tests/foo/1.0/BpHwSimple.h>
 #include <android/hardware/tests/foo/1.0/BsSimple.h>
@@ -122,6 +123,7 @@ using ::android::hardware::Void;
 using ::android::hardware::tests::bar::V1_0::IBar;
 using ::android::hardware::tests::bar::V1_0::IComplicated;
 using ::android::hardware::tests::baz::V1_0::IBaz;
+using ::android::hardware::tests::expression::V1_0::IExpression;
 using ::android::hardware::tests::foo::V1_0::Abc;
 using ::android::hardware::tests::foo::V1_0::IFoo;
 using ::android::hardware::tests::foo::V1_0::IFooCallback;
@@ -520,6 +522,17 @@ TEST_F(HidlTest, ToStringTest) {
     LOG(INFO) << toString(foo);
     // toString is for debugging purposes only; no good EXPECT
     // statement can be written here.
+}
+
+TEST_F(HidlTest, ConstantExpressionTest) {
+    // these tests are written so that these always evaluate to one
+
+    for (const auto value : hidl_enum_range<IExpression::OperatorSanityCheck>()) {
+        EXPECT_EQ(1, static_cast<int32_t>(value));
+    }
+    for (const auto value : hidl_enum_range<IExpression::EnumTagTest>()) {
+        EXPECT_EQ(1, static_cast<int32_t>(value));
+    }
 }
 
 TEST_F(HidlTest, PassthroughLookupTest) {

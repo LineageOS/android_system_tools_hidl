@@ -169,6 +169,7 @@ static std::string gCurrentComment;
 "!="                { return(token::NEQ); }
 "?"                 { return('?'); }
 "@"                 { return('@'); }
+"#"                 { return('#'); }
 
 {COMPONENT}         { yylval->str = strdup(yytext); return token::IDENTIFIER; }
 {FQNAME}            { yylval->str = strdup(yytext); return token::FQNAME; }

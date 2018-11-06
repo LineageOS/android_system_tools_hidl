@@ -109,13 +109,15 @@ status_t AST::postParse() {
     if (err != OK) return err;
     err = resolveInheritance();
     if (err != OK) return err;
-    err = lookupLocalIdentifiers();
+    err = lookupConstantExpressions();
     if (err != OK) return err;
     // checkAcyclicConstantExpressions is after resolveInheritance,
     // as resolveInheritance autofills enum values.
     err = checkAcyclicConstantExpressions();
     if (err != OK) return err;
-    err = evaluate();
+    err = validateConstantExpressions();
+    if (err != OK) return err;
+    err = evaluateConstantExpressions();
     if (err != OK) return err;
     err = validate();
     if (err != OK) return err;
@@ -145,6 +147,23 @@ status_t AST::constantExpressionRecursivePass(
     std::unordered_set<const ConstantExpression*> visitedCE;
     return mRootScope.recursivePass(Type::ParseStage::POST_PARSE,
                                     [&](Type* type) -> status_t {
+                                        for (auto* ce : type->getConstantExpressions()) {
+                                            status_t err = ce->recursivePass(
+                                                func, &visitedCE, processBeforeDependencies);
+                                            if (err != OK) return err;
+                                        }
+                                        return OK;
+                                    },
+                                    &visitedTypes);
+}
+
+status_t AST::constantExpressionRecursivePass(
+    const std::function<status_t(const ConstantExpression*)>& func,
+    bool processBeforeDependencies) const {
+    std::unordered_set<const Type*> visitedTypes;
+    std::unordered_set<const ConstantExpression*> visitedCE;
+    return mRootScope.recursivePass(Type::ParseStage::POST_PARSE,
+                                    [&](const Type* type) -> status_t {
                                         for (auto* ce : type->getConstantExpressions()) {
                                             status_t err = ce->recursivePass(
                                                 func, &visitedCE, processBeforeDependencies);
@@ -211,7 +230,7 @@ status_t AST::gatherReferencedTypes() {
         &visited);
 }
 
-status_t AST::lookupLocalIdentifiers() {
+status_t AST::lookupConstantExpressions() {
     std::unordered_set<const Type*> visitedTypes;
     std::unordered_set<const ConstantExpression*> visitedCE;
 
@@ -229,6 +248,18 @@ status_t AST::lookupLocalIdentifiers() {
                             LocalIdentifier* iden = lookupLocalIdentifier(*nextRef, scope);
                             if (iden == nullptr) return UNKNOWN_ERROR;
                             nextRef->set(iden);
+                        }
+                        for (auto* nextRef : ce->getTypeReferences()) {
+                            if (nextRef->isResolved()) continue;
+
+                            Type* nextType = lookupType(nextRef->getLookupFqName(), scope);
+                            if (nextType == nullptr) {
+                                std::cerr << "ERROR: Failed to lookup type '"
+                                          << nextRef->getLookupFqName().string() << "' at "
+                                          << nextRef->location() << "\n";
+                                return UNKNOWN_ERROR;
+                            }
+                            nextRef->set(nextType);
                         }
                         return OK;
                     },
@@ -261,7 +292,13 @@ status_t AST::resolveInheritance() {
                                     &visited);
 }
 
-status_t AST::evaluate() {
+status_t AST::validateConstantExpressions() const {
+    return constantExpressionRecursivePass(
+        [](const ConstantExpression* ce) { return ce->validate(); },
+        true /* processBeforeDependencies */);
+}
+
+status_t AST::evaluateConstantExpressions() {
     return constantExpressionRecursivePass(
         [](ConstantExpression* ce) {
             ce->evaluate();

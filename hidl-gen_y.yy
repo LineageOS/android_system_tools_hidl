@@ -272,6 +272,8 @@ bool isValidTypeName(const std::string& identifier, std::string *errorMsg) {
 /* Precedence level 3, RTL; but we have to use %left here */
 %left UNARY_MINUS UNARY_PLUS '!' '~'
 
+%token '#'
+
 %type<docComment> doc_comments
 
 %type<str> error_stmt error
@@ -736,7 +738,8 @@ typedef_declaration
     ;
 
 const_expr
-    : INTEGER                   {
+    : INTEGER
+      {
           $$ = LiteralConstantExpression::tryParse($1);
 
           if ($$ == nullptr) {
@@ -756,6 +759,11 @@ const_expr
 
           $$ = new ReferenceConstantExpression(
               Reference<LocalIdentifier>(*$1, convertYYLoc(@1)), $1->string());
+      }
+    | fqname '#' IDENTIFIER
+      {
+          $$ = new AttributeConstantExpression(
+              Reference<Type>(*$1, convertYYLoc(@1)), $1->string(), $3);
       }
     | const_expr '?' const_expr ':' const_expr
       {
