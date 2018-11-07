@@ -60,6 +60,9 @@ struct ConstantExpression {
                            std::unordered_set<const ConstantExpression*>* visited,
                            bool processBeforeDependencies) const;
 
+    // If this object is in an invalid state.
+    virtual status_t validate() const;
+
     // Evaluates current constant expression
     // Doesn't call recursive evaluation, so must be called after dependencies
     virtual void evaluate() = 0;
@@ -69,6 +72,9 @@ struct ConstantExpression {
 
     std::vector<Reference<LocalIdentifier>*> getReferences();
     virtual std::vector<const Reference<LocalIdentifier>*> getReferences() const;
+
+    std::vector<Reference<Type>*> getTypeReferences();
+    virtual std::vector<const Reference<Type>*> getTypeReferences() const;
 
     // Recursive tree pass checkAcyclic return type.
     // Stores cycle end for nice error messages.
@@ -158,6 +164,7 @@ struct ConstantExpression {
     friend struct BinaryConstantExpression;
     friend struct TernaryConstantExpression;
     friend struct ReferenceConstantExpression;
+    friend struct AttributeConstantExpression;
 };
 
 struct LiteralConstantExpression : public ConstantExpression {
@@ -213,6 +220,22 @@ struct ReferenceConstantExpression : public ConstantExpression {
 
    private:
     Reference<LocalIdentifier> mReference;
+};
+
+// This constant expression is a compile-time calculatable expression based on another type
+struct AttributeConstantExpression : public ConstantExpression {
+    AttributeConstantExpression(const Reference<Type>& value, const std::string& fqname,
+                                const std::string& tag);
+
+    status_t validate() const override;
+    void evaluate() override;
+
+    std::vector<const ConstantExpression*> getConstantExpressions() const override;
+    std::vector<const Reference<Type>*> getTypeReferences() const override;
+
+   private:
+    Reference<Type> mReference;
+    const std::string mTag;
 };
 
 }  // namespace android
