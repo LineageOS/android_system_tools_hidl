@@ -12,6 +12,7 @@
 #include <android/hardware/tests/pointer/1.0/IGraph.h>
 #include <android/hardware/tests/pointer/1.0/IPointer.h>
 #include <android/hardware/tests/safeunion/1.0/ISafeUnion.h>
+#include <android/hardware/tests/safeunion/cpp/1.0/ICppSafeUnion.h>
 #include <android/hardware/tests/trie/1.0/ITrie.h>
 
 template <template <typename Type> class Service>
@@ -26,6 +27,7 @@ void runOnEachServer(void) {
     using ::android::hardware::tests::multithread::V1_0::IMultithread;
     using ::android::hardware::tests::pointer::V1_0::IGraph;
     using ::android::hardware::tests::pointer::V1_0::IPointer;
+    using ::android::hardware::tests::safeunion::cpp::V1_0::ICppSafeUnion;
     using ::android::hardware::tests::safeunion::V1_0::ISafeUnion;
     using ::android::hardware::tests::trie::V1_0::ITrie;
 
@@ -40,6 +42,7 @@ void runOnEachServer(void) {
     Service<IPointer>::run("pointer");
     Service<IMultithread>::run("multithread");
     Service<ITrie>::run("trie");
+    Service<ICppSafeUnion>::run("default");
     Service<ISafeUnion>::run("safeunion");
 }
 
