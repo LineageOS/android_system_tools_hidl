@@ -465,7 +465,7 @@ func (h *hidlInterface) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 			panic("internal error, multiple dependencies found but only one added")
 		}
 		visited = true
-		h.properties.Full_root_option = dep.(*hidlPackageRoot).properties.Full_root_option
+		h.properties.Full_root_option = dep.(*hidlPackageRoot).getFullPackageRoot()
 	})
 	if !visited {
 		panic("internal error, no dependencies found but dependency added")
