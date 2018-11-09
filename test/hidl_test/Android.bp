@@ -35,6 +35,7 @@ cc_defaults {
         "android.hardware.tests.memory@1.0",
         "android.hardware.tests.multithread@1.0",
         "android.hardware.tests.trie@1.0",
+        "android.hardware.tests.safeunion.cpp@1.0",
         "android.hardware.tests.safeunion@1.0",
     ],
 
@@ -51,6 +52,7 @@ cc_defaults {
         "android.hardware.tests.memory@1.0-impl",
         "android.hardware.tests.multithread@1.0-impl",
         "android.hardware.tests.trie@1.0-impl",
+        "android.hardware.tests.safeunion.cpp@1.0-impl",
         "android.hardware.tests.safeunion@1.0-impl",
     ],
 
