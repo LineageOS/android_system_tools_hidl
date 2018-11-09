@@ -1039,7 +1039,12 @@ static void emitSafeUnionGetterDefinition(Formatter& out, const std::string& fie
             << ")) ";
 
         out.block([&] {
-            out << "::android::hardware::details::logAlwaysFatal(\"Bad safe_union access.\");\n";
+            out << "LOG_ALWAYS_FATAL(\"Bad safe_union access: safe_union has discriminator %\" "
+                << "PRIu64 \" but discriminator %\" PRIu64 \" was accessed.\",\n";
+            out.indent(2, [&] {
+                out << "static_cast<uint64_t>(hidl_d), "
+                    << "static_cast<uint64_t>(hidl_discriminator::" << fieldName << "));";
+            }).endl();
         }).endl().endl();
 
         out << "return hidl_u."
