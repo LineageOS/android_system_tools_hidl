@@ -210,9 +210,14 @@ bool CompoundType::containsInterface() const {
     return false;
 }
 
-void CompoundType::emitSafeUnionUnknownDiscriminatorError(Formatter& out,
-                                                          const std::string& value) const {
-    out << "::android::hardware::details::logAlwaysFatal((\n";
+void CompoundType::emitSafeUnionUnknownDiscriminatorError(Formatter& out, const std::string& value,
+                                                          bool fatal) const {
+    if (fatal) {
+        out << "::android::hardware::details::logAlwaysFatal(";
+    } else {
+        out << "ALOGE(\"%s\", ";
+    }
+    out << "(\n";
     out.indent(2, [&] {
         out << "\"Unknown union discriminator (value: \" +\n"
             << "std::to_string(" << getUnionDiscriminatorType()->getCppTypeCast(value)
@@ -294,7 +299,14 @@ void CompoundType::emitSafeUnionReaderWriterForInterfaces(
             }
 
             out << "default: ";
-            out.block([&] { emitSafeUnionUnknownDiscriminatorError(out, "_hidl_d_primitive"); })
+            out.block([&] {
+                   emitSafeUnionUnknownDiscriminatorError(out, "_hidl_d_primitive",
+                                                          !isReader /*fatal*/);
+                   if (isReader) {
+                       out << "_hidl_err = BAD_VALUE;\n";
+                       handleError(out, mode);
+                   }
+               })
                 .endl();
         }).endl();
     }).endl();
@@ -857,7 +869,10 @@ void CompoundType::emitPackageTypeHeaderDefinitions(Formatter& out) const {
 
         if (mStyle == STYLE_SAFE_UNION) {
             out << "default: ";
-            out.block([&] { emitSafeUnionUnknownDiscriminatorError(out, "o.getDiscriminator()"); })
+            out.block([&] {
+                   emitSafeUnionUnknownDiscriminatorError(out, "o.getDiscriminator()",
+                                                          true /*fatal*/);
+               })
                 .endl();
 
             out.unindent();
@@ -905,7 +920,8 @@ void CompoundType::emitPackageTypeHeaderDefinitions(Formatter& out) const {
             if (mStyle == STYLE_SAFE_UNION) {
                 out << "default: ";
                 out.block([&] {
-                       emitSafeUnionUnknownDiscriminatorError(out, "lhs.getDiscriminator()");
+                       emitSafeUnionUnknownDiscriminatorError(out, "lhs.getDiscriminator()",
+                                                              true /*fatal*/);
                    })
                     .endl();
 
@@ -1092,8 +1108,10 @@ void CompoundType::emitSafeUnionCopyAndAssignDefinition(Formatter& out,
             }
 
             out << "default: ";
-            out.block(
-                   [&] { emitSafeUnionUnknownDiscriminatorError(out, parameterName + ".hidl_d"); })
+            out.block([&] {
+                   emitSafeUnionUnknownDiscriminatorError(out, parameterName + ".hidl_d",
+                                                          true /*fatal*/);
+               })
                 .endl();
         }).endl();
 
@@ -1215,7 +1233,9 @@ void CompoundType::emitSafeUnionTypeDefinitions(Formatter& out) const {
             }
 
             out << "default: ";
-            out.block([&] { emitSafeUnionUnknownDiscriminatorError(out, "hidl_d"); }).endl();
+            out.block(
+                   [&] { emitSafeUnionUnknownDiscriminatorError(out, "hidl_d", true /*fatal*/); })
+                .endl();
         }).endl().endl();
     }).endl().endl();
 
@@ -1297,9 +1317,16 @@ void CompoundType::emitTypeDefinitions(Formatter& out, const std::string& prefix
     }
 }
 
-static void emitJavaSafeUnionUnknownDiscriminatorError(Formatter& out) {
-    out << "throw new Error(\"Unknown union discriminator "
-        << "(value: \" + hidl_d + \").\");\n";
+static void emitJavaSafeUnionUnknownDiscriminatorError(Formatter& out, bool fatal) {
+    out << "throw new ";
+
+    if (fatal) {
+        out << "Error";
+    } else {
+        out << "IllegalStateException";
+    }
+
+    out << "(\"Unknown union discriminator (value: \" + hidl_d + \").\");\n";
 }
 
 void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) const {
@@ -1543,7 +1570,8 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
 
         if (mStyle == STYLE_SAFE_UNION) {
             out << "default: ";
-            out.block([&] { emitJavaSafeUnionUnknownDiscriminatorError(out); }).endl();
+            out.block([&] { emitJavaSafeUnionUnknownDiscriminatorError(out, true /*fatal*/); })
+                .endl();
 
             out.unindent();
             out << "}\n";
@@ -1589,7 +1617,8 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
 
         if (mStyle == STYLE_SAFE_UNION) {
             out << "default: ";
-            out.block([&] { emitJavaSafeUnionUnknownDiscriminatorError(out); }).endl();
+            out.block([&] { emitJavaSafeUnionUnknownDiscriminatorError(out, false /*fatal*/); })
+                .endl();
 
             out.unindent();
             out << "}\n";
@@ -1682,7 +1711,8 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
 
         if (mStyle == STYLE_SAFE_UNION) {
             out << "default: ";
-            out.block([&] { emitJavaSafeUnionUnknownDiscriminatorError(out); }).endl();
+            out.block([&] { emitJavaSafeUnionUnknownDiscriminatorError(out, false /*fatal*/); })
+                .endl();
 
             out.unindent();
             out << "}\n";
@@ -1722,7 +1752,8 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
 
         if (mStyle == STYLE_SAFE_UNION) {
             out << "default: ";
-            out.block([&] { emitJavaSafeUnionUnknownDiscriminatorError(out); }).endl();
+            out.block([&] { emitJavaSafeUnionUnknownDiscriminatorError(out, true /*fatal*/); })
+                .endl();
 
             out.unindent();
             out << "}\n";
@@ -1811,7 +1842,8 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
 
         if (mStyle == STYLE_SAFE_UNION) {
             out << "default: ";
-            out.block([&] { emitJavaSafeUnionUnknownDiscriminatorError(out); }).endl();
+            out.block([&] { emitJavaSafeUnionUnknownDiscriminatorError(out, true /*fatal*/); })
+                .endl();
 
             out.unindent();
             out << "}\n";
