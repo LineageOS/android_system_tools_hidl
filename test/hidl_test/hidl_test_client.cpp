@@ -36,6 +36,7 @@
 #include <android/hardware/tests/pointer/1.0/IPointer.h>
 #include <android/hardware/tests/safeunion/1.0/IOtherInterface.h>
 #include <android/hardware/tests/safeunion/1.0/ISafeUnion.h>
+#include <android/hardware/tests/safeunion/cpp/1.0/ICppSafeUnion.h>
 #include <android/hardware/tests/trie/1.0/ITrie.h>
 
 #include <gtest/gtest.h>
@@ -138,6 +139,7 @@ using ::android::hardware::tests::memory::V1_0::IMemoryTest;
 using ::android::hardware::tests::multithread::V1_0::IMultithread;
 using ::android::hardware::tests::pointer::V1_0::IGraph;
 using ::android::hardware::tests::pointer::V1_0::IPointer;
+using ::android::hardware::tests::safeunion::cpp::V1_0::ICppSafeUnion;
 using ::android::hardware::tests::safeunion::V1_0::IOtherInterface;
 using ::android::hardware::tests::safeunion::V1_0::ISafeUnion;
 using ::android::hardware::tests::trie::V1_0::ITrie;
@@ -372,6 +374,7 @@ public:
     sp<IPointer> validationPointerInterface;
     sp<IMultithread> multithreadInterface;
     sp<ITrie> trieInterface;
+    sp<ICppSafeUnion> cppSafeunionInterface;
     sp<ISafeUnion> safeunionInterface;
     TestMode mode;
     bool enableDelayMeasurementTests;
@@ -443,6 +446,11 @@ public:
         ASSERT_NE(trieInterface, nullptr);
         ASSERT_EQ(trieInterface->isRemote(), mode == BINDERIZED);
 
+        cppSafeunionInterface =
+            ICppSafeUnion::getService("default", mode == PASSTHROUGH /* getStub */);
+        ASSERT_NE(cppSafeunionInterface, nullptr);
+        ASSERT_EQ(cppSafeunionInterface->isRemote(), mode == BINDERIZED);
+
         safeunionInterface = ISafeUnion::getService("safeunion", mode == PASSTHROUGH /* getStub */);
         ASSERT_NE(safeunionInterface, nullptr);
         ASSERT_EQ(safeunionInterface->isRemote(), mode == BINDERIZED);
@@ -470,6 +478,7 @@ public:
     sp<IPointer> pointerInterface;
     sp<IPointer> validationPointerInterface;
     sp<ITrie> trieInterface;
+    sp<ICppSafeUnion> cppSafeunionInterface;
     sp<ISafeUnion> safeunionInterface;
     TestMode mode = TestMode::PASSTHROUGH;
 
@@ -488,6 +497,7 @@ public:
         pointerInterface = gHidlEnvironment->pointerInterface;
         validationPointerInterface = gHidlEnvironment->validationPointerInterface;
         trieInterface = gHidlEnvironment->trieInterface;
+        cppSafeunionInterface = gHidlEnvironment->cppSafeunionInterface;
         safeunionInterface = gHidlEnvironment->safeunionInterface;
         mode = gHidlEnvironment->mode;
         ALOGI("Test setup complete");
@@ -2426,6 +2436,26 @@ TEST_F(HidlTest, SafeUnionSwitchActiveComponentsDestructorTest) {
 
     safeUnion.a(1);
     EXPECT_EQ(1, otherInterface->getStrongCount());
+}
+
+TEST_F(HidlTest, SafeUnionCppSpecificTest) {
+    ICppSafeUnion::PointerFmqSafeUnion pointerFmqSafeUnion;
+    pointerFmqSafeUnion.fmqSync({std::vector<GrantorDescriptor>(), native_handle_create(0, 1), 5});
+
+    EXPECT_OK(cppSafeunionInterface->repeatPointerFmqSafeUnion(
+        pointerFmqSafeUnion, [&](const ICppSafeUnion::PointerFmqSafeUnion& fmq) {
+            ASSERT_EQ(pointerFmqSafeUnion.getDiscriminator(), fmq.getDiscriminator());
+            checkMQDescriptorEquality(pointerFmqSafeUnion.fmqSync(), fmq.fmqSync());
+        }));
+
+    ICppSafeUnion::FmqSafeUnion fmqSafeUnion;
+    fmqSafeUnion.fmqUnsync({std::vector<GrantorDescriptor>(), native_handle_create(0, 1), 5});
+
+    EXPECT_OK(cppSafeunionInterface->repeatFmqSafeUnion(
+        fmqSafeUnion, [&](const ICppSafeUnion::FmqSafeUnion& fmq) {
+            ASSERT_EQ(fmqSafeUnion.getDiscriminator(), fmq.getDiscriminator());
+            checkMQDescriptorEquality(fmqSafeUnion.fmqUnsync(), fmq.fmqUnsync());
+        }));
 }
 
 class HidlMultithreadTest : public ::testing::Test {
