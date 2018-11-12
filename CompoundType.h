@@ -176,7 +176,8 @@ private:
     void emitSafeUnionTypeDeclarations(Formatter& out) const;
     std::unique_ptr<ScalarType> getUnionDiscriminatorType() const;
 
-    void emitSafeUnionUnknownDiscriminatorError(Formatter& out, const std::string& value) const;
+    void emitSafeUnionUnknownDiscriminatorError(Formatter& out, const std::string& value,
+                                                bool fatal) const;
 
     void emitSafeUnionCopyAndAssignDefinition(Formatter& out,
                                               const std::string& parameterName,
