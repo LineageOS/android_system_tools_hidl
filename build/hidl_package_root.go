@@ -32,18 +32,17 @@ type hidlPackageRoot struct {
 	properties struct {
 		// path to the package root from android build root
 		Path *string
-
-		// actual package path. defaults to current directory
-		Full_root_option string `blueprint:"mutated"`
 	}
+}
+
+func (r *hidlPackageRoot) getFullPackageRoot() string {
+	return "-r" + r.Name() + ":" + *r.properties.Path
 }
 
 func (r *hidlPackageRoot) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	if r.properties.Path == nil {
 		r.properties.Path = proptools.StringPtr(ctx.ModuleDir())
 	}
-
-	r.properties.Full_root_option = "-r" + ctx.ModuleName() + ":" + *r.properties.Path
 }
 func (r *hidlPackageRoot) DepsMutator(ctx android.BottomUpMutatorContext) {
 }

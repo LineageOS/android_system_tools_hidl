@@ -794,7 +794,7 @@ void AST::generateCppSource(Formatter& out) const {
         << mPackage.string() << "::" << baseName
         << "\"\n\n";
 
-    out << "#include <android/log.h>\n";
+    out << "#include <log/log.h>\n";
     out << "#include <cutils/trace.h>\n";
     out << "#include <hidl/HidlTransportSupport.h>\n\n";
     out << "#include <hidl/Static.h>\n";
