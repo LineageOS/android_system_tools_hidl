@@ -461,7 +461,8 @@ bool isSystemProcessSupportedPackage(const FQName& fqName) {
            fqName.string() == "android.hardware.graphics.mapper@2.1" ||
            fqName.string() == "android.hardware.renderscript@1.0" ||
            fqName.string() == "android.hidl.memory.token@1.0" ||
-           fqName.string() == "android.hidl.memory@1.0";
+           fqName.string() == "android.hidl.memory@1.0" ||
+           fqName.string() == "android.hidl.safe_union@1.0";
 }
 
 bool isSystemPackage(const FQName &package) {
