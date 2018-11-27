@@ -134,6 +134,9 @@ type hidlInterfaceProperties struct {
 	// The owner of the module
 	Owner *string
 
+	// Install core variant on the /product instead of /system
+	Product_specific *bool
+
 	// List of .hal files which compose this interface.
 	Srcs []string
 
@@ -305,6 +308,7 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 		mctx.CreateModule(android.ModuleFactoryAdaptor(cc.LibraryFactory), &ccProperties{
 			Name:               proptools.StringPtr(name.string()),
 			Owner:              i.properties.Owner,
+			Product_specific:   i.properties.Product_specific,
 			Recovery_available: proptools.BoolPtr(true),
 			Vendor_available:   proptools.BoolPtr(true),
 			Double_loadable:    proptools.BoolPtr(isDoubleLoadable(name.string())),
@@ -399,6 +403,7 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 	mctx.CreateModule(android.ModuleFactoryAdaptor(cc.LibraryFactory), &ccProperties{
 		Name:              proptools.StringPtr(name.adapterHelperName()),
 		Owner:             i.properties.Owner,
+		Product_specific:  i.properties.Product_specific,
 		Vendor_available:  proptools.BoolPtr(true),
 		Defaults:          []string{"hidl-module-defaults"},
 		Generated_sources: []string{name.adapterHelperSourcesName()},
