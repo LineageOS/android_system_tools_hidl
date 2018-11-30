@@ -465,7 +465,7 @@ bool isSystemProcessSupportedPackage(const FQName& fqName) {
            fqName.string() == "android.hidl.safe_union@1.0";
 }
 
-bool isSystemPackage(const FQName &package) {
+bool isCoreAndroidPackage(const FQName& package) {
     return package.inPackage("android.hidl") ||
            package.inPackage("android.system") ||
            package.inPackage("android.frameworks") ||
@@ -579,8 +579,14 @@ static status_t generateAndroidBpForPackage(Formatter& out, const FQName& packag
     err = isTestPackage(packageFQName, coordinator, &generateForTest);
     if (err != OK) return err;
 
-    bool isVndk = !generateForTest && isSystemPackage(packageFQName);
+    bool isCoreAndroid = isCoreAndroidPackage(packageFQName);
+
+    bool isVndk = !generateForTest && isCoreAndroid;
     bool isVndkSp = isVndk && isSystemProcessSupportedPackage(packageFQName);
+
+    // Currently, all platform-provided interfaces are in the VNDK, so if it isn't in the VNDK, it
+    // is device specific and so should be put in the product partition.
+    bool isProduct = !isCoreAndroid;
 
     std::string packageRoot;
     err = coordinator->getPackageRoot(packageFQName, &packageRoot);
@@ -603,6 +609,9 @@ static status_t generateAndroidBpForPackage(Formatter& out, const FQName& packag
                     out << "support_system_process: true,\n";
                 }
             }) << ",\n";
+        }
+        if (isProduct) {
+            out << "product_specific: true,\n";
         }
         (out << "srcs: [\n").indent([&] {
            for (const auto& fqName : packageInterfaces) {
