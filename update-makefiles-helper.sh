@@ -68,6 +68,11 @@ function get_package_dir() {
 # Where the first package root is the current one.
 #
 function do_makefiles_update() {
+  if ! command -v hidl-gen 1>/dev/null; then
+      echo "Cannot find hidl-gen, try lunching or making it ('m hidl-gen')?"
+      exit 1
+  fi
+
   local owner=
   if [[ "$1" = "-O" ]]; then
       owner="$2"
