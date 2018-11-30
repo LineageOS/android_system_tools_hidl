@@ -30,18 +30,32 @@ type hidlPackageRoot struct {
 	android.ModuleBase
 
 	properties struct {
-		// path to the package root from android build root
+		// Path to the package root from android build root. It is recommended not to set this and
+		// use the current path. This will be deprecated in the future.
 		Path *string
+
+		// True if there should be a current.txt API file here.
+		Use_current *bool
 	}
+
+	currentPaths android.Paths
 }
 
 func (r *hidlPackageRoot) getFullPackageRoot() string {
 	return "-r" + r.Name() + ":" + *r.properties.Path
 }
 
+func (r *hidlPackageRoot) getCurrentPaths() android.Paths {
+	return r.currentPaths
+}
+
 func (r *hidlPackageRoot) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	if r.properties.Path == nil {
 		r.properties.Path = proptools.StringPtr(ctx.ModuleDir())
+	}
+
+	if proptools.BoolDefault(r.properties.Use_current, false) {
+		r.currentPaths = append(r.currentPaths, android.PathForModuleSrc(ctx, "current.txt"))
 	}
 }
 func (r *hidlPackageRoot) DepsMutator(ctx android.BottomUpMutatorContext) {
