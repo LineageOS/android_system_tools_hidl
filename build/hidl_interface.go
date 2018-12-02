@@ -15,6 +15,7 @@
 package hidl
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/google/blueprint"
@@ -48,6 +49,7 @@ func init() {
 type hidlGenProperties struct {
 	Language   string
 	FqName     string
+	Root       string
 	Interfaces []string
 	Inputs     []string
 	Outputs    []string
@@ -78,15 +80,27 @@ func (g *hidlGenRule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	}
 
 	var fullRootOptions []string
+	var currentPaths android.Paths
 	ctx.VisitDirectDeps(func(dep android.Module) {
-		fullRootOptions = append(fullRootOptions, dep.(*hidlInterface).properties.Full_root_option)
+		switch t := dep.(type) {
+		case *hidlInterface:
+			fullRootOptions = append(fullRootOptions, t.properties.Full_root_option)
+		case *hidlPackageRoot:
+			currentPaths = append(currentPaths, t.getCurrentPaths()...)
+		default:
+			panic(fmt.Sprintf("Unrecognized hidlGenProperties dependency: %T", t))
+		}
 	})
+
+	if len(currentPaths) > 1 {
+		panic(fmt.Sprintf("Expecting one or zero current paths, but found: %v", currentPaths))
+	}
 
 	fullRootOptions = android.FirstUniqueStrings(fullRootOptions)
 
 	ctx.ModuleBuild(pctx, android.ModuleBuildParams{
 		Rule:            hidlRule,
-		Inputs:          g.genInputs,
+		Inputs:          append(g.genInputs, currentPaths...),
 		Output:          g.genOutputs[0],
 		ImplicitOutputs: g.genOutputs[1:],
 		Args: map[string]string{
@@ -118,6 +132,7 @@ func (g *hidlGenRule) GeneratedHeaderDirs() android.Paths {
 func (g *hidlGenRule) DepsMutator(ctx android.BottomUpMutatorContext) {
 	ctx.AddDependency(ctx.Module(), nil, g.properties.FqName+hidlInterfaceSuffix)
 	ctx.AddDependency(ctx.Module(), nil, wrap("", g.properties.Interfaces, hidlInterfaceSuffix)...)
+	ctx.AddDependency(ctx.Module(), nil, g.properties.Root)
 }
 
 func hidlGenFactory() android.Module {
@@ -284,6 +299,7 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 	}, &hidlGenProperties{
 		Language:   "c++-sources",
 		FqName:     name.string(),
+		Root:       i.properties.Root,
 		Interfaces: i.properties.Interfaces,
 		Inputs:     i.properties.Srcs,
 		Outputs:    concat(wrap(name.dir(), interfaces, "All.cpp"), wrap(name.dir(), types, ".cpp")),
@@ -293,6 +309,7 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 	}, &hidlGenProperties{
 		Language:   "c++-headers",
 		FqName:     name.string(),
+		Root:       i.properties.Root,
 		Interfaces: i.properties.Interfaces,
 		Inputs:     i.properties.Srcs,
 		Outputs: concat(wrap(name.dir()+"I", interfaces, ".h"),
@@ -339,6 +356,7 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 		}, &hidlGenProperties{
 			Language:   "java",
 			FqName:     name.string(),
+			Root:       i.properties.Root,
 			Interfaces: i.properties.Interfaces,
 			Inputs:     i.properties.Srcs,
 			Outputs: concat(wrap(name.sanitizedDir()+"I", interfaces, ".java"),
@@ -368,6 +386,7 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 		}, &hidlGenProperties{
 			Language:   "java-constants",
 			FqName:     name.string(),
+			Root:       i.properties.Root,
 			Interfaces: i.properties.Interfaces,
 			Inputs:     i.properties.Srcs,
 			Outputs:    []string{name.sanitizedDir() + "Constants.java"},
@@ -386,6 +405,7 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 	}, &hidlGenProperties{
 		Language:   "c++-adapter-sources",
 		FqName:     name.string(),
+		Root:       i.properties.Root,
 		Interfaces: i.properties.Interfaces,
 		Inputs:     i.properties.Srcs,
 		Outputs:    wrap(name.dir()+"A", concat(interfaces, types), ".cpp"),
@@ -395,6 +415,7 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 	}, &hidlGenProperties{
 		Language:   "c++-adapter-headers",
 		FqName:     name.string(),
+		Root:       i.properties.Root,
 		Interfaces: i.properties.Interfaces,
 		Inputs:     i.properties.Srcs,
 		Outputs:    wrap(name.dir()+"A", concat(interfaces, types), ".h"),
@@ -435,6 +456,7 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 	}, &hidlGenProperties{
 		Language:   "c++-adapter-main",
 		FqName:     name.string(),
+		Root:       i.properties.Root,
 		Interfaces: i.properties.Interfaces,
 		Inputs:     i.properties.Srcs,
 		Outputs:    []string{"main.cpp"},
