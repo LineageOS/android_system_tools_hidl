@@ -171,6 +171,22 @@ TEST_F(HidlTest, BazSomeOtherBaseMethodTest) {
                }));
 }
 
+TEST_F(HidlTest, SomeOtherBaseMethodInvalidString) {
+    IBase::Foo foo {
+        .y = {
+            .s = "\xff",
+        }
+    };
+
+    auto ret = baz->someOtherBaseMethod(foo, [&](const auto&) {
+        ADD_FAILURE() << "Should not accept invalid UTF-8 String";
+    });
+
+    EXPECT_FALSE(ret.isOk());
+
+    EXPECT_OK(baz->ping());
+}
+
 TEST_F(HidlTest, BazSomeMethodWithFooArraysTest) {
     hidl_array<IBase::Foo, 2> foo;
 
