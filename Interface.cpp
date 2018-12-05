@@ -817,13 +817,7 @@ void Interface::emitReaderWriter(
         out << "} else {\n";
         out.indent();
         out << "::android::sp<::android::hardware::IBinder> _hidl_binder = "
-            << "::android::hardware::toBinder<\n";
-        out.indent(2, [&] {
-            out << fqName().cppName()
-                << ">("
-                << name
-                << ");\n";
-        });
+            << "::android::hardware::getOrCreateCachedBinder(" << name << ".get());\n";
         out << "if (_hidl_binder.get() != nullptr) {\n";
         out.indent([&] {
             out << "_hidl_err = "
