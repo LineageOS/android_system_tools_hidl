@@ -442,7 +442,7 @@ status_t Coordinator::getPackagePath(const FQName& fqName, bool relative, bool s
 status_t Coordinator::getPackageInterfaceFiles(
         const FQName &package,
         std::vector<std::string> *fileNames) const {
-    fileNames->clear();
+    if (fileNames) fileNames->clear();
 
     std::string packagePath;
     status_t err =
@@ -450,7 +450,7 @@ status_t Coordinator::getPackageInterfaceFiles(
     if (err != OK) return err;
 
     const std::string path = makeAbsolute(packagePath);
-    DIR* dir = opendir(path.c_str());
+    std::unique_ptr<DIR, decltype(&closedir)> dir(opendir(path.c_str()), closedir);
 
     if (dir == nullptr) {
         fprintf(stderr, "ERROR: Could not open package path %s for package %s:\n%s\n",
@@ -458,8 +458,12 @@ status_t Coordinator::getPackageInterfaceFiles(
         return -errno;
     }
 
+    if (fileNames == nullptr) {
+        return OK;
+    }
+
     struct dirent *ent;
-    while ((ent = readdir(dir)) != nullptr) {
+    while ((ent = readdir(dir.get())) != nullptr) {
         // filesystems may not support d_type and return DT_UNKNOWN
         if (ent->d_type == DT_UNKNOWN) {
             struct stat sb;
@@ -486,9 +490,6 @@ status_t Coordinator::getPackageInterfaceFiles(
 
         fileNames->push_back(std::string(ent->d_name, d_namelen - suffix_len));
     }
-
-    closedir(dir);
-    dir = nullptr;
 
     std::sort(fileNames->begin(), fileNames->end(),
               [](const std::string& lhs, const std::string& rhs) -> bool {
