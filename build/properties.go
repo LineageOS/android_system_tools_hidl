@@ -28,7 +28,6 @@ type ccProperties struct {
 	Name                      *string
 	Owner                     *string
 	Defaults                  []string
-	Product_specific          *bool
 	Vendor_available          *bool
 	Recovery_available        *bool
 	Generated_sources         []string
