@@ -1400,9 +1400,16 @@ int main(int argc, char **argv) {
     }
 
     for (int i = 0; i < argc; ++i) {
+        const char* arg = argv[i];
+
         FQName fqName;
-        if (!FQName::parse(argv[i], &fqName)) {
-            fprintf(stderr, "ERROR: Invalid fully-qualified name as argument: %s.\n", argv[i]);
+        if (!FQName::parse(arg, &fqName)) {
+            fprintf(stderr, "ERROR: Invalid fully-qualified name as argument: %s.\n", arg);
+            exit(1);
+        }
+
+        if (coordinator.getPackageInterfaceFiles(fqName, nullptr /*fileNames*/) != OK) {
+            fprintf(stderr, "ERROR: Could not get sources for %s.\n", arg);
             exit(1);
         }
 
