@@ -34,6 +34,10 @@ cc_defaults {
         "-Werror",
         "-Wextra-semi",
     ],
+    // b/121200893, hidl generated *All.cpp files use value parameters
+    tidy_checks: [
+        "-performance-unnecessary-value-param",
+    ],
     product_variables: {
         debuggable: {
             cflags: ["-D__ANDROID_DEBUGGABLE__"]
