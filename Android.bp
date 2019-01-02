@@ -34,8 +34,8 @@ cc_defaults {
         "-Werror",
         "-Wextra-semi",
     ],
-    // b/121200893, hidl generated *All.cpp files use value parameters
     tidy_checks: [
+        // _hidl_cb and addOnewayTask are stuck because of the legacy ABI
         "-performance-unnecessary-value-param",
     ],
     product_variables: {
