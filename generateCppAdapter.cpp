@@ -54,7 +54,7 @@ void AST::generateCppAdapterHeader(Formatter& out) const {
             out << "public:\n";
             out << "typedef " << mockName << " Pure;\n";
 
-            out << klassName << "(::android::sp<" << mockName << "> impl);\n";
+            out << klassName << "(const ::android::sp<" << mockName << ">& impl);\n";
 
             generateMethods(out, [&](const Method* method, const Interface* /* interface */) {
                 if (method->isHidlReserved()) {
@@ -103,8 +103,8 @@ void AST::generateCppAdapterSource(Formatter& out) const {
 
         const std::string mockName = getInterface()->fqName().cppName();
 
-        out << klassName << "::" << klassName << "(::android::sp<" << mockName
-            << "> impl) : mImpl(impl) {}";
+        out << klassName << "::" << klassName << "(const ::android::sp<" << mockName
+            << ">& impl) : mImpl(impl) {}";
 
         generateMethods(out, [&](const Method* method, const Interface* /* interface */) {
             generateAdapterMethod(out, method);
