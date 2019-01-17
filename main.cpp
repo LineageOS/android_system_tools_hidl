@@ -16,6 +16,7 @@
 
 #include "AST.h"
 #include "Coordinator.h"
+#include "Interface.h"
 #include "Scope.h"
 
 #include <android-base/logging.h>
@@ -891,6 +892,31 @@ static status_t generateHashOutput(Formatter& out, const FQName& fqName,
     return OK;
 }
 
+static status_t generateFunctionCount(Formatter& out, const FQName& fqName,
+                                      const Coordinator* coordinator) {
+    CHECK(fqName.isFullyQualified());
+
+    AST* ast = coordinator->parse(fqName, {} /* parsed */,
+                                  Coordinator::Enforce::NO_HASH /* enforcement */);
+
+    if (ast == nullptr) {
+        fprintf(stderr, "ERROR: Could not parse %s. Aborting.\n", fqName.string().c_str());
+        return UNKNOWN_ERROR;
+    }
+
+    const Interface* interface = ast->getInterface();
+    if (interface == nullptr) {
+        fprintf(stderr, "ERROR: Function count requires interface: %s.\n", fqName.string().c_str());
+        return UNKNOWN_ERROR;
+    }
+
+    // This is wrong for android.hidl.base@1.0::IBase, but in that case, it doesn't matter.
+    // This is just the number of APIs that are added.
+    out << fqName.string() << " " << interface->userDefinedMethods().size() << "\n";
+
+    return OK;
+}
+
 template <typename T>
 std::vector<T> operator+(const std::vector<T>& lhs, const std::vector<T>& rhs) {
     std::vector<T> ret;
@@ -1177,6 +1203,21 @@ static const std::vector<OutputHandler> kFormats = {
                 FileGenerator::alwaysGenerate,
                 nullptr /* file name for fqName */,
                 generateHashOutput,
+            },
+        }
+    },
+    {
+        "function-count",
+        "Prints the total number of functions added by the package or interface.",
+        OutputMode::NOT_NEEDED,
+        Coordinator::Location::STANDARD_OUT,
+        GenerationGranularity::PER_FILE,
+        validateForSource,
+        {
+            {
+                FileGenerator::generateForInterfaces,
+                nullptr /* file name for fqName */,
+                generateFunctionCount,
             },
         }
     },
