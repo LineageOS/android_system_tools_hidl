@@ -80,27 +80,32 @@ func (g *hidlGenRule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	}
 
 	var fullRootOptions []string
-	var currentPaths android.Paths
+	var currentPath android.OptionalPath
 	ctx.VisitDirectDeps(func(dep android.Module) {
 		switch t := dep.(type) {
 		case *hidlInterface:
 			fullRootOptions = append(fullRootOptions, t.properties.Full_root_option)
 		case *hidlPackageRoot:
-			currentPaths = append(currentPaths, t.getCurrentPaths()...)
+			if currentPath.Valid() {
+				panic(fmt.Sprintf("Expecting only one path, but found %v %v", currentPath, t.getCurrentPath()))
+			}
+
+			currentPath = t.getCurrentPath()
 		default:
 			panic(fmt.Sprintf("Unrecognized hidlGenProperties dependency: %T", t))
 		}
 	})
 
-	if len(currentPaths) > 1 {
-		panic(fmt.Sprintf("Expecting one or zero current paths, but found: %v", currentPaths))
-	}
-
 	fullRootOptions = android.FirstUniqueStrings(fullRootOptions)
+
+	inputs := g.genInputs
+	if (currentPath.Valid()) {
+		inputs = append(inputs, currentPath.Path())
+	}
 
 	ctx.ModuleBuild(pctx, android.ModuleBuildParams{
 		Rule:            hidlRule,
-		Inputs:          append(g.genInputs, currentPaths...),
+		Inputs:          inputs,
 		Output:          g.genOutputs[0],
 		ImplicitOutputs: g.genOutputs[1:],
 		Args: map[string]string{
