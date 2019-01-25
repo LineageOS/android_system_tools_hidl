@@ -1065,7 +1065,7 @@ static const std::vector<OutputHandler> kFormats = {
     },
     {
         "c++-impl-headers",
-        "c++-impl but headers only",
+        "c++-impl but headers only.",
         OutputMode::NEEDS_DIR,
         Coordinator::Location::DIRECT,
         GenerationGranularity::PER_FILE,
@@ -1074,7 +1074,7 @@ static const std::vector<OutputHandler> kFormats = {
     },
     {
         "c++-impl-sources",
-        "c++-impl but sources only",
+        "c++-impl but sources only.",
         OutputMode::NEEDS_DIR,
         Coordinator::Location::DIRECT,
         GenerationGranularity::PER_FILE,
@@ -1092,7 +1092,7 @@ static const std::vector<OutputHandler> kFormats = {
     },
     {
         "c++-adapter-headers",
-        "c++-adapter but helper headers only",
+        "c++-adapter but helper headers only.",
         OutputMode::NEEDS_DIR,
         Coordinator::Location::GEN_OUTPUT,
         GenerationGranularity::PER_FILE,
@@ -1101,7 +1101,7 @@ static const std::vector<OutputHandler> kFormats = {
     },
     {
         "c++-adapter-sources",
-        "c++-adapter but helper sources only",
+        "c++-adapter but helper sources only.",
         OutputMode::NEEDS_DIR,
         Coordinator::Location::GEN_OUTPUT,
         GenerationGranularity::PER_FILE,
@@ -1110,7 +1110,7 @@ static const std::vector<OutputHandler> kFormats = {
     },
     {
         "c++-adapter-main",
-        "c++-adapter but the adapter binary source only",
+        "c++-adapter but the adapter binary source only.",
         OutputMode::NEEDS_DIR,
         Coordinator::Location::DIRECT,
         GenerationGranularity::PER_PACKAGE,
@@ -1255,7 +1255,7 @@ static void usage(const char *me) {
     fprintf(stderr, "         -O <owner>: The owner of the module for -Landroidbp(-impl)?.\n");
     fprintf(stderr, "         -o <output path>: Location to output files.\n");
     fprintf(stderr, "         -p <root path>: Android build root, defaults to $ANDROID_BUILD_TOP or pwd.\n");
-    fprintf(stderr, "         -R: Do not add default package roots if not specified in -r\n");
+    fprintf(stderr, "         -R: Do not add default package roots if not specified in -r.\n");
     fprintf(stderr, "         -r <package:path root>: E.g., android.hardware:hardware/interfaces.\n");
     fprintf(stderr, "         -v: verbose output.\n");
     fprintf(stderr, "         -d <depfile>: location of depfile to write to.\n");
