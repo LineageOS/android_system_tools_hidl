@@ -99,7 +99,7 @@ func (g *hidlGenRule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	fullRootOptions = android.FirstUniqueStrings(fullRootOptions)
 
 	inputs := g.genInputs
-	if (currentPath.Valid()) {
+	if currentPath.Valid() {
 		inputs = append(inputs, currentPath.Path())
 	}
 
@@ -540,14 +540,20 @@ func hidlInterfaceFactory() android.Module {
 }
 
 var doubleLoadablePackageNames = []string{
+	"android.hardware.cas@1.0",
+	"android.hardware.cas.native@1.0",
 	"android.hardware.configstore@",
+	"android.hardware.drm@1.0",
+	"android.hardware.drm@1.1",
 	"android.hardware.graphics.allocator@",
 	"android.hardware.graphics.bufferqueue@",
-	"android.hardware.media.omx@",
 	"android.hardware.media@",
+	"android.hardware.media.omx@",
+	"android.hardware.memtrack@1.0",
 	"android.hardware.neuralnetworks@",
 	"android.hidl.allocator@",
 	"android.hidl.token@",
+	"android.system.suspend@1.0",
 }
 
 func isDoubleLoadable(name string) bool {
