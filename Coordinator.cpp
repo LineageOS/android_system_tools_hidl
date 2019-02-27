@@ -859,9 +859,17 @@ status_t Coordinator::getUnfrozenDependencies(const FQName& fqName,
 
         for (const FQName& importedName : packageInterfaces) {
             HashStatus status = checkHash(importedName);
-            if (status == HashStatus::ERROR) return UNKNOWN_ERROR;
-            if (status == HashStatus::UNFROZEN) {
-                result->insert(importedName);
+            switch (status) {
+                case HashStatus::CHANGED:
+                case HashStatus::ERROR:
+                    return UNKNOWN_ERROR;
+                case HashStatus::FROZEN:
+                    continue;
+                case HashStatus::UNFROZEN:
+                    result->insert(importedName);
+                    continue;
+                default:
+                    LOG(FATAL) << static_cast<uint64_t>(status);
             }
         }
     }
@@ -878,27 +886,30 @@ status_t Coordinator::enforceHashes(const FQName& currentPackage) const {
 
     for (const FQName& currentFQName : packageInterfaces) {
         HashStatus status = checkHash(currentFQName);
-
-        if (status == HashStatus::ERROR) return UNKNOWN_ERROR;
-        if (status == HashStatus::CHANGED) return UNKNOWN_ERROR;
-
-        // frozen interface can only depend on a frozen interface
-        if (status == HashStatus::FROZEN) {
-            std::set<FQName> unfrozenDependencies;
-            err = getUnfrozenDependencies(currentFQName, &unfrozenDependencies);
-            if (err != OK) return err;
-
-            if (!unfrozenDependencies.empty()) {
-                std::cerr << "ERROR: Frozen interface " << currentFQName.string()
-                          << " cannot depend on unfrozen thing(s):" << std::endl;
-                for (const FQName& name : unfrozenDependencies) {
-                    std::cerr << " (unfrozen) " << name.string() << std::endl;
-                }
+        switch (status) {
+            case HashStatus::CHANGED:
+            case HashStatus::ERROR:
                 return UNKNOWN_ERROR;
-            }
-        }
+            case HashStatus::FROZEN: {
+                std::set<FQName> unfrozenDependencies;
+                err = getUnfrozenDependencies(currentFQName, &unfrozenDependencies);
+                if (err != OK) return err;
 
-        // UNFROZEN, ignore
+                if (!unfrozenDependencies.empty()) {
+                    std::cerr << "ERROR: Frozen interface " << currentFQName.string()
+                              << " cannot depend on unfrozen thing(s):" << std::endl;
+                    for (const FQName& name : unfrozenDependencies) {
+                        std::cerr << " (unfrozen) " << name.string() << std::endl;
+                    }
+                    return UNKNOWN_ERROR;
+                }
+            }
+                continue;
+            case HashStatus::UNFROZEN:
+                continue;
+            default:
+                LOG(FATAL) << static_cast<uint64_t>(status);
+        }
     }
 
     return err;
