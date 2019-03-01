@@ -266,6 +266,9 @@ type hidlInterfaceProperties struct {
 	// expressed by @export annotations in the hal files.
 	Gen_java_constants bool
 
+	// Whether to generate VTS-related testing libraries.
+	Gen_vts *bool
+
 	// example: -randroid.hardware:hardware/interfaces
 	Full_root_option string `blueprint:"mutated"`
 }
@@ -408,9 +411,9 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 
 	shouldGenerateLibrary := !isCorePackage(name.string())
 	// explicitly true if not specified to give early warning to devs
-	shouldGenerateJava := i.properties.Gen_java == nil || *i.properties.Gen_java
+	shouldGenerateJava := proptools.BoolDefault(i.properties.Gen_java, true)
 	shouldGenerateJavaConstants := i.properties.Gen_java_constants
-	shouldGenerateVts := shouldGenerateLibrary
+	shouldGenerateVts := shouldGenerateLibrary && proptools.BoolDefault(i.properties.Gen_vts, true)
 
 	var libraryIfExists []string
 	if shouldGenerateLibrary {
