@@ -34,8 +34,9 @@ var (
 
 	pctx = android.NewPackageContext("android/hidl")
 
-	hidl = pctx.HostBinToolVariable("hidl", "hidl-gen")
-	vtsc = pctx.HostBinToolVariable("vtsc", "vtsc")
+	hidl      = pctx.HostBinToolVariable("hidl", "hidl-gen")
+	vtsc      = pctx.HostBinToolVariable("vtsc", "vtsc")
+	soong_zip = pctx.HostBinToolVariable("soong_zip", "soong_zip")
 
 	hidlRule = pctx.StaticRule("hidlRule", blueprint.RuleParams{
 		Depfile:     "${depfile}",
@@ -43,6 +44,14 @@ var (
 		Command:     "rm -rf ${genDir} && ${hidl} -R -p . -d ${depfile} -o ${genDir} -L ${language} ${roots} ${fqName}",
 		CommandDeps: []string{"${hidl}"},
 		Description: "HIDL ${language}: ${in} => ${out}",
+	}, "depfile", "fqName", "genDir", "language", "roots")
+
+	hidlSrcJarRule = pctx.StaticRule("hidlSrcJarRule", blueprint.RuleParams{
+		Depfile:     "${depfile}",
+		Deps:        blueprint.DepsGCC,
+		Command:     "rm -rf ${genDir} && ${hidl} -R -p . -d ${depfile} -o ${genDir}/srcs -L ${language} ${roots} ${fqName} && ${soong_zip} -o ${genDir}/srcs.srcjar -D ${genDir}/srcs",
+		CommandDeps: []string{"${hidl}", "${soong_zip}"},
+		Description: "HIDL ${language}: ${in} => srcs.srcjar",
 	}, "depfile", "fqName", "genDir", "language", "roots")
 
 	vtsRule = pctx.StaticRule("vtsRule", blueprint.RuleParams{
@@ -121,8 +130,13 @@ func (g *hidlGenRule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		inputs = append(inputs, currentPath.Path())
 	}
 
+	rule := hidlRule
+	if g.properties.Language == "java" {
+		rule = hidlSrcJarRule
+	}
+
 	ctx.ModuleBuild(pctx, android.ModuleBuildParams{
-		Rule:            hidlRule,
+		Rule:            rule,
 		Inputs:          inputs,
 		Output:          g.genOutputs[0],
 		ImplicitOutputs: g.genOutputs[1:],
@@ -255,7 +269,7 @@ type hidlInterfaceProperties struct {
 	// Package root for this package, must be a prefix of name
 	Root string
 
-	// List of non-TypeDef types declared in types.hal.
+	// Unused/deprecated: List of non-TypeDef types declared in types.hal.
 	Types []string
 
 	// Whether to generate the Java library stubs.
@@ -489,8 +503,7 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 			Root:       i.properties.Root,
 			Interfaces: i.properties.Interfaces,
 			Inputs:     i.properties.Srcs,
-			Outputs: concat(wrap(name.sanitizedDir()+"I", interfaces, ".java"),
-				wrap(name.sanitizedDir(), i.properties.Types, ".java")),
+			Outputs:    []string{"srcs.srcjar"},
 		}, &i.inheritCommonProperties)
 		mctx.CreateModule(android.ModuleFactoryAdaptor(java.LibraryFactory), &javaProperties{
 			Name:              proptools.StringPtr(name.javaName()),

@@ -624,25 +624,6 @@ static status_t generateAndroidBpForPackage(Formatter& out, const FQName& packag
                }
             }) << "],\n";
         }
-        if (typesAST != nullptr) {
-            (out << "types: [\n").indent([&] {
-                std::vector<NamedType *> subTypes = typesAST->getRootScope()->getSubTypes();
-                std::sort(
-                        subTypes.begin(),
-                        subTypes.end(),
-                        [](const NamedType *a, const NamedType *b) -> bool {
-                            return a->fqName() < b->fqName();
-                        });
-
-                for (const auto &type : subTypes) {
-                    if (type->isTypeDef()) {
-                        continue;
-                    }
-
-                    out << "\"" << type->localName() << "\",\n";
-                }
-            }) << "],\n";
-        }
         // Explicity call this out for developers.
         out << "gen_java: " << (genJavaLibrary ? "true" : "false") << ",\n";
         if (genJavaConstants) {
