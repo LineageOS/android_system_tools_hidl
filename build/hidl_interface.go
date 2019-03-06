@@ -47,9 +47,11 @@ var (
 	}, "depfile", "fqName", "genDir", "language", "roots")
 
 	hidlSrcJarRule = pctx.StaticRule("hidlSrcJarRule", blueprint.RuleParams{
-		Depfile:     "${depfile}",
-		Deps:        blueprint.DepsGCC,
-		Command:     "rm -rf ${genDir} && ${hidl} -R -p . -d ${depfile} -o ${genDir}/srcs -L ${language} ${roots} ${fqName} && ${soong_zip} -o ${genDir}/srcs.srcjar -D ${genDir}/srcs",
+		Depfile: "${depfile}",
+		Deps:    blueprint.DepsGCC,
+		Command: "rm -rf ${genDir} && " +
+			"${hidl} -R -p . -d ${depfile} -o ${genDir}/srcs -L ${language} ${roots} ${fqName} && " +
+			"${soong_zip} -o ${genDir}/srcs.srcjar -C ${genDir}/srcs -D ${genDir}/srcs",
 		CommandDeps: []string{"${hidl}", "${soong_zip}"},
 		Description: "HIDL ${language}: ${in} => srcs.srcjar",
 	}, "depfile", "fqName", "genDir", "language", "roots")
@@ -731,11 +733,13 @@ func hidlInterfaceFactory() android.Module {
 }
 
 var doubleLoadablePackageNames = []string{
+	"android.frameworks.bufferhub@1.0",
 	"android.hardware.cas@1.0",
 	"android.hardware.cas.native@1.0",
 	"android.hardware.configstore@",
 	"android.hardware.drm@1.0",
 	"android.hardware.drm@1.1",
+	"android.hardware.drm@1.2",
 	"android.hardware.graphics.allocator@",
 	"android.hardware.graphics.bufferqueue@",
 	"android.hardware.media@",
