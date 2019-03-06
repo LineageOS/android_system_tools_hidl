@@ -1509,6 +1509,7 @@ void AST::generateStaticStubMethodSource(Formatter& out, const FQName& fqName,
         });
 
         out << ");\n\n";
+
         out << "::android::hardware::writeToParcel(::android::hardware::Status::ok(), "
             << "_hidl_reply);\n\n";
 
@@ -1541,7 +1542,8 @@ void AST::generateStaticStubMethodSource(Formatter& out, const FQName& fqName,
             out << "bool _hidl_callbackCalled = false;\n\n";
         }
 
-        out << callee << "->" << method->name() << "(";
+        out << "::android::hardware::Return<void> _hidl_ret = " << callee << "->" << method->name()
+            << "(";
 
         out.join(method->args().begin(), method->args().end(), ", ", [&] (const auto &arg) {
             if (arg->type().resultNeedsDeref()) {
@@ -1619,6 +1621,8 @@ void AST::generateStaticStubMethodSource(Formatter& out, const FQName& fqName,
                     method,
                     superInterface);
         }
+
+        out << "_hidl_ret.assertOk();\n";
 
         if (returnsValue) {
             out << "if (!_hidl_callbackCalled) {\n";
