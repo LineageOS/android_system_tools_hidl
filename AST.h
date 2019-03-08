@@ -34,6 +34,7 @@ namespace android {
 
 struct Coordinator;
 struct ConstantExpression;
+struct DocComment;
 struct EnumValue;
 struct Formatter;
 struct Interface;
@@ -213,6 +214,14 @@ struct AST {
     bool addMethod(Method* method, Interface* iface);
     bool addAllReservedMethodsToInterface(Interface* iface);
 
+    void setHeader(const DocComment* header);
+    const DocComment* getHeader() const;
+
+    // TODO: Clean up all interface usages of unhandled comments and ensure they are attached to the
+    // right element
+    void addUnhandledComment(const DocComment* docComment);
+    const std::vector<const DocComment*> getUnhandledComments() const;
+
   private:
     const Coordinator* mCoordinator;
     const Hash* mFileHash;
@@ -220,6 +229,12 @@ struct AST {
     RootScope mRootScope;
 
     FQName mPackage;
+
+    // Header for the file
+    const DocComment* mHeader = nullptr;
+
+    // A list of trailing DocComments.
+    std::vector<const DocComment*> mUnhandledComments;
 
     // A list of the FQNames present in the import statements
     std::vector<ImportStatement> mImportStatements;
