@@ -17,6 +17,8 @@ cc_defaults {
     cflags: [
         "-Wall",
         "-Werror",
+
+        // See also CompileToggles.h
     ],
     target: {
         host: {
