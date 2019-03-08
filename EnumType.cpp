@@ -22,6 +22,7 @@
 #include <unordered_map>
 
 #include "Annotation.h"
+#include "CompileToggles.h"
 #include "Location.h"
 #include "ScalarType.h"
 
@@ -489,11 +490,13 @@ void EnumType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) const {
     out << "public static final String toString("
         << typeName << " o) ";
     out.block([&] {
-        forEachValueFromRoot([&](EnumValue* value) {
-            out.sIf("o == " + value->name(), [&] {
-                out << "return \"" << value->name() << "\";\n";
-            }).endl();
-        });
+        if (kDetailJavaToString) {
+            forEachValueFromRoot([&](EnumValue* value) {
+                out.sIf("o == " + value->name(), [&] {
+                    out << "return \"" << value->name() << "\";\n";
+                }).endl();
+            });
+        }
         out << "return \"0x\" + ";
         scalarType->emitConvertToJavaHexString(out, "o");
         out << ";\n";
@@ -504,25 +507,29 @@ void EnumType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) const {
         << "public static final String dumpBitfield("
         << bitfieldType << " o) ";
     out.block([&] {
-        out << "java.util.ArrayList<String> list = new java.util.ArrayList<>();\n";
-        out << bitfieldType << " flipped = 0;\n";
-        forEachValueFromRoot([&](EnumValue* value) {
-            if (value->constExpr()->castSizeT() == 0) {
-                out << "list.add(\"" << value->name() << "\"); // " << value->name() << " == 0\n";
-                return;  // continue to next value
-            }
-            out.sIf("(o & " + value->name() + ") == " + value->name(), [&] {
-                out << "list.add(\"" << value->name() << "\");\n";
-                out << "flipped |= " << value->name() << ";\n";
+        if (kDetailJavaToString) {
+            out << "java.util.ArrayList<String> list = new java.util.ArrayList<>();\n";
+            out << bitfieldType << " flipped = 0;\n";
+            forEachValueFromRoot([&](EnumValue* value) {
+                if (value->constExpr()->castSizeT() == 0) {
+                    out << "list.add(\"" << value->name() << "\"); // " << value->name() << " == 0\n";
+                    return;  // continue to next value
+                }
+                out.sIf("(o & " + value->name() + ") == " + value->name(), [&] {
+                    out << "list.add(\"" << value->name() << "\");\n";
+                    out << "flipped |= " << value->name() << ";\n";
+                }).endl();
+            });
+            // put remaining bits
+            out.sIf("o != flipped", [&] {
+                out << "list.add(\"0x\" + ";
+                scalarType->emitConvertToJavaHexString(out, "o & (~flipped)");
+                out << ");\n";
             }).endl();
-        });
-        // put remaining bits
-        out.sIf("o != flipped", [&] {
-            out << "list.add(\"0x\" + ";
-            scalarType->emitConvertToJavaHexString(out, "o & (~flipped)");
-            out << ");\n";
-        }).endl();
-        out << "return String.join(\" | \", list);\n";
+            out << "return String.join(\" | \", list);\n";
+        } else {
+            out << "return toString(o);\n";
+        }
     }).endl().endl();
 
     out.unindent();
