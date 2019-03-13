@@ -128,6 +128,8 @@ void AST::generateJava(Formatter& out, const std::string& limitToType) const {
 
     const Interface *superType = iface->superType();
 
+    iface->emitDocComment(out);
+
     out << "public interface " << ifaceName << " extends ";
 
     if (superType != nullptr) {
@@ -213,7 +215,7 @@ void AST::generateJava(Formatter& out, const std::string& limitToType) const {
     emitGetService(out, ifaceName, iface->fqName().string(), true /* isRetry */);
     emitGetService(out, ifaceName, iface->fqName().string(), false /* isRetry */);
 
-    emitJavaTypeDeclarations(out);
+    iface->emitJavaTypeDeclarations(out, false /* atTopLevel */);
 
     for (const auto &method : iface->methods()) {
         const bool returnsValue = !method->results().empty();
@@ -644,10 +646,6 @@ void AST::generateJava(Formatter& out, const std::string& limitToType) const {
 
     out.unindent();
     out << "}\n";
-}
-
-void AST::emitJavaTypeDeclarations(Formatter& out) const {
-    mRootScope.emitJavaTypeDeclarations(out, false /* atTopLevel */);
 }
 
 }  // namespace android

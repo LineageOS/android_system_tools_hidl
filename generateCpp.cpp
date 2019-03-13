@@ -228,6 +228,8 @@ void AST::generateInterfaceHeader(Formatter& out) const {
     out << "\n";
 
     if (iface) {
+        iface->emitDocComment(out);
+
         out << "struct "
             << ifaceName;
 
@@ -245,9 +247,11 @@ void AST::generateInterfaceHeader(Formatter& out) const {
         out.indent();
 
         generateCppTag(out, "android::hardware::details::i_tag");
-    }
 
-    emitTypeDeclarations(out);
+        iface->emitTypeDeclarations(out);
+    } else {
+        mRootScope.emitTypeDeclarations(out);
+    }
 
     if (iface) {
         out << "virtual bool isRemote() const ";
@@ -382,10 +386,6 @@ void AST::generateHwBinderHeader(Formatter& out) const {
     enterLeaveNamespace(out, false /* enter */);
 
     out << "\n#endif  // " << guard << "\n";
-}
-
-void AST::emitTypeDeclarations(Formatter& out) const {
-    return mRootScope.emitTypeDeclarations(out);
 }
 
 static std::string wrapPassthroughArg(Formatter& out, const NamedReference<Type>* arg,
