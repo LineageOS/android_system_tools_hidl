@@ -507,13 +507,12 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 			Inputs:     i.properties.Srcs,
 			Outputs:    []string{"srcs.srcjar"},
 		}, &i.inheritCommonProperties)
-		mctx.CreateModule(android.ModuleFactoryAdaptor(java.LibraryFactory), &javaProperties{
-			Name:              proptools.StringPtr(name.javaName()),
+
+		commonJavaProperties := javaProperties{
 			Defaults:          []string{"hidl-java-module-defaults"},
 			No_framework_libs: proptools.BoolPtr(true),
 			Installable:       proptools.BoolPtr(true),
 			Srcs:              []string{":" + name.javaSourcesName()},
-			Static_libs:       javaDependencies,
 
 			// This should ideally be system_current, but android.hidl.base-V1.0-java is used
 			// to build framework, which is used to build system_current.  Use core_current
@@ -521,7 +520,16 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 			// not depend on framework.
 			Sdk_version: proptools.StringPtr("core_current"),
 			Libs:        []string{"hwbinder.stubs"},
-		}, &i.inheritCommonProperties)
+		}
+
+		mctx.CreateModule(android.ModuleFactoryAdaptor(java.LibraryFactory), &javaProperties{
+			Name:        proptools.StringPtr(name.javaName()),
+			Static_libs: javaDependencies,
+		}, &i.inheritCommonProperties, &commonJavaProperties)
+		mctx.CreateModule(android.ModuleFactoryAdaptor(java.LibraryFactory), &javaProperties{
+			Name: proptools.StringPtr(name.javaSharedName()),
+			Libs: javaDependencies,
+		}, &i.inheritCommonProperties, &commonJavaProperties)
 	}
 
 	if shouldGenerateJavaConstants {
