@@ -149,8 +149,10 @@ bool Method::overridesJavaImpl(MethodImplType type) const {
     return mJavaImpl.find(type) != mJavaImpl.end();
 }
 
-Method *Method::copySignature() const {
-    return new Method(mName.c_str(), mArgs, mResults, mOneway, mAnnotations, Location());
+Method* Method::copySignature() const {
+    Method* method = new Method(mName.c_str(), mArgs, mResults, mOneway, mAnnotations, location());
+    method->setDocComment(getDocComment());
+    return method;
 }
 
 void Method::setSerialId(size_t serial) {
