@@ -103,17 +103,43 @@ void AST::enterLeaveNamespace(Formatter &out, bool enter) const {
 static void declareGetService(Formatter &out, const std::string &interfaceName, bool isTry) {
     const std::string functionName = isTry ? "tryGetService" : "getService";
 
+    if (isTry) {
+        DocComment(
+                "This gets the service of this type with the specified instance name. If the\n"
+                "service is currently not available or not in the VINTF manifest on a Trebilized\n"
+                "device, this will return nullptr. This is useful when you don't want to block\n"
+                "during device boot. If getStub is true, this will try to return an unwrapped\n"
+                "passthrough implementation in the same process. This is useful when getting an\n"
+                "implementation from the same partition/compilation group.\n\n"
+                "In general, prefer getService(std::string,bool)")
+                .emit(out);
+    } else {
+        DocComment(
+                "This gets the service of this type with the specified instance name. If the\n"
+                "service is not in the VINTF manifest on a Trebilized device, this will return\n"
+                "nullptr. If the service is not available, this will wait for the service to\n"
+                "become available. If the service is a lazy service, this will start the service\n"
+                "and return when it becomes available. If getStub is true, this will try to\n"
+                "return an unwrapped passthrough implementation in the same process. This is\n"
+                "useful when getting an implementation from the same partition/compilation group.")
+                .emit(out);
+    }
     out << "static ::android::sp<" << interfaceName << "> " << functionName << "("
         << "const std::string &serviceName=\"default\", bool getStub=false);\n";
+    DocComment("Deprecated. See " + functionName + "(std::string, bool)").emit(out);
     out << "static ::android::sp<" << interfaceName << "> " << functionName << "("
         << "const char serviceName[], bool getStub=false)"
         << "  { std::string str(serviceName ? serviceName : \"\");"
         << "      return " << functionName << "(str, getStub); }\n";
+    DocComment("Deprecated. See " + functionName + "(std::string, bool)").emit(out);
     out << "static ::android::sp<" << interfaceName << "> " << functionName << "("
         << "const ::android::hardware::hidl_string& serviceName, bool getStub=false)"
         // without c_str the std::string constructor is ambiguous
         << "  { std::string str(serviceName.c_str());"
         << "      return " << functionName << "(str, getStub); }\n";
+    DocComment("Calls " + functionName +
+               "(\"default\", bool). This is the recommended instance name for singleton services.")
+            .emit(out);
     out << "static ::android::sp<" << interfaceName << "> " << functionName << "("
         << "bool getStub) { return " << functionName << "(\"default\", getStub); }\n";
 }
@@ -122,8 +148,13 @@ static void declareServiceManagerInteractions(Formatter &out, const std::string 
     declareGetService(out, interfaceName, true /* isTry */);
     declareGetService(out, interfaceName, false /* isTry */);
 
+    DocComment(
+            "Registers a service with the service manager. For Trebilized devices, the service\n"
+            "must also be in the VINTF manifest.")
+            .emit(out);
     out << "__attribute__ ((warn_unused_result))"
         << "::android::status_t registerAsService(const std::string &serviceName=\"default\");\n";
+    DocComment("Registers for notifications for when a service is registered.").emit(out);
     out << "static bool registerForNotifications(\n";
     out.indent(2, [&] {
         out << "const std::string &serviceName,\n"
@@ -228,6 +259,8 @@ void AST::generateInterfaceHeader(Formatter& out) const {
     out << "\n";
 
     if (iface) {
+        iface->emitDocComment(out);
+
         out << "struct "
             << ifaceName;
 
@@ -244,17 +277,28 @@ void AST::generateInterfaceHeader(Formatter& out) const {
 
         out.indent();
 
+        DocComment("Type tag for use in template logic that indicates this is a 'pure' class.")
+                .emit(out);
         generateCppTag(out, "android::hardware::details::i_tag");
+
+        DocComment("Fully qualified interface name: \"" + iface->fqName().string() + "\"")
+                .emit(out);
+        out << "static const char* descriptor;\n\n";
+
+        iface->emitTypeDeclarations(out);
+    } else {
+        mRootScope.emitTypeDeclarations(out);
     }
 
-    emitTypeDeclarations(out);
-
     if (iface) {
+        DocComment(
+                "Returns whether this object's implementation is outside of the current process.")
+                .emit(out);
         out << "virtual bool isRemote() const ";
         if (!isIBase()) {
             out << "override ";
         }
-        out << "{ return false; }\n\n";
+        out << "{ return false; }\n";
 
         for (const auto& tuple : iface->allMethodsFromRoot()) {
             const Method* method = tuple.method();
@@ -265,6 +309,7 @@ void AST::generateInterfaceHeader(Formatter& out) const {
             const NamedReference<Type>* elidedReturn = method->canElideCallback();
 
             if (elidedReturn == nullptr && returnsValue) {
+                DocComment("Return callback for " + method->name()).emit(out);
                 out << "using "
                     << method->name()
                     << "_cb = std::function<void(";
@@ -297,10 +342,14 @@ void AST::generateInterfaceHeader(Formatter& out) const {
             out << ";\n";
         }
 
-        out << "// cast static functions\n";
+        out << "\n// cast static functions\n";
         std::string childTypeResult = iface->getCppResultType();
 
         for (const Interface *superType : iface->typeChain()) {
+            DocComment(
+                    "This performs a checked cast based on what the underlying implementation "
+                    "actually is.")
+                    .emit(out);
             out << "static ::android::hardware::Return<"
                 << childTypeResult
                 << "> castFrom("
@@ -309,11 +358,10 @@ void AST::generateInterfaceHeader(Formatter& out) const {
                 << ", bool emitError = false);\n";
         }
 
-        out << "\nstatic const char* descriptor;\n\n";
-
         if (isIBase()) {
-            out << "// skipped getService, registerAsService, registerForNotifications\n\n";
+            out << "\n// skipped getService, registerAsService, registerForNotifications\n\n";
         } else {
+            out << "\n// helper methods for interactions with the hwservicemanager\n";
             declareServiceManagerInteractions(out, iface->localName());
         }
     }
@@ -382,10 +430,6 @@ void AST::generateHwBinderHeader(Formatter& out) const {
     enterLeaveNamespace(out, false /* enter */);
 
     out << "\n#endif  // " << guard << "\n";
-}
-
-void AST::emitTypeDeclarations(Formatter& out) const {
-    return mRootScope.emitTypeDeclarations(out);
 }
 
 static std::string wrapPassthroughArg(Formatter& out, const NamedReference<Type>* arg,
@@ -588,6 +632,7 @@ void AST::generateMethods(Formatter& out, const MethodGenerator& gen, bool inclu
 }
 
 void AST::generateTemplatizationLink(Formatter& out) const {
+    DocComment("The pure class is what this class wraps.").emit(out);
     out << "typedef " << mRootScope.getInterface()->localName() << " Pure;\n\n";
 }
 
@@ -648,6 +693,8 @@ void AST::generateStubHeader(Formatter& out) const {
 
     out.endl();
     generateTemplatizationLink(out);
+    DocComment("Type tag for use in template logic that indicates this is a 'native' class.")
+            .emit(out);
     generateCppTag(out, "android::hardware::details::bnhw_tag");
 
     out << "::android::sp<" << iface->localName() << "> getImpl() { return _hidl_mImpl; }\n";
@@ -740,6 +787,8 @@ void AST::generateProxyHeader(Formatter& out) const {
         << "\n\n";
 
     generateTemplatizationLink(out);
+    DocComment("Type tag for use in template logic that indicates this is a 'proxy' class.")
+            .emit(out);
     generateCppTag(out, "android::hardware::details::bphw_tag");
 
     out << "virtual bool isRemote() const override { return true; }\n\n";
