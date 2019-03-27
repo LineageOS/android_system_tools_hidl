@@ -142,7 +142,7 @@ struct CompoundType : public Scope {
     bool deepIsJavaCompatible(std::unordered_set<const Type*>* visited) const override;
     bool deepContainsPointer(std::unordered_set<const Type*>* visited) const override;
 
-    void getAlignmentAndSize(size_t *align, size_t *size) const;
+    void getAlignmentAndSize(size_t *align, size_t *size) const override;
 
     bool containsInterface() const;
 private:
