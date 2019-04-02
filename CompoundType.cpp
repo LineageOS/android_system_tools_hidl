@@ -17,7 +17,6 @@
 #include "CompoundType.h"
 
 #include "ArrayType.h"
-#include "CompileToggles.h"
 #include "ScalarType.h"
 #include "VectorType.h"
 
@@ -1538,55 +1537,53 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
 
     ////////////////////////////////////////////////////////////////////////////
 
-    if (kDetailJavaToString) {
-        out << "@Override\npublic final String toString() ";
-        out.block([&] {
-            out << "java.lang.StringBuilder builder = new java.lang.StringBuilder();\n"
-                << "builder.append(\"{\");\n";
+    out << "@Override\npublic final String toString() ";
+    out.block([&] {
+        out << "java.lang.StringBuilder builder = new java.lang.StringBuilder();\n"
+            << "builder.append(\"{\");\n";
 
+        if (mStyle == STYLE_SAFE_UNION) {
+            out << "switch (this.hidl_d) {\n";
+            out.indent();
+        }
+
+        for (const auto &field : *mFields) {
             if (mStyle == STYLE_SAFE_UNION) {
-                out << "switch (this.hidl_d) {\n";
-                out.indent();
-            }
+                out << "case hidl_discriminator."
+                    << field->name()
+                    << ": ";
 
-            for (const auto &field : *mFields) {
-                if (mStyle == STYLE_SAFE_UNION) {
-                    out << "case hidl_discriminator."
+                out.block([&] {
+                    out << "builder.append(\""
+                        << "."
                         << field->name()
-                        << ": ";
+                        << " = \");\n";
 
-                    out.block([&] {
-                        out << "builder.append(\""
-                            << "."
-                            << field->name()
-                            << " = \");\n";
-
-                        field->type().emitJavaDump(out, "builder", "this." + field->name() + "()");
-                        out << "break;\n";
-                    }).endl();
-                }
-                else {
-                    out << "builder.append(\"";
-                    if (field != *(mFields->begin())) {
-                        out << ", ";
-                    }
-                    out << "." << field->name() << " = \");\n";
-                    field->type().emitJavaDump(out, "builder", "this." + field->name());
-                }
+                    field->type().emitJavaDump(out, "builder", "this." + field->name() + "()");
+                    out << "break;\n";
+                }).endl();
             }
-
-            if (mStyle == STYLE_SAFE_UNION) {
-                out << "default: ";
-                out.block([&] { emitJavaSafeUnionUnknownDiscriminatorError(out, true /*fatal*/); })
-                    .endl();
-
-                out.unindent();
-                out << "}\n";
+            else {
+                out << "builder.append(\"";
+                if (field != *(mFields->begin())) {
+                    out << ", ";
+                }
+                out << "." << field->name() << " = \");\n";
+                field->type().emitJavaDump(out, "builder", "this." + field->name());
             }
+        }
 
-            out << "builder.append(\"}\");\nreturn builder.toString();\n";
-        }).endl().endl();
-    }
+        if (mStyle == STYLE_SAFE_UNION) {
+            out << "default: ";
+            out.block([&] { emitJavaSafeUnionUnknownDiscriminatorError(out, true /*fatal*/); })
+                .endl();
+
+            out.unindent();
+            out << "}\n";
+        }
+
+        out << "builder.append(\"}\");\nreturn builder.toString();\n";
+    }).endl().endl();
 
     CompoundLayout layout = getCompoundAlignmentAndSize();
 
