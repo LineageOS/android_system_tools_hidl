@@ -19,12 +19,16 @@ LOCAL_MODULE := hidl_test_helper
 LOCAL_MODULE_CLASS := NATIVE_TESTS
 LOCAL_SRC_FILES := hidl_test_helper
 
+LOCAL_MODULE_PATH := $(TARGET_OUT_DATA)/nativetest64
+
 include $(BUILD_PREBUILT)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := hidl_test
 LOCAL_MODULE_CLASS := NATIVE_TESTS
 LOCAL_SRC_FILES := hidl_test
+
+LOCAL_MODULE_PATH := $(TARGET_OUT_DATA)/nativetest64
 
 LOCAL_REQUIRED_MODULES := \
     hidl_test_client \
