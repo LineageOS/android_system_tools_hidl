@@ -5,6 +5,8 @@ LOCAL_MODULE := hidl_test_java
 LOCAL_MODULE_CLASS := NATIVE_TESTS
 LOCAL_SRC_FILES := hidl_test_java
 
+LOCAL_MODULE_PATH := $(TARGET_OUT_DATA)/nativetest64
+
 LOCAL_REQUIRED_MODULES :=                       \
     hidl_test_java_java                         \
     hidl_test_java_native
