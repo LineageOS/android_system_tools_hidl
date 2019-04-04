@@ -456,7 +456,7 @@ public:
         ASSERT_EQ(safeunionInterface->isRemote(), mode == BINDERIZED);
     }
 
-    virtual void SetUp() {
+    void SetUp() override {
         ALOGI("Environment setup beginning...");
         getServices();
         ALOGI("Environment setup complete.");
@@ -482,7 +482,7 @@ public:
     sp<ISafeUnion> safeunionInterface;
     TestMode mode = TestMode::PASSTHROUGH;
 
-    virtual void SetUp() override {
+    void SetUp() override {
         ALOGI("Test setup beginning...");
         manager = gHidlEnvironment->manager;
         tokenManager = gHidlEnvironment->tokenManager;
@@ -1698,7 +1698,7 @@ struct HidlDeathRecipient : hidl_death_recipient {
     bool fired = false;
     uint64_t cookie = 0;
 
-    virtual void serviceDied(uint64_t cookie, const wp<IBase>& who) {
+    void serviceDied(uint64_t cookie, const wp<IBase>& who) override {
         std::unique_lock<std::mutex> lock(mutex);
         fired = true;
         this->cookie = cookie;
@@ -2463,7 +2463,7 @@ class HidlMultithreadTest : public ::testing::Test {
     sp<IMultithread> multithreadInterface;
     TestMode mode = TestMode::PASSTHROUGH;
 
-    virtual void SetUp() override {
+    void SetUp() override {
         ALOGI("Test setup beginning...");
         multithreadInterface = gHidlEnvironment->multithreadInterface;
         mode = gHidlEnvironment->mode;
