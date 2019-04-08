@@ -26,7 +26,7 @@ for dir in $(ls -d $HIDL_ERROR_TEST_DIR/*/); do
   fi
 
   if [ $command_fails -ne 1 ]; then
-    echo "error: $package test did not fail"
+    echo "error: $package test finished with code $command_fails, but expected 1"
     exit 1
   fi
 
