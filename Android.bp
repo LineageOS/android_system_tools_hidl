@@ -126,6 +126,10 @@ cc_library_host_shared {
         "libhidl-gen-utils",
     ],
     export_include_dirs: ["."], // for tests
+    yacc: {
+        gen_location_hh: true,
+        gen_position_hh: true,
+    }
 }
 
 cc_binary_host {
