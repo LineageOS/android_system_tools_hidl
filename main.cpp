@@ -629,7 +629,7 @@ static status_t generateAndroidBpForPackage(Formatter& out, const FQName& packag
         if (genJavaConstants) {
             out << "gen_java_constants: true,\n";
         }
-   }).endl().endl();
+   }).endl();
 
     return OK;
 }
