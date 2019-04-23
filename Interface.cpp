@@ -379,24 +379,24 @@ bool Interface::fillGetDebugInfoMethod(Method *method) const {
             {IMPL_INTERFACE,
                 [](auto &out) {
                     // getDebugInfo returns N/A for local objects.
-                    out << "_hidl_cb({ -1 /* pid */, 0 /* ptr */, \n"
-                        << sArch
-                        << "});\n"
-                        << "return ::android::hardware::Void();";
+                    out << "::android::hidl::base::V1_0::DebugInfo info = {};\n";
+                    out << "info.pid = -1;\n";
+                    out << "info.ptr = 0;\n";
+                    out << "info.arch = \n" << sArch << ";\n";
+                    out << "_hidl_cb(info);\n";
+                    out << "return ::android::hardware::Void();\n";
                 }
             },
             {IMPL_STUB_IMPL,
                 [](auto &out) {
-                    out << "_hidl_cb(";
-                    out.block([&] {
-                        out << "::android::hardware::details::debuggable()"
-                            << "? getpid() : -1 /* pid */,\n"
-                            << "::android::hardware::details::debuggable()"
-                            << "? reinterpret_cast<uint64_t>(this) : 0 /* ptr */,\n"
-                            << sArch << "\n";
-                    });
-                    out << ");\n"
-                        << "return ::android::hardware::Void();";
+                    out << "::android::hidl::base::V1_0::DebugInfo info = {};\n";
+                    out << "info.pid = ::android::hardware::details::debuggable()"
+                        << "? getpid() : -1 /* pid */,\n";
+                    out << "info.ptr = ::android::hardware::details::debuggable()"
+                        << "? reinterpret_cast<uint64_t>(this) : 0;\n";
+                    out << "info.arch = \n" << sArch << ";\n";
+                    out << "_hidl_cb(info);\n";
+                    out << "return ::android::hardware::Void();\n";
                 }
             }
         }, /* cppImpl */
