@@ -748,7 +748,7 @@ bool Type::deepContainsPointer(std::unordered_set<const Type*>* /* visited */) c
 
 void Type::getAlignmentAndSize(
         size_t * /* align */, size_t * /* size */) const {
-    CHECK(!"Should not be here.");
+    CHECK(!"Should not be here.") << typeName();
 }
 
 void Type::appendToExportedTypesVector(
