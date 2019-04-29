@@ -1023,6 +1023,41 @@ TEST_F(HidlTest, SafeUnionEqualityTest) {
     }));
 }
 
+template <typename T, size_t start, size_t end>
+void expectRangeEqual(const T* t, uint8_t byte) {
+    static_assert(start < sizeof(T));
+    static_assert(end <= sizeof(T));
+
+    const uint8_t* buf = reinterpret_cast<const uint8_t*>(t);
+
+    for (size_t i = start; i < end; i++) {
+        EXPECT_EQ(byte, buf[i]) << i;
+    }
+}
+
+TEST_F(HidlTest, UninitTest) {
+    IBase::Foo foo;
+    foo.x = 1;
+    foo.y = {0, ""};
+
+    static_assert(offsetof(IBase::Foo, x) == 0);
+    static_assert(sizeof(foo.x) == 4);
+    static_assert(offsetof(IBase::Foo, aaa) == 8);
+
+    uint8_t* buf = reinterpret_cast<uint8_t*>(&foo);
+    memset(buf + 4, 0xFF, 4);
+
+    // this should not affect the result for remote Java (but would for remote C++)
+    expectRangeEqual<IBase::Foo, 4, 8>(&foo, 0xFF);
+
+    // run many times, if this error case is hit, it will only be hit
+    // sometimes.
+    for (size_t i = 0; i < 100; i++) {
+        EXPECT_OK(baz->someOtherBaseMethod(
+                foo, [](const IBase::Foo& foo) { expectRangeEqual<IBase::Foo, 4, 8>(&foo, 0); }));
+    }
+}
+
 int main(int argc, char **argv) {
     setenv("TREBLE_TESTING_OVERRIDE", "true", true);
 
