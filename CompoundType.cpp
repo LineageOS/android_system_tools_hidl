@@ -595,18 +595,16 @@ void CompoundType::emitSafeUnionTypeDeclarations(Formatter& out) const {
         << " ";
 
     out.block([&] {
-        const auto elements = getSafeUnionEnumElements(true /* useCppTypeName */);
-        for (size_t i = 0; i < elements.size(); i++) {
-            out << elements[i].fieldName
-                << " = "
-                << i
-                << ",";
+        for (size_t idx = 0; idx < mFields->size(); idx++) {
+            const auto& field = mFields->at(idx);
 
-            if (!elements[i].fieldTypeName.empty()) {
-                out << "  // "
-                    << elements[i].fieldTypeName;
-            }
-            out << "\n";
+            field->emitDocComment(out);
+            out << field->name()
+                << " = "
+                << idx
+                << ",  // "
+                << field->type().getCppStackType(true /*specifyNamespaces*/)
+                << "\n";
         }
     });
     out << ";\n\n";
@@ -750,6 +748,7 @@ void CompoundType::emitTypeDeclarations(Formatter& out) const {
             offset += Layout::getPad(offset, fieldAlign);
 
             if (pass == 0) {
+                field->emitDocComment(out);
                 out << field->type().getCppStackType()
                     << " "
                     << field->name()
@@ -1053,21 +1052,6 @@ static void emitSafeUnionGetterDefinition(Formatter& out, const std::string& fie
     }).endl().endl();
 }
 
-std::vector<CompoundType::SafeUnionEnumElement> CompoundType::getSafeUnionEnumElements(
-    bool useCppTypeName) const {
-    std::vector<SafeUnionEnumElement> elements;
-
-    for (const auto& field : *mFields) {
-        const std::string fieldTypeName = useCppTypeName
-            ? field->type().getCppStackType(true /* specifyNamespaces */)
-            : field->type().getJavaType(true /* forInitializer */);
-
-        elements.push_back({field->name(), fieldTypeName});
-    }
-
-    return elements;
-}
-
 void CompoundType::emitSafeUnionCopyAndAssignDefinition(Formatter& out,
                                                         const std::string& parameterName,
                                                         bool isCopyConstructor,
@@ -1361,21 +1345,19 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
 
         out << "public static final class hidl_discriminator ";
         out.block([&] {
-            const auto elements = getSafeUnionEnumElements(false /* useCppTypeName */);
-            for (size_t idx = 0; idx < elements.size(); idx++) {
+            for (size_t idx = 0; idx < mFields->size(); idx++) {
+                const auto& field = mFields->at(idx);
+
+                field->emitDocComment(out);
                 out << "public static final "
                     << discriminatorStorageType
                     << " "
-                    << elements[idx].fieldName
+                    << field->name()
                     << " = "
                     << idx
-                    << ";";
-
-                if (!elements[idx].fieldTypeName.empty()) {
-                    out << "  // "
-                        << elements[idx].fieldTypeName;
-                }
-                out << "\n";
+                    << ";  // "
+                    << field->type().getJavaType(true /* forInitializer */)
+                    << "\n";
             }
 
             out << "\n"
@@ -1386,11 +1368,13 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
             out.block([&] {
                 out << "switch (value) ";
                 out.block([&] {
-                    for (size_t idx = 0; idx < elements.size(); idx++) {
+                    for (size_t idx = 0; idx < mFields->size(); idx++) {
+                        const auto& field = mFields->at(idx);
+
                         out << "case "
                             << idx
                             << ": { return \""
-                            << elements[idx].fieldName
+                            << field->name()
                             << "\"; }\n";
                     }
                     out << "default: { return \"Unknown\"; }\n";
