@@ -1143,14 +1143,27 @@ void CompoundType::emitSafeUnionTypeConstructors(Formatter& out) const {
             << fullName()
             << ", hidl_d) == 0, \"wrong offset\");\n";
 
+        const CompoundLayout layout = getCompoundAlignmentAndSize();
+
         if (!containsPointer()) {
-            CompoundLayout layout = getCompoundAlignmentAndSize();
-            out << "static_assert(offsetof("
-                << fullName()
-                << ", hidl_u) == "
-                << layout.innerStruct.offset
-                << ", \"wrong offset\");\n";
+            out << "static_assert(offsetof(" << fullName()
+                << ", hidl_u) == " << layout.innerStruct.offset << ", \"wrong offset\");\n";
         }
+
+        out.endl();
+
+        out << "::std::memset(&hidl_u, 0, sizeof(hidl_u));\n";
+
+        // union itself is zero'd when set
+        // padding after descriminator
+        size_t dpad = layout.innerStruct.offset - layout.discriminator.size;
+        emitPaddingZero(out, layout.discriminator.size /*offset*/, dpad /*size*/);
+
+        size_t innerStructEnd = layout.innerStruct.offset + layout.innerStruct.size;
+        // final padding of the struct
+        size_t fpad = layout.overall.size - innerStructEnd;
+        emitPaddingZero(out, innerStructEnd /*offset*/, fpad /*size*/);
+
         out.endl();
 
         CHECK(!mFields->empty());
@@ -2224,18 +2237,33 @@ CompoundType::CompoundLayout CompoundType::getCompoundAlignmentAndSize() const {
     innerStruct.offset += Layout::getPad(innerStruct.offset,
                                          innerStruct.align);
 
-    overall.size = innerStruct.offset + innerStruct.size;
-
     // An empty struct/union still occupies a byte of space in C++.
-    if (overall.size == 0) {
-        overall.size = 1;
+    if (innerStruct.size == 0) {
+        innerStruct.size = 1;
     }
+
+    overall.size = innerStruct.offset + innerStruct.size;
 
     // Pad the overall structure's size
     overall.align = std::max(innerStruct.align, discriminator.align);
     overall.size += Layout::getPad(overall.size, overall.align);
 
+    if (mStyle != STYLE_SAFE_UNION) {
+        CHECK(overall.offset == innerStruct.offset) << overall.offset << " " << innerStruct.offset;
+        CHECK(overall.align == innerStruct.align) << overall.align << " " << innerStruct.align;
+        CHECK(overall.size == innerStruct.size) << overall.size << " " << innerStruct.size;
+    }
+
     return compoundLayout;
+}
+
+void CompoundType::emitPaddingZero(Formatter& out, size_t offset, size_t size) const {
+    if (size > 0) {
+        out << "::std::memset(reinterpret_cast<uint8_t*>(this) + " << offset << ", 0, " << size
+            << ");\n";
+    } else {
+        out << "// no padding to zero starting at offset " << offset << "\n";
+    }
 }
 
 std::unique_ptr<ScalarType> CompoundType::getUnionDiscriminatorType() const {
