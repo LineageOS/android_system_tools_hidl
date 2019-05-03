@@ -2073,6 +2073,49 @@ TEST_F(HidlTest, SafeUnionCopyConstructorTest) {
     }));
 }
 
+template <typename T>
+void testZeroInit(const std::string& header) {
+    uint8_t buf[sizeof(T)];
+    memset(buf, 0xFF, sizeof(buf));
+
+    T* t = new (buf) T;
+
+    for (size_t i = 0; i < sizeof(T); i++) {
+        EXPECT_EQ(0, buf[i]) << header << " at offset: " << i;
+    }
+
+    t->~T();
+    t = nullptr;
+
+    memset(buf, 0xFF, sizeof(buf));
+    t = new (buf) T(T());  // copy constructor
+
+    for (size_t i = 0; i < sizeof(T); i++) {
+        EXPECT_EQ(0, buf[i]) << header << " at offset: " << i;
+    }
+
+    t->~T();
+    t = nullptr;
+
+    memset(buf, 0xFF, sizeof(buf));
+    const T aT = T();
+    t = new (buf) T(std::move(aT));  // move constructor
+
+    for (size_t i = 0; i < sizeof(T); i++) {
+        EXPECT_EQ(0, buf[i]) << header << " at offset: " << i;
+    }
+
+    t->~T();
+    t = nullptr;
+}
+
+TEST_F(HidlTest, SafeUnionUninit) {
+    testZeroInit<SmallSafeUnion>("SmallSafeUnion");
+    testZeroInit<LargeSafeUnion>("LargeSafeUnion");
+    testZeroInit<InterfaceTypeSafeUnion>("InterfaceTypeSafeUnion");
+    testZeroInit<HandleTypeSafeUnion>("HandleTypeSafeUnion");
+}
+
 TEST_F(HidlTest, SafeUnionMoveConstructorTest) {
     sp<IOtherInterface> otherInterface = new OtherInterface();
     ASSERT_EQ(1, otherInterface->getStrongCount());
