@@ -1732,6 +1732,9 @@ TEST_F(HidlTest, DeathRecipientTest) {
         //do nothing, this is expected
     }
 
+    // further calls fail
+    EXPECT_FAIL(dyingBaz->ping());
+
     std::unique_lock<std::mutex> lock(recipient->mutex);
     recipient->condition.wait_for(lock, std::chrono::milliseconds(100), [&recipient]() {
             return recipient->fired;
@@ -1892,31 +1895,44 @@ TEST_F(HidlTest, EnumEqualTest) {
 
 TEST_F(HidlTest, InvalidTransactionTest) {
     using ::android::hardware::tests::bar::V1_0::BnHwBar;
-    using ::android::hardware::tests::bar::V1_0::BpHwBar;
     using ::android::hardware::IBinder;
     using ::android::hardware::Parcel;
-    using ::android::status_t;
-    using ::android::OK;
+
+    sp<IBinder> binder = ::android::hardware::toBinder(bar);
 
     Parcel request, reply;
-    sp<IBinder> binder;
-    status_t status = request.writeInterfaceToken(::android::hardware::tests::bar::V1_0::IBar::descriptor);
+    EXPECT_EQ(::android::OK, request.writeInterfaceToken(IBar::descriptor));
+    EXPECT_EQ(::android::UNKNOWN_TRANSACTION, binder->transact(1234, request, &reply));
 
-    EXPECT_EQ(status, OK);
+    EXPECT_OK(bar->ping());  // still works
+}
 
-    if (mode == BINDERIZED) {
-        EXPECT_TRUE(bar->isRemote());
-        binder = ::android::hardware::toBinder<IBar>(bar);
-    } else {
-        // For a local test, just wrap the implementation with a BnHwBar
-        binder = new BnHwBar(bar);
-    }
+TEST_F(HidlTest, EmptyTransactionTest) {
+    using ::android::hardware::IBinder;
+    using ::android::hardware::Parcel;
+    using ::android::hardware::tests::bar::V1_0::BnHwBar;
 
-    status = binder->transact(1234, request, &reply);
+    sp<IBinder> binder = ::android::hardware::toBinder(bar);
 
-    EXPECT_EQ(status, ::android::UNKNOWN_TRANSACTION);
-    // Try another call, to make sure nothing is messed up
-    EXPECT_OK(bar->thisIsNew());
+    Parcel request, reply;
+    EXPECT_EQ(::android::BAD_TYPE, binder->transact(2 /*someBoolMethod*/, request, &reply));
+
+    EXPECT_OK(bar->ping());  // still works
+}
+
+TEST_F(HidlTest, WrongDescriptorTest) {
+    using ::android::hardware::IBinder;
+    using ::android::hardware::Parcel;
+    using ::android::hardware::tests::bar::V1_0::BnHwBar;
+
+    sp<IBinder> binder = ::android::hardware::toBinder(bar);
+
+    Parcel request, reply;
+    // wrong descriptor
+    EXPECT_EQ(::android::OK, request.writeInterfaceToken("not a real descriptor"));
+    EXPECT_EQ(::android::BAD_TYPE, binder->transact(2 /*someBoolMethod*/, request, &reply));
+
+    EXPECT_OK(bar->ping());  // still works
 }
 
 TEST_F(HidlTest, TrieSimpleTest) {
@@ -2055,6 +2071,49 @@ TEST_F(HidlTest, SafeUnionCopyConstructorTest) {
                 EXPECT_EQ(testVector, safeUnionCopy.h());
             }));
     }));
+}
+
+template <typename T>
+void testZeroInit(const std::string& header) {
+    uint8_t buf[sizeof(T)];
+    memset(buf, 0xFF, sizeof(buf));
+
+    T* t = new (buf) T;
+
+    for (size_t i = 0; i < sizeof(T); i++) {
+        EXPECT_EQ(0, buf[i]) << header << " at offset: " << i;
+    }
+
+    t->~T();
+    t = nullptr;
+
+    memset(buf, 0xFF, sizeof(buf));
+    t = new (buf) T(T());  // copy constructor
+
+    for (size_t i = 0; i < sizeof(T); i++) {
+        EXPECT_EQ(0, buf[i]) << header << " at offset: " << i;
+    }
+
+    t->~T();
+    t = nullptr;
+
+    memset(buf, 0xFF, sizeof(buf));
+    const T aT = T();
+    t = new (buf) T(std::move(aT));  // move constructor
+
+    for (size_t i = 0; i < sizeof(T); i++) {
+        EXPECT_EQ(0, buf[i]) << header << " at offset: " << i;
+    }
+
+    t->~T();
+    t = nullptr;
+}
+
+TEST_F(HidlTest, SafeUnionUninit) {
+    testZeroInit<SmallSafeUnion>("SmallSafeUnion");
+    testZeroInit<LargeSafeUnion>("LargeSafeUnion");
+    testZeroInit<InterfaceTypeSafeUnion>("InterfaceTypeSafeUnion");
+    testZeroInit<HandleTypeSafeUnion>("HandleTypeSafeUnion");
 }
 
 TEST_F(HidlTest, SafeUnionMoveConstructorTest) {
