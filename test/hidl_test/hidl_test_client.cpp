@@ -2085,6 +2085,28 @@ void testZeroInit(const std::string& header) {
     }
 
     t->~T();
+    t = nullptr;
+
+    memset(buf, 0xFF, sizeof(buf));
+    t = new (buf) T(T());  // copy constructor
+
+    for (size_t i = 0; i < sizeof(T); i++) {
+        EXPECT_EQ(0, buf[i]) << header << " at offset: " << i;
+    }
+
+    t->~T();
+    t = nullptr;
+
+    memset(buf, 0xFF, sizeof(buf));
+    const T aT = T();
+    t = new (buf) T(std::move(aT));  // move constructor
+
+    for (size_t i = 0; i < sizeof(T); i++) {
+        EXPECT_EQ(0, buf[i]) << header << " at offset: " << i;
+    }
+
+    t->~T();
+    t = nullptr;
 }
 
 TEST_F(HidlTest, SafeUnionUninit) {
