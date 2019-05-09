@@ -1,0 +1,23 @@
+java_genrule {
+    name: "hidl_java_impl_test_gen",
+    tools: [
+        "hidl-gen",
+    ],
+    required: [
+        "android.hardware.tests.baz-V1.0-java",
+    ],
+    cmd: "$(location hidl-gen) -o $(genDir) -Ljava-impl android.hardware.tests.baz@1.0",
+    out: [
+        "Base.java",
+    ],
+}
+
+java_library {
+    name: "hidl_java_impl_test",
+    srcs: [
+        ":hidl_java_impl_test_gen",
+    ],
+    static_libs: [
+        "android.hardware.tests.baz-V1.0-java",
+    ],
+}
