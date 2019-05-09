@@ -273,7 +273,7 @@ bool Interface::fillDescriptorChainMethod(Method *method) const {
                 }
             });
             out << ");\n";
-            out << "return ::android::hardware::Void();";
+            out << "return ::android::hardware::Void();\n";
         } } }, /* cppImpl */
         { { IMPL_INTERFACE, [this](auto &out) {
             std::vector<const Interface *> chain = typeChain();
