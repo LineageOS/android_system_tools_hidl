@@ -1216,12 +1216,10 @@ void AST::generateStaticProxyMethodSource(Formatter& out, const std::string& kla
             superInterface);
 
     if (elidedReturn != nullptr) {
-        out << "_hidl_status.setFromStatusT(_hidl_err);\n";
         out << "return ::android::hardware::Return<";
         out << elidedReturn->type().getCppResultType()
             << ">(_hidl_out_" << elidedReturn->name() << ");\n\n";
     } else {
-        out << "_hidl_status.setFromStatusT(_hidl_err);\n";
         out << "return ::android::hardware::Return<void>();\n\n";
     }
 
