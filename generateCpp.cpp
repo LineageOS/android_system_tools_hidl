@@ -1097,7 +1097,9 @@ void AST::generateStaticProxyMethodSource(Formatter& out, const std::string& kla
 
     const bool returnsValue = !method->results().empty();
     const NamedReference<Type>* elidedReturn = method->canElideCallback();
-    if (returnsValue && elidedReturn == nullptr) {
+    const bool hasCallback = returnsValue && elidedReturn == nullptr;
+
+    if (hasCallback) {
         generateCheckNonNull(out, "_hidl_cb");
     }
 
@@ -1110,10 +1112,13 @@ void AST::generateStaticProxyMethodSource(Formatter& out, const std::string& kla
     out << "::android::hardware::Parcel _hidl_data;\n";
     out << "::android::hardware::Parcel _hidl_reply;\n";
     out << "::android::status_t _hidl_err;\n";
+    out << "::android::status_t _hidl_transact_err;\n";
     out << "::android::hardware::Status _hidl_status;\n\n";
 
-    declareCppReaderLocals(
-            out, method->results(), true /* forResults */);
+    if (!hasCallback) {
+        declareCppReaderLocals(
+                out, method->results(), true /* forResults */);
+    }
 
     out << "_hidl_err = _hidl_data.writeInterfaceToken(";
     out << klassName;
@@ -1152,7 +1157,7 @@ void AST::generateStaticProxyMethodSource(Formatter& out, const std::string& kla
         // Start binder threadpool to handle incoming transactions
         out << "::android::hardware::ProcessState::self()->startThreadPool();\n";
     }
-    out << "_hidl_err = ::android::hardware::IInterface::asBinder(_hidl_this)->transact("
+    out << "_hidl_transact_err = ::android::hardware::IInterface::asBinder(_hidl_this)->transact("
         << method->getSerialId()
         << " /* "
         << method->name()
@@ -1160,16 +1165,36 @@ void AST::generateStaticProxyMethodSource(Formatter& out, const std::string& kla
 
     if (method->isOneway()) {
         out << ", " << Interface::FLAG_ONE_WAY->cppValue();
+    } else {
+        out << ", 0";
     }
-    out << ");\n";
 
-    out << "if (_hidl_err != ::android::OK) { goto _hidl_error; }\n\n";
+    if (hasCallback) {
+        out << ", [&] (::android::hardware::Parcel& _hidl_reply) {\n";
+        out.indent();
+        declareCppReaderLocals(
+                out, method->results(), true /* forResults */);
+        out.endl();
+    } else {
+        out << ");\n";
+        out << "if (_hidl_transact_err != ::android::OK) \n";
+        out.block([&] {
+            out << "_hidl_err = _hidl_transact_err;\n";
+            out << "goto _hidl_error;\n";
+        }).endl().endl();
+    }
 
     if (!method->isOneway()) {
-        out << "_hidl_err = ::android::hardware::readFromParcel(&_hidl_status, _hidl_reply);\n";
-        out << "if (_hidl_err != ::android::OK) { goto _hidl_error; }\n\n";
-        out << "if (!_hidl_status.isOk()) { return _hidl_status; }\n\n";
+        Type::ErrorMode errorMode = hasCallback ? Type::ErrorMode_ReturnNothing : Type::ErrorMode_Goto;
 
+        out << "_hidl_err = ::android::hardware::readFromParcel(&_hidl_status, _hidl_reply);\n";
+        Type::handleError(out, errorMode);
+
+        if (hasCallback) {
+            out << "if (!_hidl_status.isOk()) { return; }\n\n";
+        } else {
+            out << "if (!_hidl_status.isOk()) { return _hidl_status; }\n\n";
+        }
 
         // First DFS: write all buffers and resolve pointers for parent
         for (const auto &arg : method->results()) {
@@ -1179,7 +1204,7 @@ void AST::generateStaticProxyMethodSource(Formatter& out, const std::string& kla
                     false /* parcelObjIsPointer */,
                     arg,
                     true /* reader */,
-                    Type::ErrorMode_Goto,
+                    errorMode,
                     true /* addPrefixToName */);
         }
 
@@ -1191,7 +1216,7 @@ void AST::generateStaticProxyMethodSource(Formatter& out, const std::string& kla
                     false /* parcelObjIsPointer */,
                     arg,
                     true /* reader */,
-                    Type::ErrorMode_Goto,
+                    errorMode,
                     true /* addPrefixToName */);
         }
 
@@ -1214,6 +1239,17 @@ void AST::generateStaticProxyMethodSource(Formatter& out, const std::string& kla
             InstrumentationEvent::CLIENT_API_EXIT,
             method,
             superInterface);
+
+    if (hasCallback) {
+        out.unindent();
+        out << "});\n";
+        out << "if (_hidl_transact_err != ::android::OK) ";
+        out.block([&] {
+            out << "_hidl_err = _hidl_transact_err;\n";
+            out << "goto _hidl_error;\n";
+        }).endl().endl();
+        out << "if (!_hidl_status.isOk()) { return _hidl_status; }\n";
+    }
 
     if (elidedReturn != nullptr) {
         out << "return ::android::hardware::Return<";
