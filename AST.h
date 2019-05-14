@@ -144,6 +144,7 @@ struct AST {
     void generateCppAdapterSource(Formatter& out) const;
 
     void generateJava(Formatter& out, const std::string& limitToType) const;
+    void generateJavaImpl(Formatter& out) const;
     void generateJavaTypes(Formatter& out, const std::string& limitToType) const;
 
     void generateVts(Formatter& out) const;

@@ -108,6 +108,7 @@ cc_library_host_shared {
         "generateCppImpl.cpp",
         "generateDependencies.cpp",
         "generateJava.cpp",
+        "generateJavaImpl.cpp",
         "generateVts.cpp",
         "hidl-gen_y.yy",
         "hidl-gen_l.ll",
