@@ -141,6 +141,32 @@ std::string ScalarType::getVtsScalarType() const {
     return kName[mKind];
 }
 
+void ScalarType::emitJavaFieldInitializer(Formatter& out, const std::string& fieldName) const {
+    const std::string typeName = getJavaType(false /* forInitializer */);
+    const std::string fieldDeclaration = typeName + " " + fieldName;
+
+    emitJavaFieldDefaultInitialValue(out, fieldDeclaration);
+}
+
+void ScalarType::emitJavaFieldDefaultInitialValue(Formatter& out,
+                                                  const std::string& declaredFieldName) const {
+    static const char* const kInitialValue[] = {
+            "false",  // boolean
+            "0",      // byte
+            "0",      // byte
+            "0",      // short
+            "0",      // short
+            "0",      // int
+            "0",      // int
+            "0L",     // long
+            "0L",     // long
+            "0.0f",   // float
+            "0.0d"    // double
+    };
+
+    out << declaredFieldName << " = " << kInitialValue[mKind] << ";\n";
+}
+
 void ScalarType::emitReaderWriter(
         Formatter &out,
         const std::string &name,
