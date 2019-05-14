@@ -210,6 +210,15 @@ LocalIdentifier *EnumType::lookupIdentifier(const std::string &name) const {
     return nullptr;
 }
 
+void EnumType::emitJavaFieldInitializer(Formatter& out, const std::string& fieldName) const {
+    mStorageType->resolveToScalarType()->emitJavaFieldInitializer(out, fieldName);
+}
+
+void EnumType::emitJavaFieldDefaultInitialValue(Formatter& out,
+                                                const std::string& fieldName) const {
+    mStorageType->resolveToScalarType()->emitJavaFieldDefaultInitialValue(out, fieldName);
+}
+
 void EnumType::emitReaderWriter(
         Formatter &out,
         const std::string &name,
