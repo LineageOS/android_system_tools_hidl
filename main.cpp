@@ -1114,6 +1114,21 @@ static const std::vector<OutputHandler> kFormats = {
         }
     },
     {
+        "java-impl",
+        "Generates boilerplate implementation of a hidl interface in Java (for convenience).",
+        OutputMode::NEEDS_DIR,
+        Coordinator::Location::DIRECT,
+        GenerationGranularity::PER_FILE,
+        validateForSource,
+        {
+            {
+                FileGenerator::generateForInterfaces,
+                [](const FQName& fqName) { return fqName.getInterfaceBaseName() + ".java"; },
+                astGenerationFunction(&AST::generateJavaImpl),
+            },
+        }
+    },
+    {
         "java-constants",
         "(internal) Like export-header but for Java (always created by -Lmakefile if @export exists).",
         OutputMode::NEEDS_DIR,
