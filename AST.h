@@ -256,8 +256,6 @@ struct AST {
                                 bool indicateGenerated = true) const;
     void enterLeaveNamespace(Formatter &out, bool enter) const;
 
-    static void generateCheckNonNull(Formatter &out, const std::string &nonNull);
-
     void generateTypeSource(Formatter& out, const std::string& ifaceName) const;
 
     // a method, and in which interface is it originally defined.
