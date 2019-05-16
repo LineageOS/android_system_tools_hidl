@@ -1513,13 +1513,6 @@ TEST_F(HidlTest, FooNullNativeHandleTest) {
     }));
 }
 
-TEST_F(HidlTest, FooNullSynchronousCallbackTest) {
-    Return<void> ret = foo->echoNullInterface(nullptr, nullptr /* synchronous callback */);
-
-    EXPECT_FAIL(ret);
-    EXPECT_TRUE(ret.description().find("Null synchronous callback passed") != std::string::npos);
-}
-
 TEST_F(HidlTest, FooNullCallbackTest) {
     EXPECT_OK(foo->echoNullInterface(nullptr,
                 [](const auto receivedNull, const auto &intf) {
@@ -1546,12 +1539,6 @@ TEST_F(HidlTest, StructWithFmq) {
 
         EXPECT_EQ(w.containsPointer.foo, returned.containsPointer.foo);
     }));
-}
-
-TEST_F(HidlTest, FooNonNullCallbackTest) {
-    hidl_array<hidl_string, 5, 3> in;
-
-    EXPECT_FAIL(foo->transpose2(in, nullptr /* _hidl_cb */));
 }
 
 TEST_F(HidlTest, FooSendVecTest) {
