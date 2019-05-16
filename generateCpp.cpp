@@ -476,10 +476,6 @@ void AST::generatePassthroughMethod(Formatter& out, const Method* method, const 
     const bool returnsValue = !method->results().empty();
     const NamedReference<Type>* elidedReturn = method->canElideCallback();
 
-    if (returnsValue && elidedReturn == nullptr) {
-        generateCheckNonNull(out, "_hidl_cb");
-    }
-
     generateCppInstrumentationCall(
             out,
             InstrumentationEvent::PASSTHROUGH_ENTRY,
@@ -953,16 +949,6 @@ void AST::generateCppSource(Formatter& out) const {
     enterLeaveNamespace(out, false /* enter */);
 }
 
-void AST::generateCheckNonNull(Formatter &out, const std::string &nonNull) {
-    out.sIf(nonNull + " == nullptr", [&] {
-        out << "return ::android::hardware::Status::fromExceptionCode(\n";
-        out.indent(2, [&] {
-            out << "::android::hardware::Status::EX_ILLEGAL_ARGUMENT,\n"
-                << "\"Null synchronous callback passed.\");\n";
-        });
-    }).endl().endl();
-}
-
 void AST::generateTypeSource(Formatter& out, const std::string& ifaceName) const {
     mRootScope.emitTypeDefinitions(out, ifaceName);
 }
@@ -1098,10 +1084,6 @@ void AST::generateStaticProxyMethodSource(Formatter& out, const std::string& kla
     const bool returnsValue = !method->results().empty();
     const NamedReference<Type>* elidedReturn = method->canElideCallback();
     const bool hasCallback = returnsValue && elidedReturn == nullptr;
-
-    if (hasCallback) {
-        generateCheckNonNull(out, "_hidl_cb");
-    }
 
     generateCppInstrumentationCall(
             out,
