@@ -132,7 +132,16 @@ struct Coordinator {
     status_t enforceRestrictionsOnPackage(const FQName& fqName,
                                           Enforce enforcement = Enforce::FULL) const;
 
-private:
+    // opt is the option that was parsed
+    // optarg contains the argument provided to opt
+    //     - optarg == NULL if opt is not expecting an argument
+    using HandleArg = std::function<void(int opt, char* optarg)>;
+
+    // options is the same format as optstring for getopt
+    void parseOptions(int argc, char** argv, const std::string& options,
+                      const HandleArg& handleArg);
+
+  private:
     static bool MakeParentHierarchy(const std::string &path);
 
     enum class HashStatus {

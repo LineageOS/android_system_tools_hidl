@@ -1270,36 +1270,15 @@ int main(int argc, char **argv) {
     const OutputHandler* outputFormat = nullptr;
     Coordinator coordinator;
     std::string outputPath;
-    bool suppressDefaultPackagePaths = false;
 
-    int res;
-    while ((res = getopt(argc, argv, "hp:o:O:r:L:vd:R")) >= 0) {
+    coordinator.parseOptions(argc, argv, "ho:O:L:", [&](int res, char* arg) {
         switch (res) {
-            case 'p': {
-                if (!coordinator.getRootPath().empty()) {
-                    fprintf(stderr, "ERROR: -p <root path> can only be specified once.\n");
-                    exit(1);
-                }
-                coordinator.setRootPath(optarg);
-                break;
-            }
-
-            case 'v': {
-                coordinator.setVerbose(true);
-                break;
-            }
-
-            case 'd': {
-                coordinator.setDepFile(optarg);
-                break;
-            }
-
             case 'o': {
                 if (!outputPath.empty()) {
                     fprintf(stderr, "ERROR: -o <output path> can only be specified once.\n");
                     exit(1);
                 }
-                outputPath = optarg;
+                outputPath = arg;
                 break;
             }
 
@@ -1308,33 +1287,7 @@ int main(int argc, char **argv) {
                     fprintf(stderr, "ERROR: -O <owner> can only be specified once.\n");
                     exit(1);
                 }
-                coordinator.setOwner(optarg);
-                break;
-            }
-
-            case 'r': {
-                std::string val(optarg);
-                auto index = val.find_first_of(':');
-                if (index == std::string::npos) {
-                    fprintf(stderr, "ERROR: -r option must contain ':': %s\n", val.c_str());
-                    exit(1);
-                }
-
-                auto root = val.substr(0, index);
-                auto path = val.substr(index + 1);
-
-                std::string error;
-                status_t err = coordinator.addPackagePath(root, path, &error);
-                if (err != OK) {
-                    fprintf(stderr, "%s\n", error.c_str());
-                    exit(1);
-                }
-
-                break;
-            }
-
-            case 'R': {
-                suppressDefaultPackagePaths = true;
+                coordinator.setOwner(arg);
                 break;
             }
 
@@ -1346,15 +1299,13 @@ int main(int argc, char **argv) {
                     exit(1);
                 }
                 for (auto& e : kFormats) {
-                    if (e.name() == optarg) {
+                    if (e.name() == arg) {
                         outputFormat = &e;
                         break;
                     }
                 }
                 if (outputFormat == nullptr) {
-                    fprintf(stderr,
-                            "ERROR: unrecognized -L option: \"%s\".\n",
-                            optarg);
+                    fprintf(stderr, "ERROR: unrecognized -L option: \"%s\".\n", arg);
                     exit(1);
                 }
                 break;
@@ -1368,14 +1319,7 @@ int main(int argc, char **argv) {
                 break;
             }
         }
-    }
-
-    if (coordinator.getRootPath().empty()) {
-        const char* ANDROID_BUILD_TOP = getenv("ANDROID_BUILD_TOP");
-        if (ANDROID_BUILD_TOP != nullptr) {
-            coordinator.setRootPath(ANDROID_BUILD_TOP);
-        }
-    }
+    });
 
     if (outputFormat == nullptr) {
         fprintf(stderr,
@@ -1426,13 +1370,6 @@ int main(int argc, char **argv) {
     }
 
     coordinator.setOutputPath(outputPath);
-
-    if (!suppressDefaultPackagePaths) {
-        coordinator.addDefaultPackagePath("android.hardware", "hardware/interfaces");
-        coordinator.addDefaultPackagePath("android.hidl", "system/libhidl/transport");
-        coordinator.addDefaultPackagePath("android.frameworks", "frameworks/hardware/interfaces");
-        coordinator.addDefaultPackagePath("android.system", "system/hardware/interfaces");
-    }
 
     for (int i = 0; i < argc; ++i) {
         const char* arg = argv[i];
