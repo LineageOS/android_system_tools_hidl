@@ -399,7 +399,7 @@ std::string Coordinator::makeAbsolute(const std::string& path) const {
 
 status_t Coordinator::getPackageRoot(const FQName& fqName, std::string* root) const {
     const PackageRoot* packageRoot = findPackageRoot(fqName);
-    if (root == nullptr) {
+    if (packageRoot == nullptr) {
         return UNKNOWN_ERROR;
     }
     *root = packageRoot->root.package();
@@ -941,6 +941,77 @@ bool Coordinator::MakeParentHierarchy(const std::string &path) {
     }
 
     return true;
+}
+
+void Coordinator::parseOptions(int argc, char** argv, const std::string& options,
+                               const HandleArg& handleArg) {
+    // reset global state for getopt
+    optind = 0;
+
+    bool suppressDefaultPackagePaths = false;
+
+    int res;
+    std::string optstr = options + "p:r:Rvd:";
+    while ((res = getopt(argc, argv, optstr.c_str())) >= 0) {
+        switch (res) {
+            case 'v': {
+                setVerbose(true);
+                break;
+            }
+            case 'd': {
+                setDepFile(optarg);
+                break;
+            }
+            case 'p': {
+                if (!getRootPath().empty()) {
+                    fprintf(stderr, "ERROR: -p <root path> can only be specified once.\n");
+                    exit(1);
+                }
+                setRootPath(optarg);
+                break;
+            }
+            case 'r': {
+                std::string val(optarg);
+                auto index = val.find_first_of(':');
+                if (index == std::string::npos) {
+                    fprintf(stderr, "ERROR: -r option must contain ':': %s\n", val.c_str());
+                    exit(1);
+                }
+
+                auto root = val.substr(0, index);
+                auto path = val.substr(index + 1);
+
+                std::string error;
+                status_t err = addPackagePath(root, path, &error);
+                if (err != OK) {
+                    fprintf(stderr, "%s\n", error.c_str());
+                    exit(1);
+                }
+
+                break;
+            }
+            case 'R': {
+                suppressDefaultPackagePaths = true;
+                break;
+            }
+            // something downstream should handle these cases
+            default: { handleArg(res, optarg); }
+        }
+    }
+
+    if (getRootPath().empty()) {
+        const char* ANDROID_BUILD_TOP = getenv("ANDROID_BUILD_TOP");
+        if (ANDROID_BUILD_TOP != nullptr) {
+            setRootPath(ANDROID_BUILD_TOP);
+        }
+    }
+
+    if (!suppressDefaultPackagePaths) {
+        addDefaultPackagePath("android.hardware", "hardware/interfaces");
+        addDefaultPackagePath("android.hidl", "system/libhidl/transport");
+        addDefaultPackagePath("android.frameworks", "frameworks/hardware/interfaces");
+        addDefaultPackagePath("android.system", "system/hardware/interfaces");
+    }
 }
 
 }  // namespace android
