@@ -1723,8 +1723,6 @@ void AST::generatePassthroughHeader(Formatter& out) const {
 
     const std::string klassName = iface->getPassthroughName();
 
-    bool supportOneway = iface->hasOnewayMethods();
-
     const std::string guard = makeHeaderGuard(klassName);
 
     out << "#ifndef " << guard << "\n";
@@ -1742,9 +1740,7 @@ void AST::generatePassthroughHeader(Formatter& out) const {
     out << "\n";
 
     out << "#include <hidl/HidlPassthroughSupport.h>\n";
-    if (supportOneway) {
-        out << "#include <hidl/TaskRunner.h>\n";
-    }
+    out << "#include <hidl/TaskRunner.h>\n";
 
     enterLeaveNamespace(out, true /* enter */);
     out << "\n";
@@ -1774,14 +1770,12 @@ void AST::generatePassthroughHeader(Formatter& out) const {
     out.indent();
     out << "const ::android::sp<" << iface->localName() << "> mImpl;\n";
 
-    if (supportOneway) {
-        out << "::android::hardware::details::TaskRunner mOnewayQueue;\n";
+    out << "::android::hardware::details::TaskRunner mOnewayQueue;\n";
 
-        out << "\n";
+    out << "\n";
 
-        out << "::android::hardware::Return<void> addOnewayTask("
-               "std::function<void(void)>);\n\n";
-    }
+    out << "::android::hardware::Return<void> addOnewayTask("
+           "std::function<void(void)>);\n\n";
 
     out.unindent();
 
@@ -1853,48 +1847,33 @@ void AST::generatePassthroughSource(Formatter& out) const {
 
     const std::string klassName = iface->getPassthroughName();
 
-    out << klassName
-        << "::"
-        << klassName
-        << "(const ::android::sp<"
-        << iface->fullName()
-        << "> impl) : ::android::hardware::details::HidlInstrumentor(\""
-        << mPackage.string()
-        << "\", \""
-        << iface->localName()
-        << "\"), mImpl(impl) {";
-    if (iface->hasOnewayMethods()) {
-        out << "\n";
-        out.indent([&] {
-            out << "mOnewayQueue.start(3000 /* similar limit to binderized */);\n";
-        });
-    }
+    out << klassName << "::" << klassName << "(const ::android::sp<" << iface->fullName()
+        << "> impl) : ::android::hardware::details::HidlInstrumentor(\"" << mPackage.string()
+        << "\", \"" << iface->localName() << "\"), mImpl(impl) {\n";
+
+    out.indent([&] { out << "mOnewayQueue.start(3000 /* similar limit to binderized */);\n"; });
+
     out << "}\n\n";
 
-    if (iface->hasOnewayMethods()) {
-        out << "::android::hardware::Return<void> "
-            << klassName
-            << "::addOnewayTask(std::function<void(void)> fun) {\n";
-        out.indent();
-        out << "if (!mOnewayQueue.push(fun)) {\n";
-        out.indent();
-        out << "return ::android::hardware::Status::fromExceptionCode(\n";
-        out.indent();
-        out.indent();
-        out << "::android::hardware::Status::EX_TRANSACTION_FAILED,\n"
-            << "\"Passthrough oneway function queue exceeds maximum size.\");\n";
-        out.unindent();
-        out.unindent();
-        out.unindent();
-        out << "}\n";
+    out << "::android::hardware::Return<void> " << klassName
+        << "::addOnewayTask(std::function<void(void)> fun) {\n";
+    out.indent();
+    out << "if (!mOnewayQueue.push(fun)) {\n";
+    out.indent();
+    out << "return ::android::hardware::Status::fromExceptionCode(\n";
+    out.indent();
+    out.indent();
+    out << "::android::hardware::Status::EX_TRANSACTION_FAILED,\n"
+        << "\"Passthrough oneway function queue exceeds maximum size.\");\n";
+    out.unindent();
+    out.unindent();
+    out.unindent();
+    out << "}\n";
 
-        out << "return ::android::hardware::Status();\n";
+    out << "return ::android::hardware::Status();\n";
 
-        out.unindent();
-        out << "}\n\n";
-
-
-    }
+    out.unindent();
+    out << "}\n\n";
 }
 
 void AST::generateCppAtraceCall(Formatter &out,
