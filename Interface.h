@@ -127,8 +127,6 @@ struct Interface : public Scope {
     void emitVtsAttributeDeclaration(Formatter& out) const;
     void emitVtsMethodDeclaration(Formatter& out, bool isInherited) const;
 
-    bool hasOnewayMethods() const;
-
     bool deepIsJavaCompatible(std::unordered_set<const Type*>* visited) const override;
 
     bool isNeverStrongReference() const override;
