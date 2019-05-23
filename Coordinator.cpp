@@ -24,6 +24,7 @@
 
 #include <android-base/logging.h>
 #include <hidl-hash/Hash.h>
+#include <hidl-util/Formatter.h>
 #include <hidl-util/StringHelper.h>
 #include <iostream>
 
@@ -941,6 +942,18 @@ bool Coordinator::MakeParentHierarchy(const std::string &path) {
     }
 
     return true;
+}
+
+void Coordinator::emitOptionsUsageString(Formatter& out) {
+    out << "[-p <root path>] (-r <interface root>)+ [-R] [-v] [-d <depfile>]";
+}
+
+void Coordinator::emitOptionsDetailString(Formatter& out) {
+    out << "-p <root path>: Android build root, defaults to $ANDROID_BUILD_TOP or pwd.\n"
+        << "-R: Do not add default package roots if not specified in -r.\n"
+        << "-r <package:path root>: E.g., android.hardware:hardware/interfaces.\n"
+        << "-v: verbose output.\n"
+        << "-d <depfile>: location of depfile to write to.\n";
 }
 
 void Coordinator::parseOptions(int argc, char** argv, const std::string& options,
