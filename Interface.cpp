@@ -959,22 +959,6 @@ void Interface::emitVtsAttributeType(Formatter& out) const {
         << "\"\n";
 }
 
-bool Interface::hasOnewayMethods() const {
-    for (auto const &method : methods()) {
-        if (method->isOneway()) {
-            return true;
-        }
-    }
-
-    const Interface* superClass = superType();
-
-    if (superClass != nullptr) {
-        return superClass->hasOnewayMethods();
-    }
-
-    return false;
-}
-
 bool Interface::deepIsJavaCompatible(std::unordered_set<const Type*>* visited) const {
     if (superType() != nullptr && !superType()->isJavaCompatible(visited)) {
         return false;
