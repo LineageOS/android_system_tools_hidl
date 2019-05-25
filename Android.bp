@@ -124,6 +124,7 @@ cc_library_host_shared {
     ],
     export_shared_lib_headers: [
         "libbase",
+        "libhidl-gen-hash",
         "libhidl-gen-utils",
     ],
     export_include_dirs: ["."], // for tests
