@@ -238,7 +238,6 @@ void AST::generateJava(Formatter& out, const std::string& limitToType) const {
     iface->emitJavaTypeDeclarations(out, false /* atTopLevel */);
 
     for (const auto &method : iface->methods()) {
-        const bool returnsValue = !method->results().empty();
         const bool needsCallback = method->results().size() > 1;
 
         if (needsCallback) {
@@ -257,27 +256,9 @@ void AST::generateJava(Formatter& out, const std::string& limitToType) const {
 
         method->emitDocComment(out);
 
-        if (returnsValue && !needsCallback) {
-            out << method->results()[0]->type().getJavaType();
-        } else {
-            out << "void";
-        }
+        method->emitJavaSignature(out);
 
-        out << " "
-            << method->name()
-            << "(";
-        method->emitJavaArgSignature(out);
-
-        if (needsCallback) {
-            if (!method->args().empty()) {
-                out << ", ";
-            }
-
-            out << method->name()
-                << "Callback _hidl_cb";
-        }
-
-        out << ")\n";
+        out << "\n";
         out.indent();
         out << "throws android.os.RemoteException;\n";
         out.unindent();
@@ -341,27 +322,9 @@ void AST::generateJava(Formatter& out, const std::string& limitToType) const {
         const bool needsCallback = method->results().size() > 1;
 
         out << "@Override\npublic ";
-        if (returnsValue && !needsCallback) {
-            out << method->results()[0]->type().getJavaType();
-        } else {
-            out << "void";
-        }
+        method->emitJavaSignature(out);
 
-        out << " "
-            << method->name()
-            << "(";
-        method->emitJavaArgSignature(out);
-
-        if (needsCallback) {
-            if (!method->args().empty()) {
-                out << ", ";
-            }
-
-            out << method->name()
-                << "Callback _hidl_cb";
-        }
-
-        out << ")\n";
+        out << "\n";
         out.indent();
         out.indent();
         out << "throws android.os.RemoteException {\n";
