@@ -53,28 +53,10 @@ void AST::generateJavaImpl(Formatter& out) const {
                 prevInterface = superInterface;
             }
 
-            const bool returnsValue = !method->results().empty();
-            const bool needsCallback = method->results().size() > 1;
-
             out << "@Override\npublic ";
-            if (returnsValue && !needsCallback) {
-                out << method->results()[0]->type().getJavaType();
-            } else {
-                out << "void";
-            }
+            method->emitJavaSignature(out);
 
-            out << " " << method->name() << "(";
-            method->emitJavaArgSignature(out);
-
-            if (needsCallback) {
-                if (!method->args().empty()) {
-                    out << ", ";
-                }
-
-                out << method->name() << "Callback _hidl_cb";
-            }
-
-            out << ")\n";
+            out << "\n";
             out.indent([&] {
                 out.indent();
                 out << "throws android.os.RemoteException {\n";
@@ -83,11 +65,13 @@ void AST::generateJavaImpl(Formatter& out) const {
                 out << "// TODO: Implement\n";
 
                 // Return the appropriate value
+                const bool returnsValue = !method->results().empty();
                 if (returnsValue) {
                     for (const auto& arg : method->results()) {
                         arg->type().emitJavaFieldInitializer(out, arg->name());
                     }
 
+                    const bool needsCallback = method->results().size() > 1;
                     if (needsCallback) {
                         out << "_hidl_cb.onValues(";
 
