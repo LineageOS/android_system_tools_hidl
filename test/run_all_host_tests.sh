@@ -17,6 +17,7 @@ function run() {
         libhidl-gen-utils_test \
         libhidl-gen-host-utils_test \
         hidl-gen-host_test \
+        hidl-lint_test \
     )
 
     $ANDROID_BUILD_TOP/build/soong/soong_ui.bash --make-mode -j \
