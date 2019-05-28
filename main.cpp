@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -1232,27 +1233,36 @@ static const std::vector<OutputHandler> kFormats = {
 };
 // clang-format on
 
-static void usage(const char *me) {
-    fprintf(stderr,
-            "usage: %s [-p <root path>] -o <output path> -L <language> [-O <owner>] (-r <interface "
-            "root>)+ [-R] [-v] [-d <depfile>] FQNAME...\n\n",
-            me);
+static void usage(const char* me) {
+    Formatter out(stderr);
 
-    fprintf(stderr,
-            "Process FQNAME, PACKAGE(.SUBPACKAGE)*@[0-9]+.[0-9]+(::TYPE)?, to create output.\n\n");
+    out << "Usage: " << me << " -o <output path> -L <language> [-O <owner>] ";
+    Coordinator::emitOptionsUsageString(out);
+    out << " FQNAME...\n\n";
 
-    fprintf(stderr, "         -h: Prints this menu.\n");
-    fprintf(stderr, "         -L <language>: The following options are available:\n");
-    for (auto& e : kFormats) {
-        fprintf(stderr, "            %-16s: %s\n", e.name().c_str(), e.description().c_str());
-    }
-    fprintf(stderr, "         -O <owner>: The owner of the module for -Landroidbp(-impl)?.\n");
-    fprintf(stderr, "         -o <output path>: Location to output files.\n");
-    fprintf(stderr, "         -p <root path>: Android build root, defaults to $ANDROID_BUILD_TOP or pwd.\n");
-    fprintf(stderr, "         -R: Do not add default package roots if not specified in -r.\n");
-    fprintf(stderr, "         -r <package:path root>: E.g., android.hardware:hardware/interfaces.\n");
-    fprintf(stderr, "         -v: verbose output.\n");
-    fprintf(stderr, "         -d <depfile>: location of depfile to write to.\n");
+    out << "Process FQNAME, PACKAGE(.SUBPACKAGE)*@[0-9]+.[0-9]+(::TYPE)?, to create output.\n\n";
+
+    out.indent();
+    out.indent();
+
+    out << "-h: Prints this menu.\n";
+    out << "-L <language>: The following options are available:\n";
+    out.indent([&] {
+        for (auto& e : kFormats) {
+            std::stringstream sstream;
+            sstream.fill(' ');
+            sstream.width(16);
+            sstream << std::left << e.name();
+
+            out << sstream.str() << ": " << e.description() << "\n";
+        }
+    });
+    out << "-O <owner>: The owner of the module for -Landroidbp(-impl)?.\n";
+    out << "-o <output path>: Location to output files.\n";
+    Coordinator::emitOptionsDetailString(out);
+
+    out.unindent();
+    out.unindent();
 }
 
 // hidl is intentionally leaky. Turn off LeakSanitizer by default.
