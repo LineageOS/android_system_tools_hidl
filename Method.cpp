@@ -239,6 +239,30 @@ void Method::emitJavaResultSignature(Formatter &out) const {
     emitJavaArgResultSignature(out, results());
 }
 
+void Method::emitJavaSignature(Formatter& out) const {
+    const bool returnsValue = !results().empty();
+    const bool needsCallback = results().size() > 1;
+
+    if (returnsValue && !needsCallback) {
+        out << results()[0]->type().getJavaType();
+    } else {
+        out << "void";
+    }
+
+    out << " " << name() << "(";
+    emitJavaArgSignature(out);
+
+    if (needsCallback) {
+        if (!args().empty()) {
+            out << ", ";
+        }
+
+        out << name() << "Callback _hidl_cb";
+    }
+
+    out << ")";
+}
+
 void Method::dumpAnnotations(Formatter &out) const {
     if (mAnnotations->size() == 0) {
         return;
