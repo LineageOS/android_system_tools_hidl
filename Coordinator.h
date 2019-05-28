@@ -141,6 +141,9 @@ struct Coordinator {
     void parseOptions(int argc, char** argv, const std::string& options,
                       const HandleArg& handleArg);
 
+    static void emitOptionsUsageString(Formatter& out);
+    static void emitOptionsDetailString(Formatter& out);
+
   private:
     static bool MakeParentHierarchy(const std::string &path);
 
