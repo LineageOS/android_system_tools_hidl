@@ -101,6 +101,7 @@ struct Method : DocCommentable {
 
     void emitJavaArgSignature(Formatter &out) const;
     void emitJavaResultSignature(Formatter &out) const;
+    void emitJavaSignature(Formatter& out) const;
 
     const NamedReference<Type>* canElideCallback() const;
 
