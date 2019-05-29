@@ -76,7 +76,6 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    std::vector<FQName> targets;
     for (int i = 0; i < argc; ++i) {
         const char* arg = argv[i];
 
@@ -87,31 +86,34 @@ int main(int argc, char** argv) {
             exit(1);
         }
 
+        std::vector<FQName> targets;
         if (fqName.isFullyQualified()) {
             targets.push_back(fqName);
-            continue;
+        } else {
+            status_t err = coordinator.appendPackageInterfacesToVector(fqName, &targets);
+            if (err != OK) {
+                std::cerr << "ERROR: Could not get sources for: " << arg << "." << std::endl;
+                exit(1);
+            }
         }
 
-        status_t err = coordinator.appendPackageInterfacesToVector(fqName, &targets);
-        if (err != OK) {
-            std::cerr << "ERROR: Could not get sources for: " << arg << "." << std::endl;
-            exit(1);
-        }
-    }
+        std::vector<Lint> errors;
+        for (const FQName& target : targets) {
+            AST* ast = coordinator.parse(target);
+            if (ast == nullptr) {
+                std::cerr << "ERROR: Could not parse " << target.name() << ". Aborting."
+                          << std::endl;
+                exit(1);
+            }
 
-    std::vector<Lint> errors;
-    for (const FQName& fqName : targets) {
-        AST* ast = coordinator.parse(fqName);
-        if (ast == nullptr) {
-            std::cerr << "ERROR: Could not parse " << fqName.name() << ". Aborting." << std::endl;
-            exit(1);
+            LintRegistry::get()->runAllLintFunctions(*ast, &errors);
         }
 
-        LintRegistry::get()->runAllLintFunctions(*ast, &errors);
-    }
-
-    for (const Lint& error : errors) {
-        std::cerr << error;
+        if (!errors.empty())
+            std::cerr << "Lints for: " << fqName.string() << std::endl << std::endl;
+        for (const Lint& error : errors) {
+            std::cerr << error;
+        }
     }
 
     return 0;
