@@ -75,7 +75,6 @@ cc_library_host_shared {
         "NamedType.cpp",
         "PointerType.cpp",
         "FmqType.cpp",
-        "RefType.cpp",
         "ScalarType.cpp",
         "Scope.cpp",
         "StringType.cpp",
