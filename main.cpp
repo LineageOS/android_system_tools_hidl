@@ -164,7 +164,7 @@ static status_t appendPerTypeTargets(const FQName& fqName, const Coordinator* co
         return UNKNOWN_ERROR;
     }
 
-    std::vector<NamedType*> rootTypes = typesAST->getRootScope()->getSubTypes();
+    std::vector<NamedType*> rootTypes = typesAST->getRootScope().getSubTypes();
     for (const NamedType* rootType : rootTypes) {
         if (rootType->isTypeDef()) continue;
 
@@ -416,9 +416,7 @@ static bool packageNeedsJavaCode(
     // We'll have to generate Java code if types.hal contains any non-typedef
     // type declarations.
 
-    Scope* rootScope = typesAST->getRootScope();
-    std::vector<NamedType *> subTypes = rootScope->getSubTypes();
-
+    std::vector<NamedType*> subTypes = typesAST->getRootScope().getSubTypes();
     for (const auto &subType : subTypes) {
         if (!subType->isTypeDef()) {
             return true;
