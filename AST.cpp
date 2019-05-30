@@ -41,8 +41,12 @@ AST::AST(const Coordinator* coordinator, const Hash* fileHash)
       mRootScope("(root scope)", FQName(), Location::startOf(fileHash->getPath()),
                  nullptr /* parent */) {}
 
-Scope* AST::getRootScope() {
+Scope* AST::getMutableRootScope() {
     return &mRootScope;
+}
+
+const Scope& AST::getRootScope() const {
+    return mRootScope;
 }
 
 // used by the parser.

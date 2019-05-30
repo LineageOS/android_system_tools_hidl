@@ -191,7 +191,8 @@ struct AST {
     // types or Interface base name (e.x. Foo)
     std::string getBaseName() const;
 
-    Scope* getRootScope();
+    Scope* getMutableRootScope();
+    const Scope& getRootScope() const;
 
     static void generateCppPackageInclude(Formatter& out, const FQName& package,
                                           const std::string& klass);
