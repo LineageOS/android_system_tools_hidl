@@ -27,28 +27,22 @@
 using namespace android;
 
 static void usage(const char* me) {
-    std::cerr << "Usage: " << me;
-    std::cerr << " [-p <root path>]";
-    std::cerr << " (-r <interface root>)+";
-    std::cerr << " [-R]";
-    std::cerr << " [-v]";
-    std::cerr << " [-d <depfile>]";
-    std::cerr << " FQNAME...";
-    std::cerr << std::endl << std::endl;
+    Formatter out(stderr);
 
-    std::cerr << "Process FQNAME, PACKAGE(.SUBPACKAGE)*@[0-9]+.[0-9]+(::TYPE)?, and provide lints."
-              << std::endl
-              << std::endl;
+    out << "Usage: " << me << " ";
+    Coordinator::emitOptionsUsageString(out);
+    out << " FQNAME...\n\n";
 
-    std::cerr << "        -h: Prints this menu." << std::endl;
-    std::cerr << "        -p <root path>: Android build root, defaults to $ANDROID_BUILD_TOP."
-              << std::endl;
-    std::cerr << "        -R: Do not add default package roots if not specified in -r."
-              << std::endl;
-    std::cerr << "        -r <package:path root>: E.g., android.hardware:hardware/interfaces."
-              << std::endl;
-    std::cerr << "        -v: verbose output." << std::endl;
-    std::cerr << "        -d <depfile>: location of depfile to write to." << std::endl;
+    out << "Process FQNAME, PACKAGE(.SUBPACKAGE)*@[0-9]+.[0-9]+(::TYPE)?, and provide lints.\n\n";
+
+    out.indent();
+    out.indent();
+
+    out << "-h: Prints this menu.\n";
+    Coordinator::emitOptionsDetailString(out);
+
+    out.unindent();
+    out.unindent();
 }
 
 int main(int argc, char** argv) {
@@ -82,7 +76,6 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    std::vector<FQName> targets;
     for (int i = 0; i < argc; ++i) {
         const char* arg = argv[i];
 
@@ -93,31 +86,34 @@ int main(int argc, char** argv) {
             exit(1);
         }
 
+        std::vector<FQName> targets;
         if (fqName.isFullyQualified()) {
             targets.push_back(fqName);
-            continue;
+        } else {
+            status_t err = coordinator.appendPackageInterfacesToVector(fqName, &targets);
+            if (err != OK) {
+                std::cerr << "ERROR: Could not get sources for: " << arg << "." << std::endl;
+                exit(1);
+            }
         }
 
-        status_t err = coordinator.appendPackageInterfacesToVector(fqName, &targets);
-        if (err != OK) {
-            std::cerr << "ERROR: Could not get sources for: " << arg << "." << std::endl;
-            exit(1);
-        }
-    }
+        std::vector<Lint> errors;
+        for (const FQName& target : targets) {
+            AST* ast = coordinator.parse(target);
+            if (ast == nullptr) {
+                std::cerr << "ERROR: Could not parse " << target.name() << ". Aborting."
+                          << std::endl;
+                exit(1);
+            }
 
-    std::vector<Lint> errors;
-    for (const FQName& fqName : targets) {
-        AST* ast = coordinator.parse(fqName);
-        if (ast == nullptr) {
-            std::cerr << "ERROR: Could not parse " << fqName.name() << ". Aborting." << std::endl;
-            exit(1);
+            LintRegistry::get()->runAllLintFunctions(*ast, &errors);
         }
 
-        LintRegistry::get()->runAllLintFunctions(*ast, &errors);
-    }
-
-    for (const Lint& error : errors) {
-        std::cerr << error;
+        if (!errors.empty())
+            std::cerr << "Lints for: " << fqName.string() << std::endl << std::endl;
+        for (const Lint& error : errors) {
+            std::cerr << error;
+        }
     }
 
     return 0;
