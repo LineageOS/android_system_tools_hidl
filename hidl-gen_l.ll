@@ -198,7 +198,7 @@ status_t parseFile(AST* ast, std::unique_ptr<FILE, std::function<void(FILE *)>> 
 
     yyset_in(file.get(), scanner);
 
-    Scope* scopeStack = ast->getRootScope();
+    Scope* scopeStack = ast->getMutableRootScope();
     int res = yy::parser(scanner, ast, &scopeStack).parse();
 
     yylex_destroy(scanner);
