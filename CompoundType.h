@@ -79,28 +79,6 @@ struct CompoundType : public Scope {
             const std::string &parentName,
             const std::string &offsetText) const override;
 
-    void emitResolveReferences(
-            Formatter &out,
-            const std::string &name,
-            bool nameIsPointer,
-            const std::string &parcelObj,
-            bool parcelObjIsPointer,
-            bool isReader,
-            ErrorMode mode) const override;
-
-    void emitResolveReferencesEmbedded(
-            Formatter &out,
-            size_t depth,
-            const std::string &name,
-            const std::string &sanitizedName,
-            bool nameIsPointer,
-            const std::string &parcelObj,
-            bool parcelObjIsPointer,
-            bool isReader,
-            ErrorMode mode,
-            const std::string &parentName,
-            const std::string &offsetText) const override;
-
     void emitJavaReaderWriter(
             Formatter &out,
             const std::string &parcelObj,
@@ -133,7 +111,6 @@ struct CompoundType : public Scope {
     void emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) const override;
 
     bool needsEmbeddedReadWrite() const override;
-    bool deepNeedsResolveReferences(std::unordered_set<const Type*>* visited) const override;
     bool resultNeedsDeref() const override;
 
     void emitVtsTypeDeclarations(Formatter& out) const override;
@@ -196,7 +173,6 @@ private:
 
     void emitStructReaderWriter(
             Formatter &out, const std::string &prefix, bool isReader) const;
-    void emitResolveReferenceDef(Formatter& out, const std::string& prefix, bool isReader) const;
 
     DISALLOW_COPY_AND_ASSIGN(CompoundType);
 };

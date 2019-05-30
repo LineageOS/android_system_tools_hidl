@@ -481,83 +481,6 @@ void CompoundType::emitJavaFieldReaderWriter(
         << offset
         << ");\n";
 }
-void CompoundType::emitResolveReferences(
-            Formatter &out,
-            const std::string &name,
-            bool nameIsPointer,
-            const std::string &parcelObj,
-            bool parcelObjIsPointer,
-            bool isReader,
-            ErrorMode mode) const {
-    emitResolveReferencesEmbedded(
-        out,
-        0 /* depth */,
-        name,
-        name /* sanitizedName */,
-        nameIsPointer,
-        parcelObj,
-        parcelObjIsPointer,
-        isReader,
-        mode,
-        "_hidl_" + name + "_parent",
-        "0 /* parentOffset */");
-}
-
-void CompoundType::emitResolveReferencesEmbedded(
-            Formatter &out,
-            size_t /* depth */,
-            const std::string &name,
-            const std::string &/* sanitizedName */,
-            bool nameIsPointer,
-            const std::string &parcelObj,
-            bool parcelObjIsPointer,
-            bool isReader,
-            ErrorMode mode,
-            const std::string &parentName,
-            const std::string &offsetText) const {
-    CHECK(needsResolveReferences());
-
-    const std::string parcelObjDeref =
-        parcelObjIsPointer ? ("*" + parcelObj) : parcelObj;
-
-    const std::string parcelObjPointer =
-        parcelObjIsPointer ? parcelObj : ("&" + parcelObj);
-
-    const std::string nameDerefed = nameIsPointer ? ("*" + name) : name;
-    const std::string namePointer = nameIsPointer ? name : ("&" + name);
-
-    out << "_hidl_err = ";
-
-    if (isReader) {
-        out << "readEmbeddedReferenceFromParcel(\n";
-    } else {
-        out << "writeEmbeddedReferenceToParcel(\n";
-    }
-
-    out.indent(2, [&]{
-        if (isReader) {
-            out << "const_cast<"
-                << fullName()
-                << " *"
-                << ">("
-                << namePointer
-                << "),\n"
-                << parcelObjDeref;
-        } else {
-            out << nameDerefed
-                << ",\n"
-                << parcelObjPointer;
-        }
-
-        out << ",\n"
-            << parentName
-            << ",\n"
-            << offsetText
-            << ");\n\n";
-    });
-
-    handleError(out, mode);
-}
 
 void CompoundType::emitLayoutAsserts(Formatter& out, const Layout& layout,
                                      const std::string& layoutName) const {
@@ -964,21 +887,6 @@ void CompoundType::emitPackageHwDeclarations(Formatter& out) const {
 
         out.unindent(2);
     }
-
-    if(needsResolveReferences()) {
-        out << "::android::status_t readEmbeddedReferenceFromParcel(\n";
-        out.indent(2);
-        out << fullName() << " *obj,\n"
-            << "const ::android::hardware::Parcel &parcel,\n"
-            << "size_t parentHandle, size_t parentOffset);\n\n";
-        out.unindent(2);
-        out << "::android::status_t writeEmbeddedReferenceToParcel(\n";
-        out.indent(2);
-        out << "const " << fullName() << " &obj,\n"
-            << "::android::hardware::Parcel *,\n"
-            << "size_t parentHandle, size_t parentOffset);\n\n";
-        out.unindent(2);
-    }
 }
 
 static void emitSafeUnionFieldConstructor(Formatter& out,
@@ -1294,11 +1202,6 @@ void CompoundType::emitTypeDefinitions(Formatter& out, const std::string& prefix
     if (needsEmbeddedReadWrite()) {
         emitStructReaderWriter(out, prefix, true /* isReader */);
         emitStructReaderWriter(out, prefix, false /* isReader */);
-    }
-
-    if (needsResolveReferences()) {
-        emitResolveReferenceDef(out, prefix, true /* isReader */);
-        emitResolveReferenceDef(out, prefix, false /* isReader */);
     }
 
     if (mStyle == STYLE_SAFE_UNION) {
@@ -1933,111 +1836,6 @@ void CompoundType::emitStructReaderWriter(
     out << "}\n\n";
 }
 
-void CompoundType::emitResolveReferenceDef(Formatter& out, const std::string& prefix,
-                                           bool isReader) const {
-    out << "::android::status_t ";
-    const std::string space(prefix.empty() ? "" : (prefix + "::"));
-
-    bool useParent = false;
-    for (const auto &field : *mFields) {
-        if (field->type().useParentInEmitResolveReferencesEmbedded()) {
-            useParent = true;
-            break;
-        }
-    }
-
-    std::string parentHandleName = useParent ? "parentHandle" : "/* parentHandle */";
-    std::string parentOffsetName = useParent ? "parentOffset" : "/* parentOffset */";
-
-    if (isReader) {
-        out << "readEmbeddedReferenceFromParcel(\n";
-        out.indent(2);
-        out << space + localName() + " *obj,\n"
-            << "const ::android::hardware::Parcel &parcel,\n"
-            << "size_t " << parentHandleName << ", "
-            << "size_t " << parentOffsetName << ")\n";
-        out.unindent(2);
-    } else {
-        out << "writeEmbeddedReferenceToParcel(\n";
-        out.indent(2);
-        out << "const " << space + localName() + " &obj,\n"
-            << "::android::hardware::Parcel *parcel,\n"
-            << "size_t " << parentHandleName << ", "
-            << "size_t " << parentOffsetName << ")\n";
-        out.unindent(2);
-    }
-
-    out << " {\n";
-
-    out.indent();
-
-    out << "::android::status_t _hidl_err = ::android::OK;\n\n";
-
-    const std::string nameDeref(isReader ? "obj->" : "obj.");
-    // if not useParent, then parentName and offsetText
-    // should not be used at all, then the #error should not be emitted.
-    std::string error = useParent ? "" : "\n#error\n";
-
-    if (mStyle == STYLE_SAFE_UNION) {
-        out << "switch (" << nameDeref << "getDiscriminator()) {\n";
-        out.indent();
-    }
-
-    for (const auto &field : *mFields) {
-        if (!field->type().needsResolveReferences()) {
-            continue;
-        }
-
-        if (mStyle == STYLE_SAFE_UNION) {
-            out << "case " << fullName() << "::hidl_discriminator::"
-                << field->name() << ": {\n";
-            out.indent();
-        }
-
-        const std::string fieldName = (mStyle == STYLE_SAFE_UNION)
-                                        ? (nameDeref + field->name() + "()")
-                                        : (nameDeref + field->name());
-
-        const std::string fieldOffset = (mStyle == STYLE_SAFE_UNION)
-                                        ? (nameDeref + "hidl_getUnionOffset() " +
-                                           "/* safe_union: union offset into struct */")
-                                        : ("offsetof(" + fullName() + ", " + field->name() + ")");
-
-        field->type().emitResolveReferencesEmbedded(
-            out,
-            0 /* depth */,
-            fieldName,
-            field->name() /* sanitizedName */,
-            false,    // nameIsPointer
-            "parcel", // const std::string &parcelObj,
-            !isReader, // bool parcelObjIsPointer,
-            isReader, // bool isReader,
-            ErrorMode_Return,
-            parentHandleName + error,
-            parentOffsetName
-                + " + "
-                + fieldOffset
-                + error);
-
-        if (mStyle == STYLE_SAFE_UNION) {
-            out << "break;\n";
-            out.unindent();
-            out << "}\n";
-        }
-    }
-
-    if (mStyle == STYLE_SAFE_UNION) {
-        out << "default: { _hidl_err = ::android::BAD_VALUE; break; }\n";
-        out.unindent();
-        out << "}\n";
-    }
-
-    out << "return _hidl_err;\n";
-
-    out.unindent();
-    out << "}\n\n";
-}
-
 bool CompoundType::needsEmbeddedReadWrite() const {
     if (mStyle == STYLE_UNION) {
         return false;
@@ -2050,20 +1848,6 @@ bool CompoundType::needsEmbeddedReadWrite() const {
     }
 
     return false;
-}
-
-bool CompoundType::deepNeedsResolveReferences(std::unordered_set<const Type*>* visited) const {
-    if (mStyle == STYLE_UNION) {
-        return false;
-    }
-
-    for (const auto &field : *mFields) {
-        if (field->type().needsResolveReferences(visited)) {
-            return true;
-        }
-    }
-
-    return Scope::deepNeedsResolveReferences(visited);
 }
 
 bool CompoundType::resultNeedsDeref() const {
