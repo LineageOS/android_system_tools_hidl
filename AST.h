@@ -325,10 +325,6 @@ struct AST {
                              const NamedReference<Type>* arg, bool isReader, Type::ErrorMode mode,
                              bool addPrefixToName) const;
 
-    void emitCppResolveReferences(Formatter& out, const std::string& parcelObj,
-                                  bool parcelObjIsPointer, const NamedReference<Type>* arg,
-                                  bool isReader, Type::ErrorMode mode, bool addPrefixToName) const;
-
     void emitJavaReaderWriter(Formatter& out, const std::string& parcelObj,
                               const NamedReference<Type>* arg, bool isReader,
                               bool addPrefixToName) const;

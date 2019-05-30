@@ -32,8 +32,6 @@
 #include <android/hardware/tests/inheritance/1.0/IParent.h>
 #include <android/hardware/tests/memory/1.0/IMemoryTest.h>
 #include <android/hardware/tests/multithread/1.0/IMultithread.h>
-#include <android/hardware/tests/pointer/1.0/IGraph.h>
-#include <android/hardware/tests/pointer/1.0/IPointer.h>
 #include <android/hardware/tests/safeunion/1.0/IOtherInterface.h>
 #include <android/hardware/tests/safeunion/1.0/ISafeUnion.h>
 #include <android/hardware/tests/safeunion/cpp/1.0/ICppSafeUnion.h>
@@ -69,7 +67,6 @@
 #include <vector>
 
 #include <hidl-test/FooHelper.h>
-#include <hidl-test/PointerHelper.h>
 #include <hidl-util/FQName.h>
 
 #include <hidl/ServiceManagement.h>
@@ -83,9 +80,6 @@
 #define EXPECT_OK(__ret__) EXPECT_TRUE(isOk(__ret__))
 #define EXPECT_FAIL(__ret__) EXPECT_FALSE(isOk(__ret__))
 #define EXPECT_ARRAYEQ(__a1__, __a2__, __size__) EXPECT_TRUE(isArrayEqual(__a1__, __a2__, __size__))
-
-// TODO uncomment this when kernel is patched with pointer changes.
-//#define HIDL_RUN_POINTER_TESTS 1
 
 // forward declarations.
 class HidlEnvironment;
@@ -137,8 +131,6 @@ using ::android::hardware::tests::inheritance::V1_0::IGrandparent;
 using ::android::hardware::tests::inheritance::V1_0::IParent;
 using ::android::hardware::tests::memory::V1_0::IMemoryTest;
 using ::android::hardware::tests::multithread::V1_0::IMultithread;
-using ::android::hardware::tests::pointer::V1_0::IGraph;
-using ::android::hardware::tests::pointer::V1_0::IPointer;
 using ::android::hardware::tests::safeunion::cpp::V1_0::ICppSafeUnion;
 using ::android::hardware::tests::safeunion::V1_0::IOtherInterface;
 using ::android::hardware::tests::safeunion::V1_0::ISafeUnion;
@@ -369,9 +361,6 @@ public:
     sp<IBaz> baz;
     sp<IBaz> dyingBaz;
     sp<IBar> bar;
-    sp<IGraph> graphInterface;
-    sp<IPointer> pointerInterface;
-    sp<IPointer> validationPointerInterface;
     sp<IMultithread> multithreadInterface;
     sp<ITrie> trieInterface;
     sp<ICppSafeUnion> cppSafeunionInterface;
@@ -425,18 +414,6 @@ public:
         ASSERT_NE(bar, nullptr);
         ASSERT_EQ(bar->isRemote(), mode == BINDERIZED);
 
-        graphInterface = IGraph::getService("graph", mode == PASSTHROUGH /* getStub */);
-        ASSERT_NE(graphInterface, nullptr);
-        ASSERT_EQ(graphInterface->isRemote(), mode == BINDERIZED);
-
-        pointerInterface = IPointer::getService("pointer", mode == PASSTHROUGH /* getStub */);
-        ASSERT_NE(pointerInterface, nullptr);
-        ASSERT_EQ(pointerInterface->isRemote(), mode == BINDERIZED);
-
-        // use passthrough mode as the validation object.
-        validationPointerInterface = IPointer::getService("pointer", true /* getStub */);
-        ASSERT_NE(validationPointerInterface, nullptr);
-
         multithreadInterface =
             IMultithread::getService("multithread", mode == PASSTHROUGH /* getStub */);
         ASSERT_NE(multithreadInterface, nullptr);
@@ -474,9 +451,6 @@ public:
     sp<IBaz> baz;
     sp<IBaz> dyingBaz;
     sp<IBar> bar;
-    sp<IGraph> graphInterface;
-    sp<IPointer> pointerInterface;
-    sp<IPointer> validationPointerInterface;
     sp<ITrie> trieInterface;
     sp<ICppSafeUnion> cppSafeunionInterface;
     sp<ISafeUnion> safeunionInterface;
@@ -493,9 +467,6 @@ public:
         baz = gHidlEnvironment->baz;
         dyingBaz = gHidlEnvironment->dyingBaz;
         bar = gHidlEnvironment->bar;
-        graphInterface = gHidlEnvironment->graphInterface;
-        pointerInterface = gHidlEnvironment->pointerInterface;
-        validationPointerInterface = gHidlEnvironment->validationPointerInterface;
         trieInterface = gHidlEnvironment->trieInterface;
         cppSafeunionInterface = gHidlEnvironment->cppSafeunionInterface;
         safeunionInterface = gHidlEnvironment->safeunionInterface;
@@ -650,13 +621,11 @@ TEST_F(HidlTest, TryGetServiceTest) {
 
 TEST_F(HidlTest, ServiceListTest) {
     static const std::set<std::string> binderizedSet = {
-        "android.hardware.tests.pointer@1.0::IPointer/pointer",
         "android.hardware.tests.bar@1.0::IBar/foo",
         "android.hardware.tests.inheritance@1.0::IFetcher/fetcher",
         "android.hardware.tests.inheritance@1.0::IParent/parent",
         "android.hardware.tests.inheritance@1.0::IParent/child",
         "android.hardware.tests.inheritance@1.0::IChild/child",
-        "android.hardware.tests.pointer@1.0::IGraph/graph",
         "android.hardware.tests.inheritance@1.0::IGrandparent/child",
         "android.hardware.tests.foo@1.0::IFoo/foo",
         "android.hidl.manager@1.0::IServiceManager/default",
@@ -2551,298 +2520,6 @@ TEST_F(HidlMultithreadTest, MultithreadTest) {
     test_multithread(20, 20);
     test_multithread(20, 10);
 }
-
-#if HIDL_RUN_POINTER_TESTS
-
-TEST_F(HidlTest, PassAGraphTest) {
-    IGraph::Graph g;
-    ::android::simpleGraph(g);
-    ::android::logSimpleGraph("CLIENT", g);
-    ALOGI("CLIENT call passAGraph");
-    EXPECT_OK(graphInterface->passAGraph(g));
-}
-
-TEST_F(HidlTest, GiveAGraphTest) {
-    EXPECT_OK(graphInterface->giveAGraph([&](const auto &newGraph) {
-        ::android::logSimpleGraph("CLIENT", newGraph);
-        EXPECT_TRUE(::android::isSimpleGraph(newGraph));
-    }));
-}
-TEST_F(HidlTest, PassANodeTest) {
-    IGraph::Node node; node.data = 10;
-    EXPECT_OK(graphInterface->passANode(node));
-}
-TEST_F(HidlTest, PassTwoGraphsTest) {
-    IGraph::Graph g;
-    ::android::simpleGraph(g);
-    EXPECT_OK(graphInterface->passTwoGraphs(&g, &g));
-}
-TEST_F(HidlTest, PassAGammaTest) {
-    IGraph::Theta s; s.data = 500;
-    IGraph::Alpha a; a.s_ptr = &s;
-    IGraph::Beta  b; b.s_ptr = &s;
-    IGraph::Gamma c; c.a_ptr = &a; c.b_ptr = &b;
-    ALOGI("CLIENT calling passAGamma: c.a = %p, c.b = %p, c.a->s = %p, c.b->s = %p",
-        c.a_ptr, c.b_ptr, c.a_ptr->s_ptr, c.b_ptr->s_ptr);
-    EXPECT_OK(graphInterface->passAGamma(c));
-}
-TEST_F(HidlTest, PassNullTest) {
-    IGraph::Gamma c;
-    c.a_ptr = nullptr;
-    c.b_ptr = nullptr;
-    EXPECT_OK(graphInterface->passAGamma(c));
-}
-TEST_F(HidlTest, PassASimpleRefTest) {
-    IGraph::Theta s;
-    s.data = 500;
-    IGraph::Alpha a;
-    a.s_ptr = &s;
-    EXPECT_OK(graphInterface->passASimpleRef(&a));
-}
-TEST_F(HidlTest, PassASimpleRefSTest) {
-    IGraph::Theta s;
-    s.data = 500;
-    ALOGI("CLIENT call passASimpleRefS with %p", &s);
-    EXPECT_OK(graphInterface->passASimpleRefS(&s));
-}
-TEST_F(HidlTest, GiveASimpleRefTest) {
-    EXPECT_OK(graphInterface->giveASimpleRef([&](const auto & a_ptr) {
-        EXPECT_EQ(a_ptr->s_ptr->data, 500);
-    }));
-}
-TEST_F(HidlTest, GraphReportErrorsTest) {
-    Return<int32_t> ret = graphInterface->getErrors();
-    EXPECT_OK(ret);
-    EXPECT_EQ(int32_t(ret), 0);
-}
-
-TEST_F(HidlTest, PointerPassOldBufferTest) {
-    EXPECT_OK(validationPointerInterface->bar1([&](const auto& sptr, const auto& s) {
-        EXPECT_OK(pointerInterface->foo1(sptr, s));
-    }));
-}
-TEST_F(HidlTest, PointerPassOldBufferTest2) {
-    EXPECT_OK(validationPointerInterface->bar2([&](const auto& s, const auto& a) {
-        EXPECT_OK(pointerInterface->foo2(s, a));
-    }));
-}
-TEST_F(HidlTest, PointerPassSameOldBufferPointerTest) {
-    EXPECT_OK(validationPointerInterface->bar3([&](const auto& s, const auto& a, const auto& b) {
-        EXPECT_OK(pointerInterface->foo3(s, a, b));
-    }));
-}
-TEST_F(HidlTest, PointerPassOnlyTest) {
-    EXPECT_OK(validationPointerInterface->bar4([&](const auto& s) {
-        EXPECT_OK(pointerInterface->foo4(s));
-    }));
-}
-TEST_F(HidlTest, PointerPassTwoEmbeddedTest) {
-    EXPECT_OK(validationPointerInterface->bar5([&](const auto& a, const auto& b) {
-        EXPECT_OK(pointerInterface->foo5(a, b));
-    }));
-}
-TEST_F(HidlTest, PointerPassIndirectBufferHasDataTest) {
-    EXPECT_OK(validationPointerInterface->bar6([&](const auto& a) {
-        EXPECT_OK(pointerInterface->foo6(a));
-    }));
-}
-TEST_F(HidlTest, PointerPassTwoIndirectBufferTest) {
-    EXPECT_OK(validationPointerInterface->bar7([&](const auto& a, const auto& b) {
-        EXPECT_OK(pointerInterface->foo7(a, b));
-    }));
-}
-TEST_F(HidlTest, PointerPassDeeplyIndirectTest) {
-    EXPECT_OK(validationPointerInterface->bar8([&](const auto& d) {
-        EXPECT_OK(pointerInterface->foo8(d));
-    }));
-}
-TEST_F(HidlTest, PointerPassStringRefTest) {
-    EXPECT_OK(validationPointerInterface->bar9([&](const auto& str) {
-        EXPECT_OK(pointerInterface->foo9(str));
-    }));
-}
-TEST_F(HidlTest, PointerPassRefVecTest) {
-    EXPECT_OK(validationPointerInterface->bar10([&](const auto& v) {
-        EXPECT_OK(pointerInterface->foo10(v));
-    }));
-}
-TEST_F(HidlTest, PointerPassVecRefTest) {
-    EXPECT_OK(validationPointerInterface->bar11([&](const auto& v) {
-        EXPECT_OK(pointerInterface->foo11(v));
-    }));
-}
-TEST_F(HidlTest, PointerPassArrayRefTest) {
-    EXPECT_OK(validationPointerInterface->bar12([&](const auto& array) {
-        EXPECT_OK(pointerInterface->foo12(array));
-    }));
-}
-TEST_F(HidlTest, PointerPassRefArrayTest) {
-    EXPECT_OK(validationPointerInterface->bar13([&](const auto& array) {
-        EXPECT_OK(pointerInterface->foo13(array));
-    }));
-}
-TEST_F(HidlTest, PointerPass3RefTest) {
-    EXPECT_OK(validationPointerInterface->bar14([&](const auto& p3) {
-        EXPECT_OK(pointerInterface->foo14(p3));
-    }));
-}
-TEST_F(HidlTest, PointerPassInt3RefTest) {
-    EXPECT_OK(validationPointerInterface->bar15([&](const auto& p3) {
-        EXPECT_OK(pointerInterface->foo15(p3));
-    }));
-}
-TEST_F(HidlTest, PointerPassEmbeddedPointersTest) {
-    EXPECT_OK(validationPointerInterface->bar16([&](const auto& p) {
-        EXPECT_OK(pointerInterface->foo16(p));
-    }));
-}
-TEST_F(HidlTest, PointerPassEmbeddedPointers2Test) {
-    EXPECT_OK(validationPointerInterface->bar17([&](const auto& p) {
-        EXPECT_OK(pointerInterface->foo17(p));
-    }));
-}
-TEST_F(HidlTest, PointerPassCopiedStringTest) {
-    EXPECT_OK(validationPointerInterface->bar18([&](const auto& str_ref, const auto& str_ref2, const auto& str) {
-        EXPECT_OK(pointerInterface->foo18(str_ref, str_ref2, str));
-    }));
-}
-TEST_F(HidlTest, PointerPassCopiedVecTest) {
-    EXPECT_OK(validationPointerInterface->bar19([&](const auto& a_vec_ref, const auto& a_vec, const auto& a_vec_ref2) {
-        EXPECT_OK(pointerInterface->foo19(a_vec_ref, a_vec, a_vec_ref2));
-    }));
-}
-TEST_F(HidlTest, PointerPassBigRefVecTest) {
-    EXPECT_OK(validationPointerInterface->bar20([&](const auto& v) {
-        EXPECT_FAIL(pointerInterface->foo20(v));
-    }));
-}
-TEST_F(HidlTest, PointerPassMultidimArrayRefTest) {
-    EXPECT_OK(validationPointerInterface->bar21([&](const auto& v) {
-        EXPECT_OK(pointerInterface->foo21(v));
-    }));
-}
-TEST_F(HidlTest, PointerPassRefMultidimArrayTest) {
-    EXPECT_OK(validationPointerInterface->bar22([&](const auto& v) {
-        EXPECT_OK(pointerInterface->foo22(v));
-    }));
-}
-TEST_F(HidlTest, PointerGiveOldBufferTest) {
-    EXPECT_OK(pointerInterface->bar1([&](const auto& sptr, const auto& s) {
-        EXPECT_OK(validationPointerInterface->foo1(sptr, s));
-    }));
-}
-TEST_F(HidlTest, PointerGiveOldBufferTest2) {
-    EXPECT_OK(pointerInterface->bar2([&](const auto& s, const auto& a) {
-        EXPECT_OK(validationPointerInterface->foo2(s, a));
-    }));
-}
-TEST_F(HidlTest, PointerGiveSameOldBufferPointerTest) {
-    EXPECT_OK(pointerInterface->bar3([&](const auto& s, const auto& a, const auto& b) {
-        EXPECT_OK(validationPointerInterface->foo3(s, a, b));
-    }));
-}
-TEST_F(HidlTest, PointerGiveOnlyTest) {
-    EXPECT_OK(pointerInterface->bar4([&](const auto& s) {
-        EXPECT_OK(validationPointerInterface->foo4(s));
-    }));
-}
-TEST_F(HidlTest, PointerGiveTwoEmbeddedTest) {
-    EXPECT_OK(pointerInterface->bar5([&](const auto& a, const auto& b) {
-        EXPECT_OK(validationPointerInterface->foo5(a, b));
-    }));
-}
-TEST_F(HidlTest, PointerGiveIndirectBufferHasDataTest) {
-    EXPECT_OK(pointerInterface->bar6([&](const auto& a) {
-        EXPECT_OK(validationPointerInterface->foo6(a));
-    }));
-}
-TEST_F(HidlTest, PointerGiveTwoIndirectBufferTest) {
-    EXPECT_OK(pointerInterface->bar7([&](const auto& a, const auto& b) {
-        EXPECT_OK(validationPointerInterface->foo7(a, b));
-    }));
-}
-TEST_F(HidlTest, PointerGiveDeeplyIndirectTest) {
-    EXPECT_OK(pointerInterface->bar8([&](const auto& d) {
-        EXPECT_OK(validationPointerInterface->foo8(d));
-    }));
-}
-TEST_F(HidlTest, PointerGiveStringRefTest) {
-    EXPECT_OK(pointerInterface->bar9([&](const auto& str) {
-        EXPECT_OK(validationPointerInterface->foo9(str));
-    }));
-}
-TEST_F(HidlTest, PointerGiveRefVecTest) {
-    EXPECT_OK(pointerInterface->bar10([&](const auto& v) {
-        EXPECT_OK(validationPointerInterface->foo10(v));
-    }));
-}
-TEST_F(HidlTest, PointerGiveVecRefTest) {
-    EXPECT_OK(pointerInterface->bar11([&](const auto& v) {
-        EXPECT_OK(validationPointerInterface->foo11(v));
-    }));
-}
-TEST_F(HidlTest, PointerGiveArrayRefTest) {
-    EXPECT_OK(pointerInterface->bar12([&](const auto& array) {
-        EXPECT_OK(validationPointerInterface->foo12(array));
-    }));
-}
-TEST_F(HidlTest, PointerGiveRefArrayTest) {
-    EXPECT_OK(pointerInterface->bar13([&](const auto& array) {
-        EXPECT_OK(validationPointerInterface->foo13(array));
-    }));
-}
-TEST_F(HidlTest, PointerGive3RefTest) {
-    EXPECT_OK(pointerInterface->bar14([&](const auto& p3) {
-        EXPECT_OK(validationPointerInterface->foo14(p3));
-    }));
-}
-TEST_F(HidlTest, PointerGiveInt3RefTest) {
-    EXPECT_OK(pointerInterface->bar15([&](const auto& p3) {
-        EXPECT_OK(validationPointerInterface->foo15(p3));
-    }));
-}
-TEST_F(HidlTest, PointerGiveEmbeddedPointersTest) {
-    EXPECT_OK(pointerInterface->bar16([&](const auto& p) {
-        EXPECT_OK(validationPointerInterface->foo16(p));
-    }));
-}
-TEST_F(HidlTest, PointerGiveEmbeddedPointers2Test) {
-    EXPECT_OK(pointerInterface->bar17([&](const auto& p) {
-        EXPECT_OK(validationPointerInterface->foo17(p));
-    }));
-}
-TEST_F(HidlTest, PointerGiveCopiedStringTest) {
-    EXPECT_OK(pointerInterface->bar18([&](const auto& str_ref, const auto& str_ref2, const auto& str) {
-        EXPECT_OK(validationPointerInterface->foo18(str_ref, str_ref2, str));
-    }));
-}
-TEST_F(HidlTest, PointerGiveCopiedVecTest) {
-    EXPECT_OK(pointerInterface->bar19([&](const auto& a_vec_ref, const auto& a_vec, const auto& a_vec_ref2) {
-        EXPECT_OK(validationPointerInterface->foo19(a_vec_ref, a_vec, a_vec_ref2));
-    }));
-}
-// This cannot be enabled until _hidl_error is not ignored when
-// the remote writeEmbeddedReferencesToParcel.
-// TEST_F(HidlTest, PointerGiveBigRefVecTest) {
-//     EXPECT_FAIL(pointerInterface->bar20([&](const auto& v) {
-//     }));
-// }
-TEST_F(HidlTest, PointerGiveMultidimArrayRefTest) {
-    EXPECT_OK(pointerInterface->bar21([&](const auto& v) {
-        EXPECT_OK(validationPointerInterface->foo21(v));
-    }));
-}
-TEST_F(HidlTest, PointerGiveRefMultidimArrayTest) {
-    EXPECT_OK(pointerInterface->bar22([&](const auto& v) {
-        EXPECT_OK(validationPointerInterface->foo22(v));
-    }));
-}
-TEST_F(HidlTest, PointerReportErrorsTest) {
-    Return<int32_t> ret = pointerInterface->getErrors();
-    EXPECT_OK(ret);
-    EXPECT_EQ(int32_t(ret), 0);
-}
-#endif
 
 template <class T>
 struct WaitForServer {
