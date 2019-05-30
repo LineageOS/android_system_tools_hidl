@@ -218,28 +218,6 @@ struct Type : DocCommentable {
             const std::string &parentName,
             const std::string &offsetText) const;
 
-    virtual void emitResolveReferences(
-            Formatter &out,
-            const std::string &name,
-            bool nameIsPointer,
-            const std::string &parcelObj,
-            bool parcelObjIsPointer,
-            bool isReader,
-            ErrorMode mode) const;
-
-    virtual void emitResolveReferencesEmbedded(
-            Formatter &out,
-            size_t depth,
-            const std::string &name,
-            const std::string &sanitizedName,
-            bool nameIsPointer,
-            const std::string &parcelObj,
-            bool parcelObjIsPointer,
-            bool isReader,
-            ErrorMode mode,
-            const std::string &parentName,
-            const std::string &offsetText) const;
-
     virtual void emitDump(
             Formatter &out,
             const std::string &streamName,
@@ -249,8 +227,6 @@ struct Type : DocCommentable {
             Formatter &out,
             const std::string &streamName,
             const std::string &name) const;
-
-    virtual bool useParentInEmitResolveReferencesEmbedded() const;
 
     virtual void emitJavaReaderWriter(
             Formatter &out,
@@ -311,10 +287,6 @@ struct Type : DocCommentable {
 
     virtual bool needsEmbeddedReadWrite() const;
     virtual bool resultNeedsDeref() const;
-
-    bool needsResolveReferences() const;
-    bool needsResolveReferences(std::unordered_set<const Type*>* visited) const;
-    virtual bool deepNeedsResolveReferences(std::unordered_set<const Type*>* visited) const;
 
     // Generates type declaration for vts proto file.
     // TODO (b/30844146): make it a pure virtual method.
@@ -379,7 +351,6 @@ struct Type : DocCommentable {
     DISALLOW_COPY_AND_ASSIGN(Type);
 };
 
-/* Base type for VectorType and RefType. */
 struct TemplatedType : public Type {
     void setElementType(const Reference<Type>& elementType);
     const Type* getElementType() const;

@@ -417,32 +417,6 @@ void Type::emitReaderWriter(
     CHECK(!"Should not be here") << typeName();
 }
 
-void Type::emitResolveReferences(
-        Formatter &,
-        const std::string &,
-        bool,
-        const std::string &,
-        bool,
-        bool,
-        ErrorMode) const {
-    CHECK(!"Should not be here") << typeName();
-}
-
-void Type::emitResolveReferencesEmbedded(
-        Formatter &,
-        size_t,
-        const std::string &,
-        const std::string &,
-        bool,
-        const std::string &,
-        bool,
-        bool,
-        ErrorMode,
-        const std::string &,
-        const std::string &) const {
-    CHECK(!"Should not be here") << typeName();
-}
-
 void Type::emitDump(
         Formatter &out,
         const std::string &streamName,
@@ -468,10 +442,6 @@ void Type::emitJavaDump(
         const std::string &streamName,
         const std::string &name) const {
     out << streamName << ".append(" << name << ");\n";
-}
-
-bool Type::useParentInEmitResolveReferencesEmbedded() const {
-    return needsResolveReferences();
 }
 
 void Type::emitReaderWriterEmbedded(
@@ -648,24 +618,6 @@ bool Type::needsEmbeddedReadWrite() const {
 }
 
 bool Type::resultNeedsDeref() const {
-    return false;
-}
-
-bool Type::needsResolveReferences() const {
-    std::unordered_set<const Type*> visited;
-    return needsResolveReferences(&visited);
-}
-
-bool Type::needsResolveReferences(std::unordered_set<const Type*>* visited) const {
-    // See isJavaCompatible for similar structure.
-    if (visited->find(this) != visited->end()) {
-        return false;
-    }
-    visited->insert(this);
-    return deepNeedsResolveReferences(visited);
-}
-
-bool Type::deepNeedsResolveReferences(std::unordered_set<const Type*>* /* visited */) const {
     return false;
 }
 
