@@ -45,7 +45,6 @@ FQNAME              ({COMPONENT}|{VERSION})(({DOT}|":"+){COMPONENT}|{VERSION})*
 #include "Scope.h"
 #include "StringType.h"
 #include "VectorType.h"
-#include "RefType.h"
 #include "FmqType.h"
 
 #include "hidl-gen_y.h"
@@ -112,7 +111,6 @@ static std::string gCurrentComment;
 "union"             { return token::UNION; }
 "bitfield"          { yylval->templatedType = new BitFieldType(*scope); return token::TEMPLATED; }
 "vec"               { yylval->templatedType = new VectorType(*scope); return token::TEMPLATED; }
-"ref"               { yylval->templatedType = new RefType(*scope); return token::TEMPLATED; }
 "oneway"            { return token::ONEWAY; }
 
 "bool"              { SCALAR_TYPE(KIND_BOOL); }
@@ -198,7 +196,7 @@ status_t parseFile(AST* ast, std::unique_ptr<FILE, std::function<void(FILE *)>> 
 
     yyset_in(file.get(), scanner);
 
-    Scope* scopeStack = ast->getRootScope();
+    Scope* scopeStack = ast->getMutableRootScope();
     int res = yy::parser(scanner, ast, &scopeStack).parse();
 
     yylex_destroy(scanner);

@@ -26,7 +26,6 @@
 #include "Interface.h"
 #include "Location.h"
 #include "Method.h"
-#include "RefType.h"
 #include "Scope.h"
 #include "TypeDef.h"
 #include "VectorType.h"
@@ -48,7 +47,7 @@ void enterScope(AST* /* ast */, Scope** scope, Scope* container) {
 }
 
 void leaveScope(AST* ast, Scope** scope) {
-    CHECK((*scope) != ast->getRootScope());
+    CHECK((*scope) != &ast->getRootScope());
     *scope = (*scope)->parent();
 }
 
@@ -699,7 +698,7 @@ interface_declaration
               YYERROR;
           }
 
-          if (*scope != ast->getRootScope()) {
+          if (*scope != &ast->getRootScope()) {
               std::cerr << "ERROR: All interface must declared in "
                         << "global scope at " << @2 << "\n";
 

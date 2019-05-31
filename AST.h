@@ -191,7 +191,8 @@ struct AST {
     // types or Interface base name (e.x. Foo)
     std::string getBaseName() const;
 
-    Scope* getRootScope();
+    Scope* getMutableRootScope();
+    const Scope& getRootScope() const;
 
     static void generateCppPackageInclude(Formatter& out, const FQName& package,
                                           const std::string& klass);
@@ -323,10 +324,6 @@ struct AST {
     void emitCppReaderWriter(Formatter& out, const std::string& parcelObj, bool parcelObjIsPointer,
                              const NamedReference<Type>* arg, bool isReader, Type::ErrorMode mode,
                              bool addPrefixToName) const;
-
-    void emitCppResolveReferences(Formatter& out, const std::string& parcelObj,
-                                  bool parcelObjIsPointer, const NamedReference<Type>* arg,
-                                  bool isReader, Type::ErrorMode mode, bool addPrefixToName) const;
 
     void emitJavaReaderWriter(Formatter& out, const std::string& parcelObj,
                               const NamedReference<Type>* arg, bool isReader,
