@@ -44,11 +44,16 @@ template <class T>
 struct NamedReference;
 struct Type;
 
+struct ImportStatement {
+    FQName fqName;
+    Location location;
+};
+
 struct AST {
     AST(const Coordinator* coordinator, const Hash* fileHash);
 
     bool setPackage(const char *package);
-    bool addImport(const char *import);
+    bool addImport(const char* import, const Location& location);
 
     // package and version really.
     FQName package() const;
@@ -151,6 +156,7 @@ struct AST {
 
     void generateDependencies(Formatter& out) const;
 
+    const std::vector<ImportStatement>& getImportStatements() const;
     void getImportedPackages(std::set<FQName> *importSet) const;
 
     // Run getImportedPackages on this, then run getImportedPackages on
@@ -212,6 +218,9 @@ struct AST {
     RootScope mRootScope;
 
     FQName mPackage;
+
+    // A list of the FQNames present in the import statements
+    std::vector<ImportStatement> mImportStatements;
 
     // A set of all external interfaces/types that are _actually_ referenced
     // in this AST, this is a subset of those specified in import statements.
