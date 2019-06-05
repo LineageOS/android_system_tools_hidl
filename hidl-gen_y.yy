@@ -554,7 +554,7 @@ package
 import_stmt
     : IMPORT FQNAME require_semicolon
       {
-          if (!ast->addImport($2)) {
+          if (!ast->addImport($2, convertYYLoc(@2))) {
               std::cerr << "ERROR: Unable to import '" << $2 << "' at " << @2
                         << "\n";
               ast->addSyntaxError();
@@ -562,7 +562,7 @@ import_stmt
       }
     | IMPORT valid_type_name require_semicolon
       {
-          if (!ast->addImport($2)) {
+          if (!ast->addImport($2, convertYYLoc(@2))) {
               std::cerr << "ERROR: Unable to import '" << $2 << "' at " << @2
                         << "\n";
               ast->addSyntaxError();
@@ -678,7 +678,7 @@ interface_declaration
               }
               superType = new Reference<Type>();
           } else {
-              if (!ast->addImport(gIBaseFqName.string().c_str())) {
+              if (!ast->addImport(gIBaseFqName.string().c_str(), convertYYLoc(@1))) {
                   std::cerr << "ERROR: Unable to automatically import '"
                             << gIBaseFqName.string()
                             << "' at " << @$
