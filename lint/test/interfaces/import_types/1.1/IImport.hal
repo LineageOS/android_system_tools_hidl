@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package lint_test.safeunion@1.1;
+package lint_test.import_types@1.1;
 
-import @1.0::InTypes;
+import lint_test.import_types@1.1::types;
+import @1.0::IImport;
 
-struct SomeStruct {
-    InTypes unionType;
-};
+interface IImport extends @1.0::IImport {};

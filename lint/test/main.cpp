@@ -138,4 +138,18 @@ TEST_F(HidlLintTest, SafeunionLintTest) {
     EXPECT_LINT("lint_test.safeunion@1.1::IReferStructWithUnion",
                 "Reference to struct.*contains a union type.");
 }
+
+TEST_F(HidlLintTest, ImportTypesTest) {
+    // Imports types.hal file from package
+    EXPECT_LINT("lint_test.import_types@1.0::IImport", "Redundant import");
+
+    // Imports types.hal from other package
+    EXPECT_LINT("lint_test.import_types@1.0::IImportOther", "This imports every type");
+
+    // Imports types.hal from previous version of the same package
+    EXPECT_LINT("lint_test.import_types@1.1::types", "This imports every type");
+
+    // Imports types.hal from same package with fully qualified name
+    EXPECT_LINT("lint_test.import_types@1.1::IImport", "Redundant import");
+}
 }  // namespace android
