@@ -441,23 +441,9 @@ bool Interface::fillDebugMethod(Method *method) const {
     return true;
 }
 
-static std::map<std::string, Method *> gAllReservedMethods;
-
-bool Interface::addMethod(Method *method) {
-    if (isIBase()) {
-        if (!gAllReservedMethods.emplace(method->name(), method).second) {
-            std::cerr << "ERROR: hidl-gen encountered duplicated reserved method " << method->name()
-                      << std::endl;
-            return false;
-        }
-        // will add it in addAllReservedMethods
-        return true;
-    }
-
+void Interface::addUserDefinedMethod(Method* method) {
     CHECK(!method->isHidlReserved());
     mUserMethods.push_back(method);
-
-    return true;
 }
 
 std::vector<const Reference<Type>*> Interface::getReferences() const {
@@ -600,10 +586,10 @@ status_t Interface::validateAnnotations() const {
     return OK;
 }
 
-bool Interface::addAllReservedMethods() {
+bool Interface::addAllReservedMethods(const std::map<std::string, Method*>& allReservedMethods) {
     // use a sorted map to insert them in serial ID order.
     std::map<int32_t, Method *> reservedMethodsById;
-    for (const auto &pair : gAllReservedMethods) {
+    for (const auto& pair : allReservedMethods) {
         Method *method = pair.second->copySignature();
         bool fillSuccess = fillPingMethod(method)
             || fillDescriptorChainMethod(method)
