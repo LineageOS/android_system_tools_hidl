@@ -611,7 +611,7 @@ interface_declarations
 
           if ($2 != nullptr) {
             Interface *iface = static_cast<Interface*>(*scope);
-            if (!iface->addMethod($2)) {
+            if (!ast->addMethod($2, iface)) {
                 std::cerr << "ERROR: Unable to add method '" << $2->name()
                           << "' at " << @2 << "\n";
 
@@ -716,7 +716,7 @@ interface_declaration
           CHECK((*scope)->isInterface());
 
           Interface *iface = static_cast<Interface *>(*scope);
-          CHECK(iface->addAllReservedMethods());
+          CHECK(ast->addAllReservedMethodsToInterface(iface));
 
           leaveScope(ast, scope);
           ast->addScopedType(iface, *scope);

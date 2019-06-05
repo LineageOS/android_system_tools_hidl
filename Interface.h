@@ -39,8 +39,8 @@ struct Interface : public Scope {
 
     const Hash* getFileHash() const;
 
-    bool addMethod(Method *method);
-    bool addAllReservedMethods();
+    void addUserDefinedMethod(Method* method);
+    bool addAllReservedMethods(const std::map<std::string, Method*>& allReservedMethods);
 
     bool isElidableType() const override;
     bool isInterface() const override;
