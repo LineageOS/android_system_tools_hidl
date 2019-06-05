@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-package lint_test.safeunion@1.1;
+package lint_test.import_types@1.0;
 
-import @1.0::InTypes;
-
-struct SomeStruct {
-    InTypes unionType;
+struct Foo {
+    uint8_t intA;
 };
