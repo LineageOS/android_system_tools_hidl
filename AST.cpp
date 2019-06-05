@@ -22,6 +22,7 @@
 #include "HandleType.h"
 #include "Interface.h"
 #include "Location.h"
+#include "Method.h"
 #include "Scope.h"
 #include "TypeDef.h"
 
@@ -30,8 +31,11 @@
 #include <hidl-util/Formatter.h>
 #include <hidl-util/StringHelper.h>
 #include <stdlib.h>
+
 #include <algorithm>
 #include <iostream>
+#include <map>
+#include <string>
 
 namespace android {
 
@@ -843,6 +847,34 @@ void AST::addReferencedTypes(std::set<FQName> *referencedTypes) const {
             [referencedTypes](const auto &fqName) {
                 referencedTypes->insert(fqName);
             });
+}
+
+bool AST::addMethod(Method* method, Interface* iface) {
+    if (iface->isIBase()) {
+        if (!mAllReservedMethods.emplace(method->name(), method).second) {
+            std::cerr << "ERROR: hidl-gen encountered duplicated reserved method " << method->name()
+                      << std::endl;
+            return false;
+        }
+
+        // methods will be added to iface in addAllReservedMethodsToInterface
+        return true;
+    }
+
+    iface->addUserDefinedMethod(method);
+
+    return true;
+}
+
+bool AST::addAllReservedMethodsToInterface(Interface* iface) {
+    std::map<std::string, Method*> allReservedMethods(mAllReservedMethods);
+    // Looking for the IBase AST which is imported for all interfaces that are not IBase
+    for (const AST* importedAST : mImportedASTs) {
+        allReservedMethods.insert(importedAST->mAllReservedMethods.begin(),
+                                  importedAST->mAllReservedMethods.end());
+    }
+
+    return iface->addAllReservedMethods(allReservedMethods);
 }
 
 }  // namespace android;
