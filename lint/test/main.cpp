@@ -25,7 +25,7 @@
 #include "../LintRegistry.h"
 #include "Coordinator.h"
 
-using ::testing::HasSubstr;
+using ::testing::ContainsRegex;
 
 namespace android {
 class HidlLintTest : public ::testing::Test {
@@ -73,13 +73,13 @@ class HidlLintTest : public ::testing::Test {
         EXPECT_EQ(0, errors.size());        \
     } while (false)
 
-#define EXPECT_LINT(interface, errorMsg)                          \
-    do {                                                          \
-        std::vector<Lint> errors;                                 \
-        getLintsForHal(interface, &errors);                       \
-        EXPECT_EQ(1, errors.size());                              \
-        if (errors.size() != 1) break;                            \
-        EXPECT_THAT(errors[0].getMessage(), HasSubstr(errorMsg)); \
+#define EXPECT_LINT(interface, errorMsg)                              \
+    do {                                                              \
+        std::vector<Lint> errors;                                     \
+        getLintsForHal(interface, &errors);                           \
+        EXPECT_EQ(1, errors.size());                                  \
+        if (errors.size() != 1) break;                                \
+        EXPECT_THAT(errors[0].getMessage(), ContainsRegex(errorMsg)); \
     } while (false)
 
 TEST_F(HidlLintTest, OnewayLintTest) {
@@ -112,5 +112,30 @@ TEST_F(HidlLintTest, OnewayLintTest) {
 
     EXPECT_LINT("lint_test.oneway@1.0::INonOnewayOpposite",
                 "INonOnewayOpposite should only have non-oneway methods");
+}
+
+TEST_F(HidlLintTest, SafeunionLintTest) {
+    // Has no errors (empty). Even though types.hal has a lint.
+    EXPECT_NO_LINT("lint_test.safeunion@1.0::IEmpty");
+
+    // A child of an interface that refers to a union should not lint unless it refers to a union
+    EXPECT_NO_LINT("lint_test.safeunion@1.1::IReference");
+
+    // Should lint the union type definition
+    EXPECT_LINT("lint_test.safeunion@1.0::types", "union InTypes.*defined");
+    EXPECT_LINT("lint_test.safeunion@1.0::IDefined", "union SomeUnion.*defined");
+
+    // Should mention that a union type is being referenced and where that type is.
+    EXPECT_LINT("lint_test.safeunion@1.0::IReference", "Reference to union type.*types.hal");
+
+    // Referencing a union inside a struct should lint
+    EXPECT_LINT("lint_test.safeunion@1.1::types", "Reference to union type.*1\\.0/types.hal");
+
+    // Defining a union inside a struct should lint
+    EXPECT_LINT("lint_test.safeunion@1.0::IUnionInStruct", "union SomeUnionInStruct.*defined");
+
+    // Reference to a struct that contains a union should lint
+    EXPECT_LINT("lint_test.safeunion@1.1::IReferStructWithUnion",
+                "Reference to struct.*contains a union type.");
 }
 }  // namespace android
