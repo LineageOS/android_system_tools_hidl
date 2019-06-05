@@ -369,7 +369,7 @@ status_t AST::checkForwardReferenceRestrictions() const {
                                     &visited);
 }
 
-bool AST::addImport(const char *import) {
+bool AST::addImport(const char* import, const Location& location) {
     FQName fqName;
     if (!FQName::parse(import, &fqName)) {
         std::cerr << "ERROR: '" << import << "' is an invalid fully-qualified name." << std::endl;
@@ -377,6 +377,8 @@ bool AST::addImport(const char *import) {
     }
 
     fqName.applyDefaults(mPackage.package(), mPackage.version());
+
+    mImportStatements.push_back({fqName, location});
 
     if (fqName.name().empty()) {
         // import a package
@@ -755,6 +757,10 @@ Type *AST::findDefinedType(const FQName &fqName, FQName *matchingName) const {
     }
 
     return nullptr;
+}
+
+const std::vector<ImportStatement>& AST::getImportStatements() const {
+    return mImportStatements;
 }
 
 void AST::getImportedPackages(std::set<FQName> *importSet) const {
