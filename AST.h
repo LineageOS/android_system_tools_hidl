@@ -202,7 +202,10 @@ struct AST {
 
     void addToImportedNamesGranular(const FQName &fqName);
 
-   private:
+    bool addMethod(Method* method, Interface* iface);
+    bool addAllReservedMethodsToInterface(Interface* iface);
+
+  private:
     const Coordinator* mCoordinator;
     const Hash* mFileHash;
 
@@ -233,6 +236,9 @@ struct AST {
 
     // Types keyed by full names defined in this AST.
     std::map<FQName, Type *> mDefinedTypesByFullName;
+
+    // contains all the hidl reserved methods part of this AST
+    std::map<std::string, Method*> mAllReservedMethods;
 
     // used by the parser.
     size_t mSyntaxErrors = 0;
