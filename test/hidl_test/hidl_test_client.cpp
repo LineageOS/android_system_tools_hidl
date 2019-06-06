@@ -715,13 +715,6 @@ TEST_F(HidlTest, ServiceListManifestByInterfaceTest) {
         [](const hidl_vec<hidl_string>& registered) { ASSERT_EQ(0, registered.size()); }));
 }
 
-TEST_F(HidlTest, RegisterSameInterfaceRepeatedly) {
-    for (size_t i = 0; i < 1000; i++) {
-        sp<IChild> child = new SimpleChild();
-        EXPECT_EQ(::android::OK, child->registerAsService());
-    }
-}
-
 TEST_F(HidlTest, SubInterfaceServiceRegistrationTest) {
     using ::android::hardware::interfacesEqual;
 
