@@ -30,6 +30,9 @@ import android.hardware.tests.safeunion.V1_0.ISafeUnion.InterfaceTypeSafeUnion;
 import android.hardware.tests.safeunion.V1_0.ISafeUnion.LargeSafeUnion;
 import android.hardware.tests.safeunion.V1_0.ISafeUnion.SmallSafeUnion;
 import android.os.HwBinder;
+import android.os.HwParcel;
+import android.os.IBinder;
+import android.os.IHwBinder;
 import android.os.NativeHandle;
 import android.os.RemoteException;
 import android.os.HidlSupport;
@@ -574,6 +577,46 @@ public final class HidlTestJava {
 
         {
             Expect(proxy.interfaceDescriptor(), IBaz.kInterfaceName);
+        }
+
+        {
+            // Tests calling a two-way method with oneway enabled.
+            IHwBinder binder = proxy.asBinder();
+            HwParcel request = new HwParcel();
+            HwParcel reply = new HwParcel();
+
+            request.writeInterfaceToken(IBaz.kInterfaceName);
+            request.writeInt64(1234);
+            // IBaz::doThatAndReturnSomething is not oneway but we call it using FLAG_ONEWAY.
+            binder.transact(18 /*doThatAndReturnSomething*/, request, reply, IBinder.FLAG_ONEWAY);
+
+            try {
+                reply.verifySuccess();
+                // This should never run.
+                ExpectTrue(false);
+            } catch (Exception e) {
+                ExpectTrue(e instanceof RemoteException);
+            }
+
+            proxy.ping();
+        }
+
+        {
+            // Tests calling a oneway method with oneway disabled.
+            IHwBinder binder = proxy.asBinder();
+            HwParcel request = new HwParcel();
+            HwParcel reply = new HwParcel();
+
+            request.writeInterfaceToken(IBaz.kInterfaceName);
+            request.writeFloat(1.0f);
+            // IBaz::doThis is oneway but we call it without using FLAG_ONEWAY.
+            // This does not raise an exception because
+            // IPCThreadState::executeCommand for BR_TRANSACTION sends an empty
+            // reply for two-way transactions if the transaction itself did not
+            // send a reply.
+            binder.transact(17 /*doThis*/, request, reply, 0 /* Not FLAG_ONEWAY */);
+
+            proxy.ping();
         }
 
         {
