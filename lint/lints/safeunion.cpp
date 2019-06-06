@@ -70,6 +70,9 @@ static void lintUnionRecursively(const Scope* scope, std::unordered_set<const Ty
             // The reference was not from this scope
             if (!Location::inSameFile(scope->location(), nextRef->location())) continue;
 
+            // The type is defined in the same file. Will lint there.
+            if (Location::inSameFile(scope->location(), compoundType->location())) continue;
+
             errors->push_back(Lint(ERROR, nextRef->location())
                               << "Reference to union type: " << compoundType->typeName()
                               << " located in " << compoundType->location().begin().filename()
