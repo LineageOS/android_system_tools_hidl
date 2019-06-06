@@ -21,6 +21,6 @@ interface IUnionInStruct {
         union SomeUnionInStruct {
             uint8_t number;
             int32_t otherNumber;
-        };
+        } shouldOnlyLintDefinition;
     };
 };
