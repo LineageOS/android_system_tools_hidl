@@ -20,4 +20,5 @@ import @1.0::types;
 
 struct ContainsFoo {
     Foo fooInstance;
+    uint8_t preventLintForSingleElement;
 };
