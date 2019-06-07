@@ -25,7 +25,9 @@
 #include "../LintRegistry.h"
 #include "Coordinator.h"
 
+using ::testing::Contains;
 using ::testing::ContainsRegex;
+using ::testing::Property;
 
 namespace android {
 class HidlLintTest : public ::testing::Test {
@@ -80,6 +82,15 @@ class HidlLintTest : public ::testing::Test {
         EXPECT_EQ(1, errors.size());                                  \
         if (errors.size() != 1) break;                                \
         EXPECT_THAT(errors[0].getMessage(), ContainsRegex(errorMsg)); \
+    } while (false)
+
+#define EXPECT_A_LINT(interface, errorMsg)                                                   \
+    do {                                                                                     \
+        std::vector<Lint> errors;                                                            \
+        getLintsForHal(interface, &errors);                                                  \
+        EXPECT_LE(1, errors.size());                                                         \
+        if (errors.size() < 1) break;                                                        \
+        EXPECT_THAT(errors, Contains(Property(&Lint::getMessage, ContainsRegex(errorMsg)))); \
     } while (false)
 
 TEST_F(HidlLintTest, OnewayLintTest) {
@@ -151,5 +162,18 @@ TEST_F(HidlLintTest, ImportTypesTest) {
 
     // Imports types.hal from same package with fully qualified name
     EXPECT_LINT("lint_test.import_types@1.1::IImport", "Redundant import");
+}
+
+TEST_F(HidlLintTest, SmallStructsTest) {
+    // Referencing bad structs should not lint
+    EXPECT_NO_LINT("lint_test.small_structs@1.0::IReference");
+
+    // Empty structs/unions should lint
+    EXPECT_LINT("lint_test.small_structs@1.0::IEmptyStruct", "contains no elements");
+    EXPECT_A_LINT("lint_test.small_structs@1.0::IEmptyUnion", "contains no elements");
+
+    // Structs/unions with single field should lint
+    EXPECT_LINT("lint_test.small_structs@1.0::ISingleStruct", "only contains 1 element");
+    EXPECT_A_LINT("lint_test.small_structs@1.0::ISingleUnion", "only contains 1 element");
 }
 }  // namespace android
