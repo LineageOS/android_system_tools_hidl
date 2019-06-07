@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-package lint_test.safeunion@1.0;
+package lint_test.small_structs@1.0;
 
-interface IUnionInStruct {
-    struct SomeStruct {
-        union SomeUnionInStruct {
-            uint8_t number;
-            int32_t otherNumber;
-        } shouldOnlyLintDefinition;
-        uint8_t preventLintForSingleElement;
-    };
+interface IEmptyStruct {
+    struct EmptyStruct {};
 };
