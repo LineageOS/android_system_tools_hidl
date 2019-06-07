@@ -789,6 +789,8 @@ void AST::generateProxyHeader(Formatter& out) const {
 
     out << "virtual bool isRemote() const override { return true; }\n\n";
 
+    out << "void onLastStrongRef(const void* id) override;\n\n";
+
     generateMethods(
         out,
         [&](const Method* method, const Interface*) {
@@ -1239,6 +1241,18 @@ void AST::generateProxySource(Formatter& out, const FQName& fqName) const {
     out.unindent();
     out.unindent();
     out << "}\n\n";
+
+    out << "void " << klassName << "::onLastStrongRef(const void* id) ";
+    out.block([&] {
+        out.block([&] {
+            // if unlinkToDeath is not used, remove strong cycle between
+            // this and hidl_binder_death_recipient
+            out << "std::unique_lock<std::mutex> lock(_hidl_mMutex);\n";
+            out << "_hidl_mDeathRecipients.clear();\n";
+        }).endl().endl();
+
+        out << "BpInterface<" << fqName.getInterfaceName() << ">::onLastStrongRef(id);\n";
+    }).endl();
 
     generateMethods(out,
                     [&](const Method* method, const Interface* superInterface) {
