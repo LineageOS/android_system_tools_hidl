@@ -1369,11 +1369,6 @@ void AST::generateStubSource(Formatter& out, const Interface* iface) const {
 
         out.indent();
 
-        out << "bool _hidl_is_oneway = _hidl_flags & " << Interface::FLAG_ONE_WAY->cppValue()
-            << ";\n";
-        out << "if (_hidl_is_oneway != " << (method->isOneway() ? "true" : "false") << ") ";
-        out.block([&] { out << "return ::android::UNKNOWN_ERROR;\n"; }).endl().endl();
-
         generateStubSourceForMethod(out, method, superInterface);
 
         out.unindent();
