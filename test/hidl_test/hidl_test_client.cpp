@@ -19,6 +19,7 @@
 #include <android/hardware/tests/bar/1.0/IBar.h>
 #include <android/hardware/tests/bar/1.0/IComplicated.h>
 #include <android/hardware/tests/bar/1.0/IImportRules.h>
+#include <android/hardware/tests/baz/1.0/BnHwBaz.h>
 #include <android/hardware/tests/baz/1.0/IBaz.h>
 #include <android/hardware/tests/expression/1.0/IExpression.h>
 #include <android/hardware/tests/foo/1.0/BnHwSimple.h>
@@ -1889,6 +1890,58 @@ TEST_F(HidlTest, WrongDescriptorTest) {
     EXPECT_EQ(::android::BAD_TYPE, binder->transact(2 /*someBoolMethod*/, request, &reply));
 
     EXPECT_OK(bar->ping());  // still works
+}
+
+TEST_F(HidlTest, TwowayMethodOnewayEnabledTest) {
+    using ::android::hardware::IBinder;
+    using ::android::hardware::Parcel;
+    using ::android::hardware::tests::baz::V1_0::BnHwBaz;
+
+    sp<IBinder> binder = ::android::hardware::toBinder(baz);
+
+    Parcel request, reply;
+    EXPECT_EQ(::android::OK, request.writeInterfaceToken(IBaz::descriptor));
+    EXPECT_EQ(::android::OK, request.writeInt64(1234));
+    // IBaz::doThatAndReturnSomething is two-way but we call it using FLAG_ONEWAY.
+    EXPECT_EQ(::android::OK, binder->transact(18 /*doThatAndReturnSomething*/, request, &reply,
+                                              IBinder::FLAG_ONEWAY));
+
+    ::android::hardware::Status status;
+    ::android::status_t readFromParcelStatus = ::android::hardware::readFromParcel(&status, reply);
+    if (mode == BINDERIZED) {
+        EXPECT_EQ(::android::NOT_ENOUGH_DATA, readFromParcelStatus);
+        EXPECT_EQ(::android::hardware::Status::EX_TRANSACTION_FAILED, status.exceptionCode());
+    } else {
+        EXPECT_EQ(666, reply.readInt32());
+    }
+
+    EXPECT_OK(baz->ping());  // still works
+}
+
+TEST_F(HidlTest, OnewayMethodOnewayDisabledTest) {
+    using ::android::hardware::IBinder;
+    using ::android::hardware::Parcel;
+    using ::android::hardware::tests::baz::V1_0::BnHwBaz;
+
+    sp<IBinder> binder = ::android::hardware::toBinder(baz);
+
+    Parcel request, reply;
+    EXPECT_EQ(::android::OK, request.writeInterfaceToken(IBaz::descriptor));
+    EXPECT_EQ(::android::OK, request.writeFloat(1.0f));
+    nsecs_t now = systemTime();
+    // IBaz::doThis is oneway but we call it without using FLAG_ONEWAY.
+    EXPECT_EQ(
+            // Expect OK because IPCThreadState::executeCommand for BR_TRANSACTION
+            // sends an empty reply for two-way transactions if the transaction itself
+            // did not send a reply.
+            ::android::OK,
+            binder->transact(17 /*doThis*/, request, &reply, 0 /* Not FLAG_ONEWAY */));
+    if (gHidlEnvironment->enableDelayMeasurementTests) {
+        // IBaz::doThis is oneway, should return instantly.
+        EXPECT_LT(systemTime() - now, ONEWAY_TOLERANCE_NS);
+    }
+
+    EXPECT_OK(baz->ping());  // still works
 }
 
 TEST_F(HidlTest, TrieSimpleTest) {

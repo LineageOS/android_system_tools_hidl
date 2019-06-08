@@ -43,14 +43,28 @@ Lint&& Lint::operator<<(const std::string& in) {
     return std::move(*this);
 }
 
+enum Color { DEFAULT = 0, RED = 31, YELLOW = 33 };
+
+static std::string setColor(Color color, bool bold = false) {
+    std::string ret;
+    ret += "\033[";
+    if (bold) ret += "1";
+    if (bold && color != DEFAULT) ret += ";";
+    if (color != DEFAULT) ret += std::to_string(color);
+    ret += "m";
+
+    return ret;
+}
+
 std::ostream& operator<<(std::ostream& os, const Lint& lint) {
     if (lint.getLevel() == WARNING) {
-        os << "WARNING: ";
+        os << setColor(YELLOW, true) << "WARNING: " << setColor(DEFAULT);
     } else {
         CHECK(lint.getLevel() == ERROR);
-        os << "ERROR: ";
+        os << setColor(RED, true) << "ERROR: " << setColor(DEFAULT);
     }
 
-    return os << lint.getLocation() << ": " << lint.getMessage() << std::endl;
+    return os << setColor(DEFAULT, true) << lint.getLocation() << setColor(DEFAULT) << ": "
+              << lint.getMessage() << std::endl;
 }
 }  // namespace android

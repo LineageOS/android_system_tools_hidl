@@ -554,7 +554,7 @@ package
 import_stmt
     : IMPORT FQNAME require_semicolon
       {
-          if (!ast->addImport($2)) {
+          if (!ast->addImport($2, convertYYLoc(@2))) {
               std::cerr << "ERROR: Unable to import '" << $2 << "' at " << @2
                         << "\n";
               ast->addSyntaxError();
@@ -562,7 +562,7 @@ import_stmt
       }
     | IMPORT valid_type_name require_semicolon
       {
-          if (!ast->addImport($2)) {
+          if (!ast->addImport($2, convertYYLoc(@2))) {
               std::cerr << "ERROR: Unable to import '" << $2 << "' at " << @2
                         << "\n";
               ast->addSyntaxError();
@@ -611,7 +611,7 @@ interface_declarations
 
           if ($2 != nullptr) {
             Interface *iface = static_cast<Interface*>(*scope);
-            if (!iface->addMethod($2)) {
+            if (!ast->addMethod($2, iface)) {
                 std::cerr << "ERROR: Unable to add method '" << $2->name()
                           << "' at " << @2 << "\n";
 
@@ -678,7 +678,7 @@ interface_declaration
               }
               superType = new Reference<Type>();
           } else {
-              if (!ast->addImport(gIBaseFqName.string().c_str())) {
+              if (!ast->addImport(gIBaseFqName.string().c_str(), convertYYLoc(@1))) {
                   std::cerr << "ERROR: Unable to automatically import '"
                             << gIBaseFqName.string()
                             << "' at " << @$
@@ -716,7 +716,7 @@ interface_declaration
           CHECK((*scope)->isInterface());
 
           Interface *iface = static_cast<Interface *>(*scope);
-          CHECK(iface->addAllReservedMethods());
+          CHECK(ast->addAllReservedMethodsToInterface(iface));
 
           leaveScope(ast, scope);
           ast->addScopedType(iface, *scope);
