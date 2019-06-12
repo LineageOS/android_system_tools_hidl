@@ -141,8 +141,6 @@ void AST::generateJava(Formatter& out, const std::string& limitToType) const {
 
     out << "package " << mPackage.javaPackage() << ";\n\n";
 
-    out.setNamespace(mPackage.javaPackage() + ".");
-
     const Interface *superType = iface->superType();
 
     iface->emitDocComment(out);
