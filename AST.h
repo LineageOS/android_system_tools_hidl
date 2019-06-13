@@ -68,6 +68,8 @@ struct AST {
     const std::string& getFilename() const;
     const Hash* getFileHash() const;
 
+    const Coordinator& getCoordinator() const;
+
     // Look up local identifier.
     // It could be plain identifier or enum value as described by lookupEnumValue.
     LocalIdentifier* lookupLocalIdentifier(const Reference<LocalIdentifier>& ref, Scope* scope);
