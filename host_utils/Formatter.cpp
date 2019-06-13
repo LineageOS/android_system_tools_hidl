@@ -183,10 +183,6 @@ FORMATTER_INPUT_CHAR(unsigned char);
 
 #undef FORMATTER_INPUT_CHAR
 
-void Formatter::setNamespace(const std::string &space) {
-    mSpace = space;
-}
-
 bool Formatter::isValid() const {
     return mFile != nullptr;
 }
