@@ -41,6 +41,8 @@ struct Lint {
     const Location& getLocation() const;
     const std::string& getMessage() const;
 
+    bool operator<(const Lint& other) const;
+
   private:
     LintLevel mLevel;
     Location mLocation;
