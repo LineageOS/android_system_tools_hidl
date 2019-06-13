@@ -45,12 +45,12 @@ static void checkSmallStructs(const AST& ast, std::vector<Lint>* errors) {
                     errors->push_back(
                             Lint(ERROR, compoundType->location())
                             << compoundType->typeName() << " contains no elements.\n"
-                            << "Prefer using android.hidl.safe_union@1.0::Monostate instead.");
+                            << "Prefer using android.hidl.safe_union@1.0::Monostate instead.\n");
                 } else if (compoundType->getReferences().size() == 1) {
                     errors->push_back(Lint(ERROR, compoundType->location())
                                       << compoundType->typeName() << " only contains 1 element.\n"
                                       << "Prefer using the type directly since wrapping it adds "
-                                      << "memory and performance overhead.");
+                                      << "memory and performance overhead.\n");
                 }
 
                 return OK;
