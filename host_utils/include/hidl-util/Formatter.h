@@ -128,9 +128,6 @@ struct Formatter {
     Formatter &operator<<(double c);
     Formatter &operator<<(long double c);
 
-    // Any substrings matching "space" will be stripped out of the output.
-    void setNamespace(const std::string &space);
-
     // Puts a prefix before each line. This is useful if
     // you want to start a // comment block, for example.
     // The prefix will be put before the indentation.
@@ -150,7 +147,6 @@ struct Formatter {
     size_t mSpacesPerIndent;
     bool mAtStartOfLine;
 
-    std::string mSpace;
     std::string mLinePrefix;
 
     void output(const std::string &text) const;

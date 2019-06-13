@@ -87,11 +87,7 @@ void AST::enterLeaveNamespace(Formatter &out, bool enter) const {
         for (const auto &component : packageComponents) {
             out << "namespace " << component << " {\n";
         }
-
-        out.setNamespace(mPackage.cppNamespace() + "::");
     } else {
-        out.setNamespace(std::string());
-
         for (auto it = packageComponents.rbegin();
                 it != packageComponents.rend();
                 ++it) {
