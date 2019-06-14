@@ -174,7 +174,7 @@ void Coordinator::onFileAccess(const std::string& path, const std::string& mode)
         // 1). If there is a bug in hidl-gen, the dependencies on the first project from
         //     the second would be required to recover correctly when the bug is fixed.
         // 2). This option is never used in Android builds.
-        mReadFiles.insert(StringHelper::LTrim(path, mRootPath));
+        mReadFiles.insert(makeRelative(path));
     }
 
     if (!mVerbose) {
@@ -201,7 +201,7 @@ status_t Coordinator::writeDepFile(const std::string& forFile) const {
     out << StringHelper::LTrim(forFile, mOutputPath) << ": \\\n";
     out.indent([&] {
         for (const std::string& file : mReadFiles) {
-            out << StringHelper::LTrim(file, mRootPath) << " \\\n";
+            out << makeRelative(file) << " \\\n";
         }
     });
     return OK;
@@ -396,6 +396,10 @@ std::string Coordinator::makeAbsolute(const std::string& path) const {
     }
 
     return mRootPath + path;
+}
+
+std::string Coordinator::makeRelative(const std::string& filename) const {
+    return StringHelper::LTrim(filename, mRootPath);
 }
 
 status_t Coordinator::getPackageRoot(const FQName& fqName, std::string* root) const {

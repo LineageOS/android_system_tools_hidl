@@ -21,6 +21,7 @@
 #include "ArrayType.h"
 #include "CompoundType.h"
 #include "ConstantExpression.h"
+#include "Coordinator.h"
 #include "DocComment.h"
 #include "EnumType.h"
 #include "Interface.h"
@@ -51,11 +52,12 @@ void leaveScope(AST* ast, Scope** scope) {
     *scope = (*scope)->parent();
 }
 
-::android::Location convertYYLoc(const yy::parser::location_type &loc) {
+::android::Location convertYYLoc(const yy::parser::location_type& loc, const AST* ast) {
     return ::android::Location(
-            ::android::Position(*(loc.begin.filename), loc.begin.line, loc.begin.column),
-            ::android::Position(*(loc.end.filename), loc.end.line, loc.end.column)
-    );
+            ::android::Position(ast->getCoordinator().makeRelative(*(loc.begin.filename)),
+                                loc.begin.line, loc.begin.column),
+            ::android::Position(ast->getCoordinator().makeRelative(*(loc.end.filename)),
+                                loc.end.line, loc.end.column));
 }
 
 bool isValidInterfaceField(const std::string& identifier, std::string *errorMsg) {
@@ -522,11 +524,11 @@ fqname
 fqtype
     : fqname
       {
-          $$ = new Reference<Type>(*$1, convertYYLoc(@1));
+          $$ = new Reference<Type>(*$1, convertYYLoc(@1, ast));
       }
     | TYPE
       {
-          $$ = new Reference<Type>($1, convertYYLoc(@1));
+          $$ = new Reference<Type>($1, convertYYLoc(@1, ast));
       }
     ;
 
@@ -554,7 +556,7 @@ package
 import_stmt
     : IMPORT FQNAME require_semicolon
       {
-          if (!ast->addImport($2, convertYYLoc(@2))) {
+          if (!ast->addImport($2, convertYYLoc(@2, ast))) {
               std::cerr << "ERROR: Unable to import '" << $2 << "' at " << @2
                         << "\n";
               ast->addSyntaxError();
@@ -562,7 +564,7 @@ import_stmt
       }
     | IMPORT valid_type_name require_semicolon
       {
-          if (!ast->addImport($2, convertYYLoc(@2))) {
+          if (!ast->addImport($2, convertYYLoc(@2, ast))) {
               std::cerr << "ERROR: Unable to import '" << $2 << "' at " << @2
                         << "\n";
               ast->addSyntaxError();
@@ -678,7 +680,7 @@ interface_declaration
               }
               superType = new Reference<Type>();
           } else {
-              if (!ast->addImport(gIBaseFqName.string().c_str(), convertYYLoc(@1))) {
+              if (!ast->addImport(gIBaseFqName.string().c_str(), convertYYLoc(@1, ast))) {
                   std::cerr << "ERROR: Unable to automatically import '"
                             << gIBaseFqName.string()
                             << "' at " << @$
@@ -687,7 +689,7 @@ interface_declaration
               }
 
               if (superType == nullptr) {
-                  superType = new Reference<Type>(gIBaseFqName, convertYYLoc(@$));
+                  superType = new Reference<Type>(gIBaseFqName, convertYYLoc(@$, ast));
               }
           }
 
@@ -706,7 +708,7 @@ interface_declaration
           }
 
           Interface* iface = new Interface(
-              $2, ast->makeFullName($2, *scope), convertYYLoc(@2),
+              $2, ast->makeFullName($2, *scope), convertYYLoc(@2, ast),
               *scope, *superType, ast->getFileHash());
 
           enterScope(ast, scope, iface);
@@ -731,7 +733,7 @@ typedef_declaration
           // emitting any type definitions later on, since this is just an alias
           // to a type defined elsewhere.
           TypeDef* typeDef = new TypeDef(
-              $3, ast->makeFullName($3, *scope), convertYYLoc(@2), *scope, *$2);
+              $3, ast->makeFullName($3, *scope), convertYYLoc(@2, ast), *scope, *$2);
           ast->addScopedType(typeDef, *scope);
           $$ = typeDef;
       }
@@ -758,12 +760,12 @@ const_expr
           }
 
           $$ = new ReferenceConstantExpression(
-              Reference<LocalIdentifier>(*$1, convertYYLoc(@1)), $1->string());
+              Reference<LocalIdentifier>(*$1, convertYYLoc(@1, ast)), $1->string());
       }
     | fqname '#' IDENTIFIER
       {
           $$ = new AttributeConstantExpression(
-              Reference<Type>(*$1, convertYYLoc(@1)), $1->string(), $3);
+              Reference<Type>(*$1, convertYYLoc(@1, ast)), $1->string(), $3);
       }
     | const_expr '?' const_expr ':' const_expr
       {
@@ -820,7 +822,7 @@ method_declaration
                           new std::vector<NamedReference<Type>*> /* results */,
                           false /* oneway */,
                           $1 /* annotations */,
-                          convertYYLoc(@$));
+                          convertYYLoc(@$, ast));
       }
     | opt_annotations ONEWAY valid_identifier '(' typed_vars ')' require_semicolon
       {
@@ -829,7 +831,7 @@ method_declaration
                           new std::vector<NamedReference<Type>*> /* results */,
                           true /* oneway */,
                           $1 /* annotations */,
-                          convertYYLoc(@$));
+                          convertYYLoc(@$, ast));
       }
     | opt_annotations valid_identifier '(' typed_vars ')' GENERATES '(' typed_vars ')' require_semicolon
       {
@@ -843,7 +845,7 @@ method_declaration
                           $8 /* results */,
                           false /* oneway */,
                           $1 /* annotations */,
-                          convertYYLoc(@$));
+                          convertYYLoc(@$, ast));
       }
     ;
 
@@ -882,11 +884,11 @@ non_empty_typed_vars
 typed_var
     : type valid_identifier
       {
-          $$ = new NamedReference<Type>($2, *$1, convertYYLoc(@2));
+          $$ = new NamedReference<Type>($2, *$1, convertYYLoc(@2, ast));
       }
     | type
       {
-          $$ = new NamedReference<Type>("", *$1, convertYYLoc(@1));
+          $$ = new NamedReference<Type>("", *$1, convertYYLoc(@1, ast));
 
           const std::string typeName = $$->isResolved()
               ? $$->get()->typeName() : $$->getLookupFqName().string();
@@ -908,7 +910,7 @@ named_struct_or_union_declaration
     : struct_or_union_keyword valid_type_name
       {
           CompoundType *container = new CompoundType(
-              $1, $2, ast->makeFullName($2, *scope), convertYYLoc(@2), *scope);
+              $1, $2, ast->makeFullName($2, *scope), convertYYLoc(@2, ast), *scope);
           enterScope(ast, scope, container);
       }
       struct_or_union_body
@@ -962,7 +964,7 @@ field_declaration
                         << @2 << "\n";
               YYERROR;
           }
-          $$ = new NamedReference<Type>($2, *$1, convertYYLoc(@2));
+          $$ = new NamedReference<Type>($2, *$1, convertYYLoc(@2, ast));
       }
     | annotated_compound_declaration ';'
       {
@@ -1017,11 +1019,11 @@ named_enum_declaration
                         << $2 << " at " << @2 << "\n";
               ast->addSyntaxError();
               storageType = new Reference<Type>(
-                  new ScalarType(ScalarType::KIND_INT64, *scope), convertYYLoc(@2));
+                  new ScalarType(ScalarType::KIND_INT64, *scope), convertYYLoc(@2, ast));
           }
 
           EnumType* enumType = new EnumType(
-              $2, ast->makeFullName($2, *scope), convertYYLoc(@2), *storageType, *scope);
+              $2, ast->makeFullName($2, *scope), convertYYLoc(@2, ast), *storageType, *scope);
           enterScope(ast, scope, enumType);
       }
       enum_declaration_body
@@ -1051,11 +1053,11 @@ commentable_enum_value
 enum_value
     : valid_identifier
       {
-          $$ = new EnumValue($1 /* name */, nullptr /* value */, convertYYLoc(@$));
+          $$ = new EnumValue($1 /* name */, nullptr /* value */, convertYYLoc(@$, ast));
       }
     | valid_identifier '=' const_expr
       {
-          $$ = new EnumValue($1 /* name */, $3 /* value */, convertYYLoc(@$));
+          $$ = new EnumValue($1 /* name */, $3 /* value */, convertYYLoc(@$, ast));
       }
     ;
 
@@ -1093,13 +1095,13 @@ array_type_base
     | TEMPLATED '<' type '>'
       {
           $1->setElementType(*$3);
-          $$ = new Reference<Type>($1, convertYYLoc(@1));
+          $$ = new Reference<Type>($1, convertYYLoc(@1, ast));
       }
     | TEMPLATED '<' TEMPLATED '<' type RSHIFT
       {
           $3->setElementType(*$5);
-          $1->setElementType(Reference<Type>($3, convertYYLoc(@3)));
-          $$ = new Reference<Type>($1, convertYYLoc(@1));
+          $1->setElementType(Reference<Type>($3, convertYYLoc(@3, ast)));
+          $$ = new Reference<Type>($1, convertYYLoc(@1, ast));
       }
     ;
 
@@ -1117,11 +1119,11 @@ array_type
 
 type
     : array_type_base { $$ = $1; }
-    | array_type { $$ = new Reference<Type>($1, convertYYLoc(@1)); }
+    | array_type { $$ = new Reference<Type>($1, convertYYLoc(@1, ast)); }
     | INTERFACE
       {
           // "interface" is a synonym of android.hidl.base@1.0::IBase
-          $$ = new Reference<Type>(gIBaseFqName, convertYYLoc(@1));
+          $$ = new Reference<Type>(gIBaseFqName, convertYYLoc(@1, ast));
       }
     ;
 
@@ -1129,7 +1131,7 @@ type_or_inplace_compound_declaration
     : type { $$ = $1; }
     | annotated_compound_declaration
       {
-          $$ = new Reference<Type>($1, convertYYLoc(@1));
+          $$ = new Reference<Type>($1, convertYYLoc(@1, ast));
       }
     ;
 
