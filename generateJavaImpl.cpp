@@ -33,8 +33,6 @@ void AST::generateJavaImpl(Formatter& out) const {
 
     out << "import " << mPackage.javaPackage() << "." << iface->localName() << ";\n\n";
 
-    out.setNamespace(mPackage.javaPackage() + ".");
-
     out << "class " << baseName << " extends " << iface->localName() << ".Stub"
         << " {\n";
 
