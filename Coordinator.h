@@ -144,6 +144,9 @@ struct Coordinator {
     static void emitOptionsUsageString(Formatter& out);
     static void emitOptionsDetailString(Formatter& out);
 
+    // Returns path relative to mRootPath
+    std::string makeRelative(const std::string& filename) const;
+
   private:
     static bool MakeParentHierarchy(const std::string &path);
 
