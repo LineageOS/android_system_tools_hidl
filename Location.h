@@ -35,7 +35,6 @@ struct Position {
 
     static bool inSameFile(const Position& lhs, const Position& rhs);
 
-    // Precondition: inSameFile()
     bool operator<(const Position& pos) const;
 
    private:
@@ -64,7 +63,6 @@ struct Location {
     static bool inSameFile(const Location& lhs, const Location& rhs);
     static bool intersect(const Location& lhs, const Location& rhs);
 
-    // Precondition: inSameFile() && !intersect()
     bool operator<(const Location& loc) const;
 
    private:
