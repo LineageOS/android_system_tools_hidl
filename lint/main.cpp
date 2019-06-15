@@ -16,6 +16,7 @@
 
 #include <hidl-util/FQName.h>
 
+#include <algorithm>
 #include <iostream>
 #include <vector>
 
@@ -23,6 +24,7 @@
 #include "Coordinator.h"
 #include "Lint.h"
 #include "LintRegistry.h"
+#include "Location.h"
 
 using namespace android;
 
@@ -111,6 +113,8 @@ int main(int argc, char** argv) {
 
         if (!errors.empty())
             std::cerr << "Lints for: " << fqName.string() << std::endl << std::endl;
+
+        std::sort(errors.begin(), errors.end());
         for (const Lint& error : errors) {
             std::cerr << error;
         }
