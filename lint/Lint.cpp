@@ -18,6 +18,7 @@
 
 #include <android-base/logging.h>
 #include <iostream>
+#include <tuple>
 
 #include "Location.h"
 
@@ -35,6 +36,11 @@ const Location& Lint::getLocation() const {
 
 const std::string& Lint::getMessage() const {
     return mMessage;
+}
+
+bool Lint::operator<(const Lint& other) const {
+    return std::tie(mLocation, mLevel, mMessage) <
+           std::tie(other.mLocation, other.mLevel, other.mMessage);
 }
 
 Lint&& Lint::operator<<(const std::string& in) {
