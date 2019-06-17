@@ -22,11 +22,11 @@
 #include <cctype>
 #include <sstream>
 
-#include <iostream>
+#include "Location.h"
 
 namespace android {
 
-DocComment::DocComment(const std::string& comment) {
+DocComment::DocComment(const std::string& comment, const Location& location) : mLocation(location) {
     std::vector<std::string> lines = base::Split(base::Trim(comment), "\n");
 
     bool foundFirstLine = false;
@@ -55,6 +55,7 @@ DocComment::DocComment(const std::string& comment) {
 
 void DocComment::merge(const DocComment* comment) {
     mComment = mComment + "\n\n" + comment->mComment;
+    mLocation.setLocation(mLocation.begin(), comment->mLocation.end());
 }
 
 void DocComment::emit(Formatter& out) const {
