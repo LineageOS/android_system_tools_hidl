@@ -176,4 +176,22 @@ TEST_F(HidlLintTest, SmallStructsTest) {
     EXPECT_LINT("lint_test.small_structs@1.0::ISingleStruct", "only contains 1 element");
     EXPECT_A_LINT("lint_test.small_structs@1.0::ISingleUnion", "only contains 1 element");
 }
+
+TEST_F(HidlLintTest, DocCommentRefTest) {
+    EXPECT_NO_LINT("lint_test.doc_comments@1.0::ICorrect");
+
+    // Should lint since nothing follows the keyword
+    EXPECT_LINT("lint_test.doc_comments@1.0::INoReturn",
+                "should be followed by a return parameter");
+    EXPECT_LINT("lint_test.doc_comments@1.0::INoParam", "should be followed by a parameter name");
+    EXPECT_LINT("lint_test.doc_comments@1.0::IReturnSpace",
+                "should be followed by a return parameter");
+
+    // Typos should be caught
+    EXPECT_LINT("lint_test.doc_comments@1.0::IWrongReturn", "is not a return parameter");
+    EXPECT_LINT("lint_test.doc_comments@1.0::IWrongParam", "is not an argument");
+
+    // Incorrectly marked as @param should lint as a param
+    EXPECT_LINT("lint_test.doc_comments@1.0::ISwitched", "is not an argument");
+}
 }  // namespace android
