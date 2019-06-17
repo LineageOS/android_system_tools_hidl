@@ -24,6 +24,11 @@
 // Mimics for yy::location and yy::position
 namespace android {
 
+#define HIDL_LOCATION_HERE                                 \
+    Location {                                             \
+        {__FILE__, __LINE__, 0}, { __FILE__, __LINE__, 0 } \
+    }
+
 struct Position {
     Position() = default;
     Position(std::string filename, size_t line, size_t column);
