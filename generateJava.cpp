@@ -18,6 +18,7 @@
 
 #include "Coordinator.h"
 #include "Interface.h"
+#include "Location.h"
 #include "Method.h"
 #include "Reference.h"
 #include "Scope.h"
@@ -76,12 +77,14 @@ void emitGetService(
                 "This will invoke the equivalent of the C++ getService(std::string) if retry is\n"
                 "true or tryGetService(std::string) if retry is false. If the service is\n"
                 "available on the device and retry is true, this will wait for the service to\n"
-                "start. Otherwise, it will return immediately even if the service is null.")
+                "start. Otherwise, it will return immediately even if the service is null.",
+                HIDL_LOCATION_HERE)
                 .emit(out);
     } else {
         DocComment(
                 "Warning: this will not wait for the interface to come up if it hasn't yet\n"
-                "started. See getService(String,boolean) instead.")
+                "started. See getService(String,boolean) instead.",
+                HIDL_LOCATION_HERE)
                 .emit(out);
     }
     out << "public static "
@@ -104,11 +107,12 @@ void emitGetService(
     }).endl().endl();
 
     if (isRetry) {
-        DocComment("Calls getService(\"default\",retry).").emit(out);
+        DocComment("Calls getService(\"default\",retry).", HIDL_LOCATION_HERE).emit(out);
     } else {
         DocComment(
                 "Warning: this will not wait for the interface to come up if it hasn't yet "
-                "started. See getService(String,boolean) instead.")
+                "started. See getService(String,boolean) instead.",
+                HIDL_LOCATION_HERE)
                 .emit(out);
     }
     out << "public static "
@@ -156,14 +160,15 @@ void AST::generateJava(Formatter& out, const std::string& limitToType) const {
     out << " {\n";
     out.indent();
 
-    DocComment("Fully-qualified interface name for this interface.").emit(out);
+    DocComment("Fully-qualified interface name for this interface.", HIDL_LOCATION_HERE).emit(out);
     out << "public static final String kInterfaceName = \""
         << mPackage.string()
         << "::"
         << ifaceName
         << "\";\n\n";
 
-    DocComment("Does a checked conversion from a binder to this class.").emit(out);
+    DocComment("Does a checked conversion from a binder to this class.", HIDL_LOCATION_HERE)
+            .emit(out);
     out << "/* package private */ static "
         << ifaceName
         << " asInterface(android.os.IHwBinder binder) {\n";
@@ -215,7 +220,8 @@ void AST::generateJava(Formatter& out, const std::string& limitToType) const {
     out.unindent();
     out << "}\n\n";
 
-    DocComment("Does a checked conversion from any interface to this class.").emit(out);
+    DocComment("Does a checked conversion from any interface to this class.", HIDL_LOCATION_HERE)
+            .emit(out);
     out << "public static "
         << ifaceName
         << " castFrom(android.os.IHwInterface iface) {\n";

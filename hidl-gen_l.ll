@@ -50,11 +50,10 @@ FQNAME              ({COMPONENT}|{VERSION})(({DOT}|":"+){COMPONENT}|{VERSION})*
 #include "hidl-gen_y.h"
 
 #include <assert.h>
+#include <algorithm>
 
 using namespace android;
 using token = yy::parser::token;
-
-static std::string gCurrentComment;
 
 #define SCALAR_TYPE(kind)                                        \
     {                                                            \
@@ -78,24 +77,22 @@ static std::string gCurrentComment;
 %option bison-locations
 
 %x COMMENT_STATE
-%x DOC_COMMENT_STATE
 
 %%
 
-"/**"                       { gCurrentComment.clear(); BEGIN(DOC_COMMENT_STATE); }
-<DOC_COMMENT_STATE>"*/"     {
-                                BEGIN(INITIAL);
-                                yylval->docComment = new DocComment(gCurrentComment);
-                                return token::DOC_COMMENT;
-                            }
-<DOC_COMMENT_STATE>[^*\n]*                          { gCurrentComment += yytext; }
-<DOC_COMMENT_STATE>[\n]                             { gCurrentComment += yytext; yylloc->lines(); }
-<DOC_COMMENT_STATE>[*]                              { gCurrentComment += yytext; }
+\/\*\*([^*]|\*+[^*\/])*\*+\/    {
+                                    std::string str(yytext);
+                                    str = str.substr(3, str.size() - 3 - 2); // remove /** and */
+                                    // Add the lines to location (to keep it updated)
+                                    yylloc->lines(std::count(str.begin(), str.end(), '\n'));
+                                    yylval->str = strdup(str.c_str());
+                                    return token::DOC_COMMENT;
+                                }
 
-"/*"                        { BEGIN(COMMENT_STATE); }
-<COMMENT_STATE>"*/"         { BEGIN(INITIAL); }
-<COMMENT_STATE>[\n]         { yylloc->lines(); }
-<COMMENT_STATE>.            { }
+"/*"                            { BEGIN(COMMENT_STATE); }
+<COMMENT_STATE>"*/"             { BEGIN(INITIAL); }
+<COMMENT_STATE>[\n]             { yylloc->lines(); }
+<COMMENT_STATE>.                { }
 
 "//"[^\r\n]*        { /* skip C++ style comment */ }
 
