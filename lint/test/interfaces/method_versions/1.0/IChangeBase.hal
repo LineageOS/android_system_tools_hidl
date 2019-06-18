@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package lint_test.oneway@1.0;
+package lint_test.method_versions@1.0;
 
-interface IOneway {
-    oneway someOnewayMethod();
+import IBase;
+
+interface IChangeBase extends IBase {
+    baseMethod_1_0();
 };
