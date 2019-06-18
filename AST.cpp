@@ -888,4 +888,20 @@ bool AST::addAllReservedMethodsToInterface(Interface* iface) {
     return iface->addAllReservedMethods(allReservedMethods);
 }
 
+void AST::setHeader(const DocComment* header) {
+    mHeader = header;
+}
+
+const DocComment* AST::getHeader() const {
+    return mHeader;
+}
+
+void AST::addUnhandledComment(const DocComment* docComment) {
+    if (docComment != nullptr) mUnhandledComments.push_back(docComment);
+}
+
+const std::vector<const DocComment*> AST::getUnhandledComments() const {
+    return mUnhandledComments;
+}
+
 }  // namespace android;
