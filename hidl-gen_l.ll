@@ -51,6 +51,7 @@ FQNAME              ({COMPONENT}|{VERSION})(({DOT}|":"+){COMPONENT}|{VERSION})*
 
 #include <assert.h>
 #include <algorithm>
+#include <hidl-util/StringHelper.h>
 
 using namespace android;
 using token = yy::parser::token;
@@ -76,23 +77,22 @@ using token = yy::parser::token;
 %option bison-bridge
 %option bison-locations
 
-%x COMMENT_STATE
-
 %%
 
-\/\*\*([^*]|\*+[^*\/])*\*+\/    {
-                                    std::string str(yytext);
-                                    str = str.substr(3, str.size() - 3 - 2); // remove /** and */
-                                    // Add the lines to location (to keep it updated)
-                                    yylloc->lines(std::count(str.begin(), str.end(), '\n'));
-                                    yylval->str = strdup(str.c_str());
-                                    return token::DOC_COMMENT;
-                                }
+\/\*([^*]|\*+[^*\/])*\*+\/  {
+                                std::string str(yytext);
 
-"/*"                            { BEGIN(COMMENT_STATE); }
-<COMMENT_STATE>"*/"             { BEGIN(INITIAL); }
-<COMMENT_STATE>[\n]             { yylloc->lines(); }
-<COMMENT_STATE>.                { }
+                                // Add the lines to location (to keep it updated)
+                                yylloc->lines(std::count(str.begin(), str.end(), '\n'));
+
+                                str = StringHelper::LTrim(str, "/");
+                                str = StringHelper::LTrimAll(str, "*");
+                                str = StringHelper::RTrim(str, "/");
+                                str = StringHelper::RTrimAll(str, "*");
+
+                                yylval->str = strdup(str.c_str());
+                                return token::DOC_COMMENT;
+                            }
 
 "//"[^\r\n]*        { /* skip C++ style comment */ }
 
