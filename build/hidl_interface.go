@@ -509,10 +509,9 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 		}, &i.inheritCommonProperties)
 
 		commonJavaProperties := javaProperties{
-			Defaults:          []string{"hidl-java-module-defaults"},
-			No_framework_libs: proptools.BoolPtr(true),
-			Installable:       proptools.BoolPtr(true),
-			Srcs:              []string{":" + name.javaSourcesName()},
+			Defaults:    []string{"hidl-java-module-defaults"},
+			Installable: proptools.BoolPtr(true),
+			Srcs:        []string{":" + name.javaSourcesName()},
 
 			// This should ideally be system_current, but android.hidl.base-V1.0-java is used
 			// to build framework, which is used to build system_current.  Use core_current
