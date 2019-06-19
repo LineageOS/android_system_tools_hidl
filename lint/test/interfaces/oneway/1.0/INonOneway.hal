@@ -17,5 +17,5 @@
 package lint_test.oneway@1.0;
 
 interface INonOneway {
-    thisIsANonOnewayMethod();
+    someNonOnewayMethod();
 };
