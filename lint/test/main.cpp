@@ -228,4 +228,17 @@ TEST_F(HidlLintTest, MethodVersionsTest) {
     EXPECT_LINT("lint_test.method_versions@1.0::Isnake_case",
                 "Methods should follow the camelCase naming convention.");
 }
+
+TEST_F(HidlLintTest, EnumMaxAllTest) {
+    // Implements MAX correctly
+    EXPECT_NO_LINT("lint_test.enum_max_all@1.0::IFoo");
+
+    // Lint since MAX and ALL are enum values
+    EXPECT_LINT("lint_test.enum_max_all@1.0::IMax", "\"MAX\" enum values are considered harmful");
+    EXPECT_LINT("lint_test.enum_max_all@1.0::IAll", "\"ALL\" enum values are considered harmful");
+
+    // Lint since MAX and ALL are parts of the enum values
+    EXPECT_LINT("lint_test.enum_max_all@1.0::IMax2", "\"MAX\" enum values are considered harmful");
+    EXPECT_LINT("lint_test.enum_max_all@1.0::IAll2", "\"ALL\" enum values are considered harmful");
+}
 }  // namespace android
