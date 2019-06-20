@@ -15,6 +15,8 @@
  */
 
 #include <hidl-util/FQName.h>
+#include <hidl-util/Formatter.h>
+#include <json/json.h>
 
 #include <algorithm>
 #include <iostream>
@@ -31,7 +33,7 @@ using namespace android;
 static void usage(const char* me) {
     Formatter out(stderr);
 
-    out << "Usage: " << me << " ";
+    out << "Usage: " << me << " [-j] ";
     Coordinator::emitOptionsUsageString(out);
     out << " FQNAME...\n\n";
 
@@ -41,6 +43,19 @@ static void usage(const char* me) {
     out.indent();
 
     out << "-h: Prints this menu.\n";
+    out << "-j: Prints output in JSON.\n";
+    out.indent([&] {
+        out << "{\n";
+        out.indent([&] {
+            out << "\"level\": \"warning\" | \"error\",\n";
+            out << "\"message\": string,\n";
+            out << "\"filename\": string,\n";
+
+            out << "\"begin\": { \"line\" : number, \"column\" : number }\n";
+            out << "\"end\": { \"line\" : number, \"column\" : number }\n";
+        });
+        out << "}\n\n";
+    });
     Coordinator::emitOptionsDetailString(out);
 
     out.unindent();
@@ -55,10 +70,14 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    Coordinator coordinator;
+    bool machineReadable = false;
 
-    coordinator.parseOptions(argc, argv, "h", [&](int res, char* /* arg */) {
+    Coordinator coordinator;
+    coordinator.parseOptions(argc, argv, "hj", [&](int res, char* /* arg */) {
         switch (res) {
+            case 'j':
+                machineReadable = true;
+                break;
             case 'h':
             case '?':
             default: {
@@ -78,6 +97,7 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
+    Json::Value lintJsonArray(Json::arrayValue);
     for (int i = 0; i < argc; ++i) {
         const char* arg = argv[i];
 
@@ -111,13 +131,25 @@ int main(int argc, char** argv) {
             LintRegistry::get()->runAllLintFunctions(*ast, &errors);
         }
 
-        if (!errors.empty())
-            std::cerr << "Lints for: " << fqName.string() << std::endl << std::endl;
-
         std::sort(errors.begin(), errors.end());
-        for (const Lint& error : errors) {
-            std::cerr << error;
+        if (machineReadable) {
+            for (const Lint& error : errors) {
+                lintJsonArray.append(error.asJson());
+            }
+        } else {
+            if (!errors.empty()) {
+                std::cerr << "Lints for: " << fqName.string() << std::endl << std::endl;
+            }
+
+            for (const Lint& error : errors) {
+                std::cerr << error;
+            }
         }
+    }
+
+    if (machineReadable) {
+        Json::StyledStreamWriter writer;
+        writer.write(std::cerr, lintJsonArray);
     }
 
     return 0;
