@@ -194,4 +194,51 @@ TEST_F(HidlLintTest, DocCommentRefTest) {
     // Incorrectly marked as @param should lint as a param
     EXPECT_LINT("lint_test.doc_comments@1.0::ISwitched", "is not an argument");
 }
+
+TEST_F(HidlLintTest, MethodVersionsTest) {
+    // Extends baseMethod correctly
+    EXPECT_NO_LINT("lint_test.method_versions@1.0::IChangeBase");
+
+    // Extends IBase.foo through @1.0::IChangeBase correctly
+    EXPECT_NO_LINT("lint_test.method_versions@1.1::IChangeBase");
+
+    // Lints because lintBadName_V1_x is not minor_major version naming
+    EXPECT_LINT("lint_test.method_versions@1.0::IBase",
+                "Methods should follow the camelCase naming convention.");
+
+    // Lints because incorrect package name
+    EXPECT_LINT("lint_test.method_versions@1.0::IChild", "interface is in package version 1.0");
+
+    // Lints because wrong minor version
+    EXPECT_LINT("lint_test.method_versions@1.0::IWrongMinor",
+                "Methods should follow the camelCase naming convention.");
+
+    // Lints because underscore in wrong place
+    EXPECT_LINT("lint_test.method_versions@1.0::IWrongUnderscore",
+                "when defining a new version of a method");
+
+    // Method does not exist in any of the super types
+    EXPECT_LINT("lint_test.method_versions@1.1::IMethodDNE", "Could not find method");
+
+    // Methods are not in camel case
+    EXPECT_LINT("lint_test.method_versions@1.0::IPascalCase",
+                "Methods should follow the camelCase naming convention.");
+    EXPECT_LINT("lint_test.method_versions@1.0::IHybrid",
+                "Methods should follow the camelCase naming convention.");
+    EXPECT_LINT("lint_test.method_versions@1.0::Isnake_case",
+                "Methods should follow the camelCase naming convention.");
+}
+
+TEST_F(HidlLintTest, EnumMaxAllTest) {
+    // Implements MAX correctly
+    EXPECT_NO_LINT("lint_test.enum_max_all@1.0::IFoo");
+
+    // Lint since MAX and ALL are enum values
+    EXPECT_LINT("lint_test.enum_max_all@1.0::IMax", "\"MAX\" enum values are considered harmful");
+    EXPECT_LINT("lint_test.enum_max_all@1.0::IAll", "\"ALL\" enum values are considered harmful");
+
+    // Lint since MAX and ALL are parts of the enum values
+    EXPECT_LINT("lint_test.enum_max_all@1.0::IMax2", "\"MAX\" enum values are considered harmful");
+    EXPECT_LINT("lint_test.enum_max_all@1.0::IAll2", "\"ALL\" enum values are considered harmful");
+}
 }  // namespace android

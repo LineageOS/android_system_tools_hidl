@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
-package lint_test.oneway@1.0;
+package lint_test.enum_max_all@1.0;
 
-interface IOneway {
-    oneway someOnewayMethod();
+interface IAll2 {
+    enum ContainsAll : uint8_t {
+        SOME_NONE = 0,
+        SOME_ONE = 1,
+        SOME_TWO = 2,
+        SOME_ALL = 3
+    };
 };

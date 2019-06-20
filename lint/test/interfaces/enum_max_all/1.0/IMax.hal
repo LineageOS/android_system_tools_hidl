@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
-package lint_test.oneway@1.0;
+package lint_test.enum_max_all@1.0;
 
-interface IOneway {
-    oneway someOnewayMethod();
+interface IMax {
+    enum ContainsMax : uint8_t {
+        VAL = 3,
+        MAX = 4
+    };
 };
