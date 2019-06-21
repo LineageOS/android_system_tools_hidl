@@ -340,11 +340,11 @@ bool isValidTypeName(const std::string& identifier, std::string *errorMsg) {
 %%
 
 program
-    : doc_comments package imports type_declarations ignore_doc_comments
+    : doc_comments package declarations ignore_doc_comments
       {
         ast->setHeader($1);
       }
-    | package imports type_declarations ignore_doc_comments
+    | package declarations ignore_doc_comments
     ;
 
 doc_comments
@@ -575,12 +575,6 @@ import_stmt
     | IMPORT error_stmt
     ;
 
-
-imports
-    : /* empty */
-    | imports import_stmt
-    ;
-
 opt_extends
     : /* empty */ { $$ = nullptr; }
     | EXTENDS fqtype { $$ = $2; }
@@ -626,12 +620,37 @@ interface_declarations
       }
     ;
 
-type_declarations
+declarations
     : /* empty */
     | error_stmt
-    | type_declarations commentable_type_declaration
+    | declarations commentable_declaration
     ;
 
+commentable_declaration
+    : doc_comments type_declaration
+      {
+        $2->setDocComment($1);
+      }
+    | type_declaration
+    | ignore_doc_comments import_stmt
+      {
+        // Import statements must be first. The grammar allows them later so that:
+        // - there is a nice error if imports are later
+        // - doc_comments can be factored out here to avoid shift/reduce conflicts
+        if (!ast->getRootScope().getDefinedTypes().empty()) {
+            std::cerr << "ERROR: import at " << @2
+                      << " follows type definitions, but imports must come first" << std::endl;
+
+            YYERROR;
+        }
+      }
+    ;
+
+/*
+ * For orthogonality/simplicity in the future, import_stmt could be made to share inheritance
+ * hierarchy with type_declaration, and then we could explicitly disallow import inside of
+ * interfaces
+ */
 commentable_type_declaration
     : doc_comments type_declaration
       {
