@@ -21,8 +21,8 @@ interface ISwitched {
      * This doc comment will be correct
      * @param param is the first param
      * @param multiple
-     * @return retVal is the return
-     * @param second is the second return (marked as param)
+     * @param retVal is the return
+     * @return second is the second return (marked as param)
      */
     someMethod(vec<uint8_t> param, string multiple) generates (float second, bool retVal);
 };
