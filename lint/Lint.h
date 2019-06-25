@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <json/json.h>
+
 #include <string>
 #include <vector>
 
@@ -38,9 +40,11 @@ struct Lint {
     Lint&& operator<<(const std::string& message);
 
     LintLevel getLevel() const;
+    std::string getLevelString() const;
     const Location& getLocation() const;
     const std::string& getMessage() const;
 
+    Json::Value asJson() const;
     bool operator<(const Lint& other) const;
 
   private:

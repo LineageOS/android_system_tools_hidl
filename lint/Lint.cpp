@@ -17,6 +17,7 @@
 #include "Lint.h"
 
 #include <android-base/logging.h>
+#include <json/json.h>
 #include <iostream>
 #include <tuple>
 
@@ -28,6 +29,17 @@ Lint::Lint(LintLevel level, const Location& location, const std::string& message
 
 LintLevel Lint::getLevel() const {
     return mLevel;
+}
+
+std::string Lint::getLevelString() const {
+    switch (mLevel) {
+        case WARNING:
+            return "WARNING";
+        case ERROR:
+            return "ERROR";
+        default:
+            LOG(FATAL) << "LintLevel must be warning or error";
+    }
 }
 
 const Location& Lint::getLocation() const {
@@ -49,6 +61,22 @@ Lint&& Lint::operator<<(const std::string& in) {
     return std::move(*this);
 }
 
+Json::Value Lint::asJson() const {
+    Json::Value lint;
+
+    lint["message"] = mMessage;
+    lint["level"] = getLevelString();
+
+    // Begin and end should be in the same file
+    lint["filename"] = mLocation.begin().filename();
+    lint["begin"]["line"] = Json::UInt(mLocation.begin().line());
+    lint["begin"]["column"] = Json::UInt(mLocation.begin().column());
+    lint["end"]["line"] = Json::UInt(mLocation.end().line());
+    lint["end"]["column"] = Json::UInt(mLocation.end().column());
+
+    return lint;
+}
+
 enum Color { DEFAULT = 0, RED = 31, YELLOW = 33 };
 
 static std::string setColor(Color color, bool bold = false) {
@@ -64,10 +92,10 @@ static std::string setColor(Color color, bool bold = false) {
 
 std::ostream& operator<<(std::ostream& os, const Lint& lint) {
     if (lint.getLevel() == WARNING) {
-        os << setColor(YELLOW, true) << "WARNING: " << setColor(DEFAULT);
+        os << setColor(YELLOW, true) << lint.getLevelString() << ": " << setColor(DEFAULT);
     } else {
         CHECK(lint.getLevel() == ERROR);
-        os << setColor(RED, true) << "ERROR: " << setColor(DEFAULT);
+        os << setColor(RED, true) << lint.getLevelString() << ": " << setColor(DEFAULT);
     }
 
     return os << setColor(DEFAULT, true) << lint.getLocation() << setColor(DEFAULT) << ": "
