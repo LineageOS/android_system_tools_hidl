@@ -193,6 +193,20 @@ TEST_F(HidlLintTest, DocCommentRefTest) {
 
     // Incorrectly marked as @param should lint as a param
     EXPECT_LINT("lint_test.doc_comments@1.0::ISwitched", "is not an argument");
+
+    // Incorrectly marked as @param should lint as a param
+    EXPECT_LINT("lint_test.doc_comments@1.0::IParamAfterReturn",
+                "@param references should come before @return");
+
+    // Reversed order should be caught
+    EXPECT_LINT("lint_test.doc_comments@1.0::IRevReturn",
+                "@return references should be ordered the same way they show up");
+    EXPECT_LINT("lint_test.doc_comments@1.0::IRevParam",
+                "@param references should be ordered the same way they show up");
+
+    // Referencing the same param/return multiple times should be caught
+    EXPECT_LINT("lint_test.doc_comments@1.0::IDoubleReturn", "was referenced multiple times");
+    EXPECT_LINT("lint_test.doc_comments@1.0::IDoubleParam", "was referenced multiple times");
 }
 
 TEST_F(HidlLintTest, MethodVersionsTest) {
