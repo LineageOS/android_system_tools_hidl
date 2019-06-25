@@ -16,13 +16,13 @@
 
 package lint_test.doc_comments@1.0;
 
-interface ICorrect {
+interface IDoubleReturn {
     /**
      * This doc comment will be correct
      * @param param is the first param
      * @param multiple
-     * @return second is the second return
      * @return retVal is the return
+     * @return retVal is the second return
      */
-    someMethod(vec<uint8_t> param, string multiple) generates (float second, string extra, bool retVal);
+    someMethod(vec<uint8_t> param, string multiple) generates (float second, bool retVal);
 };
