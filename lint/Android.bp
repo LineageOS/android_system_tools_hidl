@@ -17,6 +17,7 @@
 cc_library_host_shared {
     name: "libhidl-lint",
     defaults: ["hidl-gen-defaults"],
+    export_shared_lib_headers: ["libjsoncpp"],
     srcs: [
         "Lint.cpp",
         "LintRegistry.cpp",
@@ -28,6 +29,7 @@ cc_library_host_shared {
         "libhidl-gen-ast",
         "libhidl-gen-host-utils",
         "libhidl-gen-utils",
+        "libjsoncpp",
         "liblog",
     ],
 }
@@ -43,6 +45,7 @@ cc_binary_host {
         "libhidl-gen-host-utils",
         "libhidl-gen-utils",
         "libhidl-lint",
+        "libjsoncpp",
         "liblog",
     ],
 }
