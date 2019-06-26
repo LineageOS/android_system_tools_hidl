@@ -34,9 +34,11 @@ var (
 
 	pctx = android.NewPackageContext("android/hidl")
 
-	hidl      = pctx.HostBinToolVariable("hidl", "hidl-gen")
-	vtsc      = pctx.HostBinToolVariable("vtsc", "vtsc")
-	soong_zip = pctx.HostBinToolVariable("soong_zip", "soong_zip")
+	hidl             = pctx.HostBinToolVariable("hidl", "hidl-gen")
+	vtsc             = pctx.HostBinToolVariable("vtsc", "vtsc")
+	hidlLint         = pctx.HostBinToolVariable("lint", "hidl-lint")
+	soong_zip        = pctx.HostBinToolVariable("soong_zip", "soong_zip")
+	intermediatesDir = pctx.IntermediatesPathVariable("intermediatesDir", "")
 
 	hidlRule = pctx.StaticRule("hidlRule", blueprint.RuleParams{
 		Depfile:     "${depfile}",
@@ -61,11 +63,65 @@ var (
 		CommandDeps: []string{"${vtsc}"},
 		Description: "VTS ${mode} ${type}: ${in} => ${out}",
 	}, "mode", "type", "inputDir", "genDir", "packagePath")
+
+	lintRule = pctx.StaticRule("lintRule", blueprint.RuleParams{
+		Command:     "rm -f ${output} && touch ${output} && ${lint} -j -R -p . ${roots} ${fqName} 2> ${output}",
+		CommandDeps: []string{"${lint}"},
+		Description: "hidl-lint ${fqName}: ${out}",
+	}, "output", "roots", "fqName")
+
+	zipLintRule = pctx.StaticRule("zipLintRule", blueprint.RuleParams{
+		Command:     "rm -f ${output} && ${soong_zip} -o ${output} -C ${intermediatesDir} ${files}",
+		CommandDeps: []string{"${soong_zip}"},
+		Description: "Zipping hidl-lints into ${output}",
+	}, "output", "files")
 )
 
 func init() {
 	android.RegisterModuleType("hidl_interface", hidlInterfaceFactory)
+	android.RegisterSingletonType("all_hidl_lints", allHidlLintsFactory)
 	android.RegisterMakeVarsProvider(pctx, makeVarsProvider)
+}
+
+func allHidlLintsFactory() android.Singleton {
+	return &allHidlLintsSingleton{}
+}
+
+type allHidlLintsSingleton struct {
+	outPath string
+}
+
+func (m *allHidlLintsSingleton) GenerateBuildActions(ctx android.SingletonContext) {
+	var hidlLintOutputs android.Paths
+	ctx.VisitAllModules(func(m android.Module) {
+		switch t := m.(type) {
+		case *hidlGenRule:
+			if t.properties.Language == "lint" {
+				if len(t.genOutputs) == 1 {
+					hidlLintOutputs = append(hidlLintOutputs, t.genOutputs[0])
+				} else {
+					panic("-hidl-lint target was not configured correctly")
+				}
+			}
+		}
+	})
+
+	outPath := android.PathForIntermediates(ctx, "hidl-lint.zip")
+	m.outPath = outPath.String()
+
+	ctx.Build(pctx, android.BuildParams{
+		Rule:   zipLintRule,
+		Inputs: hidlLintOutputs,
+		Output: outPath,
+		Args: map[string]string{
+			"output": outPath.String(),
+			"files":  strings.Join(wrap("-f ", hidlLintOutputs.Strings(), ""), " "),
+		},
+	})
+}
+
+func (m *allHidlLintsSingleton) MakeVars(ctx android.MakeVarsContext) {
+	ctx.Strict("ALL_HIDL_LINTS_ZIP", m.outPath)
 }
 
 type hidlGenProperties struct {
@@ -97,8 +153,12 @@ func (g *hidlGenRule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		g.genInputs = append(g.genInputs, android.PathForModuleSrc(ctx, input))
 	}
 
-	for _, output := range g.properties.Outputs {
-		g.genOutputs = append(g.genOutputs, android.PathForModuleGen(ctx, output))
+	if g.properties.Language == "lint" {
+		g.genOutputs = append(g.genOutputs, android.PathForModuleGen(ctx, "lint.json"))
+	} else {
+		for _, output := range g.properties.Outputs {
+			g.genOutputs = append(g.genOutputs, android.PathForModuleGen(ctx, output))
+		}
 	}
 
 	if g.properties.Language == "vts" && isVtsSpecPackage(ctx.ModuleName()) {
@@ -135,6 +195,21 @@ func (g *hidlGenRule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	rule := hidlRule
 	if g.properties.Language == "java" {
 		rule = hidlSrcJarRule
+	}
+
+	if g.properties.Language == "lint" {
+		ctx.Build(pctx, android.BuildParams{
+			Rule:   lintRule,
+			Inputs: inputs,
+			Output: g.genOutputs[0],
+			Args: map[string]string{
+				"output": g.genOutputs[0].String(),
+				"fqName": g.properties.FqName,
+				"roots":  strings.Join(fullRootOptions, " "),
+			},
+		})
+
+		return
 	}
 
 	ctx.ModuleBuild(pctx, android.ModuleBuildParams{
@@ -706,6 +781,16 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 			Cflags: []string{"-Wno-unused-variable"},
 		}, &i.inheritCommonProperties)
 	}
+
+	mctx.CreateModule(android.ModuleFactoryAdaptor(hidlGenFactory), &nameProperties{
+		Name: proptools.StringPtr(name.lintName()),
+	}, &hidlGenProperties{
+		Language:   "lint",
+		FqName:     name.string(),
+		Root:       i.properties.Root,
+		Interfaces: i.properties.Interfaces,
+		Inputs:     i.properties.Srcs,
+	}, &i.inheritCommonProperties)
 }
 
 func (h *hidlInterface) Name() string {
