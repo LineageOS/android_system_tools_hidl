@@ -406,19 +406,19 @@ type manuallyInheritCommonProperties struct {
 			Compile_multilib *string
 		}
 	}
-	Proprietary               *bool
-	Owner                     *string
-	Vendor                    *bool
-	Soc_specific              *bool
-	Device_specific           *bool
-	Product_specific          *bool
-	Product_services_specific *bool
-	Recovery                  *bool
-	Init_rc                   []string
-	Vintf_fragments           []string
-	Required                  []string
-	Notice                    *string
-	Dist                      struct {
+	Proprietary         *bool
+	Owner               *string
+	Vendor              *bool
+	Soc_specific        *bool
+	Device_specific     *bool
+	Product_specific    *bool
+	System_ext_specific *bool
+	Recovery            *bool
+	Init_rc             []string
+	Vintf_fragments     []string
+	Required            []string
+	Notice              *string
+	Dist                struct {
 		Targets []string
 		Dest    *string
 		Dir     *string
