@@ -60,6 +60,22 @@ static bool isNameInList(const std::string& name, const std::vector<NamedReferen
     });
 }
 
+static bool isSubsequence(const std::vector<NamedReference<Type>*>& refs,
+                          const std::vector<std::string>& subsequence) {
+    if (subsequence.empty()) return true;
+
+    auto it = subsequence.begin();
+    auto subEnd = subsequence.end();
+    for (const NamedReference<Type>* namedRef : refs) {
+        if (namedRef->name() == *it) it++;
+
+        if (it == subEnd) return true;
+    }
+
+    // Should be false here
+    return it == subEnd;
+}
+
 static void methodDocComments(const AST& ast, std::vector<Lint>* errors) {
     const Interface* iface = ast.getInterface();
     if (iface == nullptr) {
@@ -72,6 +88,10 @@ static void methodDocComments(const AST& ast, std::vector<Lint>* errors) {
         if (docComment == nullptr) continue;
 
         std::vector<std::string> lines = base::Split(docComment->string(), "\n");
+        bool returnRefFound = false;
+
+        std::vector<std::string> dcArgs;
+        std::vector<std::string> dcReturns;
 
         // want a copy so that it can be mutated
         for (const std::string& line : lines) {
@@ -85,11 +105,22 @@ static void methodDocComments(const AST& ast, std::vector<Lint>* errors) {
                     continue;
                 }
 
+                returnRefFound = true;
                 if (!isNameInList(returnName, method->results())) {
                     errors->push_back(Lint(WARNING, docComment->location())
                                       << "@return " << returnName
                                       << " is not a return parameter of the method "
                                       << method->name() << ".\n");
+                } else {
+                    if (std::find(dcReturns.begin(), dcReturns.end(), returnName) !=
+                        dcReturns.end()) {
+                        errors->push_back(
+                                Lint(WARNING, docComment->location())
+                                << "@return " << returnName
+                                << " was referenced multiple times in the same doc comment.\n");
+                    } else {
+                        dcReturns.push_back(returnName);
+                    }
                 }
 
                 continue;
@@ -103,13 +134,40 @@ static void methodDocComments(const AST& ast, std::vector<Lint>* errors) {
                     continue;
                 }
 
+                if (returnRefFound) {
+                    errors->push_back(Lint(WARNING, docComment->location())
+                                      << "Found @param " << returnName
+                                      << " after a @return declaration. All @param references "
+                                      << "should come before @return references.\n");
+                }
+
                 if (!isNameInList(returnName, method->args())) {
                     errors->push_back(Lint(WARNING, docComment->location())
                                       << "@param " << returnName
                                       << " is not an argument to the method " << method->name()
                                       << ".\n");
+                } else {
+                    if (std::find(dcArgs.begin(), dcArgs.end(), returnName) != dcArgs.end()) {
+                        errors->push_back(
+                                Lint(WARNING, docComment->location())
+                                << "@param " << returnName
+                                << " was referenced multiple times in the same doc comment.\n");
+                    } else {
+                        dcArgs.push_back(returnName);
+                    }
                 }
             }
+        }
+
+        if (!isSubsequence(method->results(), dcReturns)) {
+            errors->push_back(Lint(WARNING, docComment->location())
+                              << "@return references should be ordered the same way they show up "
+                              << "in the return parameter list.\n");
+        }
+        if (!isSubsequence(method->args(), dcArgs)) {
+            errors->push_back(Lint(WARNING, docComment->location())
+                              << "@param references should be ordered the same way they show up in "
+                              << "the argument list.\n");
         }
     }
 }
