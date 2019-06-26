@@ -255,4 +255,9 @@ TEST_F(HidlLintTest, EnumMaxAllTest) {
     EXPECT_LINT("lint_test.enum_max_all@1.0::IMax2", "\"MAX\" enum values are considered harmful");
     EXPECT_LINT("lint_test.enum_max_all@1.0::IAll2", "\"ALL\" enum values are considered harmful");
 }
+
+TEST_F(HidlLintTest, UnhandledDocCommentTest) {
+    EXPECT_LINT("lint_test.unhandled_comments@1.0::types",
+                "cannot be processed since it is in an unrecognized place");
+}
 }  // namespace android
