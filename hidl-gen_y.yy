@@ -907,8 +907,7 @@ non_empty_typed_vars
     ;
 
 typed_var
-    : doc_comments uncommented_typed_var { $2->setDocComment($1); $$ = $2; }
-    | uncommented_typed_var { $$ = $1; }
+    : ignore_doc_comments uncommented_typed_var { $$ = $2; }
     ;
 
 uncommented_typed_var
