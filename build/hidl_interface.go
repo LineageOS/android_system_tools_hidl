@@ -81,6 +81,34 @@ func init() {
 	android.RegisterModuleType("hidl_interface", hidlInterfaceFactory)
 	android.RegisterSingletonType("all_hidl_lints", allHidlLintsFactory)
 	android.RegisterMakeVarsProvider(pctx, makeVarsProvider)
+	android.RegisterSingletonType("known_hidl_interfaces", knownHidlInterfacesSingletonFactory)
+	pctx.Import("android/soong/android")
+}
+
+func knownHidlInterfacesSingletonFactory() android.Singleton {
+	return &knownHidlInterfacesSingleton{}
+}
+
+type knownHidlInterfacesSingleton struct {
+	outPath android.OutputPath
+}
+
+func (m *knownHidlInterfacesSingleton) GenerateBuildActions(ctx android.SingletonContext) {
+	m.outPath = android.PathForIntermediates(ctx, "known_hidl_interfaces.txt")
+	interfaceList := *interfaceList(ctx.Config())
+	sort.Strings(interfaceList)
+
+	ctx.Build(pctx, android.BuildParams{
+		Rule:   android.WriteFile,
+		Output: m.outPath,
+		Args: map[string]string{
+			"content": strings.Join(interfaceList, " "),
+		},
+	})
+}
+
+func (m *knownHidlInterfacesSingleton) MakeVars(ctx android.MakeVarsContext) {
+	ctx.Strict("KNOWN_HIDL_INTERFACES", m.outPath.String())
 }
 
 func allHidlLintsFactory() android.Singleton {
@@ -489,6 +517,15 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 
 	interfaces, types, _ := processSources(mctx, i.properties.Srcs)
 
+	if i.ModuleBase.ExportedToMake() {
+		interfaceList := interfaceList(mctx.AConfig())
+		interfaceListMutex.Lock()
+		for _, intf := range interfaces {
+			*interfaceList = append(*interfaceList, name.string()+"::I"+intf)
+		}
+		interfaceListMutex.Unlock()
+	}
+
 	if len(interfaces) == 0 && len(types) == 0 {
 		mctx.PropertyErrorf("srcs", "No sources provided.")
 	}
@@ -893,6 +930,16 @@ func vtsList(config android.Config) *android.Paths {
 }
 
 var vtsListMutex sync.Mutex
+
+var interfaceListKey = android.NewOnceKey("interfaceList")
+
+func interfaceList(config android.Config) *[]string {
+	return config.Once(interfaceListKey, func() interface{} {
+		return &[]string{}
+	}).(*[]string)
+}
+
+var interfaceListMutex sync.Mutex
 
 func makeVarsProvider(ctx android.MakeVarsContext) {
 	vtsList := vtsList(ctx.Config()).Strings()
