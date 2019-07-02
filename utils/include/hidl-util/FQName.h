@@ -108,6 +108,13 @@ struct FQName {
     bool operator==(const FQName &other) const;
     bool operator!=(const FQName &other) const;
 
+    // Provides the FQName relative to "relativeTo"
+    // If this is android.hardware.foo@1.0::IFoo it returns
+    // relativeTo: android.hardware.foo@1.0::IBar - IFoo
+    // relativeTo: android.hardware.foo@1.2::IFoo - @1.0::IFoo
+    // relativeTo: android.hardware.bar@1.0::IFoo - android.hardware.foo@1.0::IFoo
+    std::string getRelativeFQName(const FQName& relativeTo) const;
+
     // Must be called on an interface
     // android.hardware.foo@1.0::IBar
     // -> Bar

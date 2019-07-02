@@ -822,6 +822,31 @@ void Interface::emitReaderWriter(
     }
 }
 
+void Interface::emitHidlDefinition(Formatter& out) const {
+    if (getDocComment() != nullptr) getDocComment()->emit(out);
+    out << typeName() << " ";
+
+    const Interface* super = superType();
+    if (super != nullptr && !super->isIBase()) {
+        out << "extends " << super->fqName().getRelativeFQName(fqName()) << " ";
+    }
+
+    out << "{\n";
+
+    out.indent([&] {
+        const std::vector<const NamedType*>& definedTypes = getSortedDefinedTypes();
+        out.join(definedTypes.begin(), definedTypes.end(), "\n",
+                 [&](auto t) { t->emitHidlDefinition(out); });
+
+        if (definedTypes.size() > 0 && userDefinedMethods().size() > 0) out << "\n";
+
+        out.join(userDefinedMethods().begin(), userDefinedMethods().end(), "\n",
+                 [&](auto method) { method->emitHidlDefinition(out); });
+    });
+
+    out << "};\n";
+}
+
 void Interface::emitPackageTypeDeclarations(Formatter& out) const {
     Scope::emitPackageTypeDeclarations(out);
 

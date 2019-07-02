@@ -19,6 +19,7 @@
 #include <assert.h>
 
 #include <android-base/logging.h>
+#include <vector>
 
 namespace android {
 
@@ -123,7 +124,7 @@ Formatter &Formatter::operator<<(const std::string &out) {
 
         if (pos == std::string::npos) {
             if (mAtStartOfLine) {
-                fprintf(mFile, "%*s", (int)(mSpacesPerIndent * mIndentDepth), "");
+                fprintf(mFile, "%*s", (int)(getIndentation()), "");
                 fprintf(mFile, "%s", mLinePrefix.c_str());
                 mAtStartOfLine = false;
             }
@@ -133,7 +134,7 @@ Formatter &Formatter::operator<<(const std::string &out) {
         }
 
         if (mAtStartOfLine && (pos > start || !mLinePrefix.empty())) {
-            fprintf(mFile, "%*s", (int)(mSpacesPerIndent * mIndentDepth), "");
+            fprintf(mFile, "%*s", (int)(getIndentation()), "");
             fprintf(mFile, "%s", mLinePrefix.c_str());
         }
 
@@ -147,6 +148,56 @@ Formatter &Formatter::operator<<(const std::string &out) {
 
         start = pos + 1;
     }
+
+    return *this;
+}
+
+Formatter& Formatter::operator<<(const WrappedOutput& wrappedOutput) {
+    CHECK(mAtStartOfLine) << "This function should only be called at the start of a new line";
+
+    size_t currentPosition = getIndentation();
+    std::function<void(Formatter&, const WrappedOutput::Block&)> printBlock =
+            [&](Formatter& out, const WrappedOutput::Block& block) {
+                size_t blockSize = block.computeSize(false);
+                if (blockSize + currentPosition < wrappedOutput.mLineLength) {
+                    block.print(out, false);
+                    currentPosition += blockSize;
+                    return;
+                }
+
+                // Everything will not fit on this line. Try to fit it on the next line.
+                blockSize = block.computeSize(true);
+                if (blockSize + getIndentation() + mSpacesPerIndent < wrappedOutput.mLineLength) {
+                    out << "\n";
+                    out.indent();
+
+                    block.print(out, true);
+                    currentPosition = getIndentation() + blockSize;
+
+                    out.unindent();
+                    return;
+                }
+
+                if (!block.content.empty()) {
+                    // Doesn't have subblocks. This means that the block itself is too big.
+                    // Have to print it out.
+                    out << "\n";
+                    out.indent();
+
+                    block.print(out, true);
+                    currentPosition = getIndentation() + blockSize;
+
+                    out.unindent();
+                    return;
+                }
+
+                // Everything will not fit on this line. Go through all the children
+                for (const WrappedOutput::Block& subBlock : block.blocks) {
+                    printBlock(out, subBlock);
+                }
+            };
+
+    printBlock(*this, wrappedOutput.mRootBlock);
 
     return *this;
 }
@@ -187,10 +238,101 @@ bool Formatter::isValid() const {
     return mFile != nullptr;
 }
 
+size_t Formatter::getIndentation() const {
+    return mSpacesPerIndent * mIndentDepth;
+}
+
 void Formatter::output(const std::string &text) const {
     CHECK(isValid());
 
     fprintf(mFile, "%s", text.c_str());
+}
+
+WrappedOutput::Block::Block(const std::string& content, Block* const parent)
+    : content(content), parent(parent) {}
+
+size_t WrappedOutput::Block::computeSize(bool wrapped) const {
+    CHECK(content.empty() || blocks.empty());
+
+    // There is a wrap, so the block would not be printed
+    if (printUnlessWrapped && wrapped) return 0;
+
+    size_t size = content.size();
+    for (auto block = blocks.begin(); block != blocks.end(); ++block) {
+        if (block == blocks.begin()) {
+            // Only the first one can be wrapped (since content.empty())
+            size += block->computeSize(wrapped);
+        } else {
+            size += block->computeSize(false);
+        }
+    }
+
+    return size;
+}
+
+void WrappedOutput::Block::print(Formatter& out, bool wrapped) const {
+    CHECK(content.empty() || blocks.empty());
+
+    // There is a wrap, so the block should not be printed
+    if (printUnlessWrapped && wrapped) return;
+
+    out << content;
+    for (auto block = blocks.begin(); block != blocks.end(); ++block) {
+        if (block == blocks.begin()) {
+            // Only the first one can be wrapped (since content.empty())
+            block->print(out, wrapped);
+        } else {
+            block->print(out, false);
+        }
+    }
+}
+
+WrappedOutput::WrappedOutput(size_t lineLength)
+    : mLineLength(lineLength), mRootBlock(Block("", nullptr)) {
+    mCurrentBlock = &mRootBlock;
+}
+
+WrappedOutput& WrappedOutput::operator<<(const std::string& str) {
+    std::vector<Block>& blockVec = mCurrentBlock->blocks;
+    if (!blockVec.empty()) {
+        Block& last = blockVec.back();
+        if (!last.populated && last.blocks.empty()) {
+            last.content += str;
+
+            return *this;
+        }
+    }
+
+    blockVec.emplace_back(str, mCurrentBlock);
+    return *this;
+}
+
+WrappedOutput& WrappedOutput::printUnlessWrapped(const std::string& str) {
+    std::vector<Block>& blockVec = mCurrentBlock->blocks;
+    if (!blockVec.empty()) {
+        blockVec.back().populated = true;
+    }
+
+    blockVec.emplace_back(str, mCurrentBlock);
+    blockVec.back().populated = true;
+    blockVec.back().printUnlessWrapped = true;
+
+    return *this;
+}
+
+void WrappedOutput::group(const std::function<void(void)>& block) {
+    std::vector<Block>& blockVec = mCurrentBlock->blocks;
+    if (!blockVec.empty()) {
+        blockVec.back().populated = true;
+    }
+
+    blockVec.emplace_back("", mCurrentBlock);
+    mCurrentBlock = &blockVec.back();
+
+    block();
+
+    mCurrentBlock->populated = true;
+    mCurrentBlock = mCurrentBlock->parent;
 }
 
 }  // namespace android

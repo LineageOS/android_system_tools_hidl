@@ -25,10 +25,12 @@
 #include <hidl-util/Formatter.h>
 #include <algorithm>
 #include <iostream>
+#include <string>
 
 namespace android {
 
-Type::Type(Scope* parent) : mParent(parent) {}
+Type::Type(Scope* parent, const std::string& definedName)
+    : mDefinedName(definedName), mParent(parent) {}
 
 Type::~Type() {}
 
@@ -369,6 +371,10 @@ const Scope* Type::parent() const {
     return mParent;
 }
 
+const std::string& Type::definedName() const {
+    return mDefinedName;
+}
+
 std::string Type::getCppType(StorageMode, bool) const {
     CHECK(!"Should not be here") << typeName();
     return std::string();
@@ -597,6 +603,10 @@ void Type::emitReaderWriterEmbeddedForTypeName(
     handleError(out, mode);
 }
 
+void Type::emitHidlDefinition(Formatter&) const {
+    CHECK(!"Should not be here.") << typeName();
+}
+
 void Type::emitTypeDeclarations(Formatter&) const {}
 
 void Type::emitTypeForwardDeclaration(Formatter&) const {}
@@ -725,7 +735,8 @@ bool Type::isNeverStrongReference() const {
 
 ////////////////////////////////////////
 
-TemplatedType::TemplatedType(Scope* parent) : Type(parent) {}
+TemplatedType::TemplatedType(Scope* parent, const std::string& definedName)
+    : Type(parent, definedName) {}
 
 std::string TemplatedType::typeName() const {
     return templatedTypeName() + " of " + mElementType->typeName();
@@ -737,6 +748,7 @@ void TemplatedType::setElementType(const Reference<Type>& elementType) {
     CHECK(!elementType.isEmptyReference());
 
     mElementType = elementType;
+    mDefinedName = mDefinedName + "<" + mElementType.localName() + ">";
 }
 
 const Type* TemplatedType::getElementType() const {

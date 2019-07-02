@@ -158,7 +158,7 @@ void Annotation::dump(Formatter &out) const {
 
         const AnnotationParam* param = mParams->at(i);
 
-        out << param->getName() << "=";
+        out << param->getName() << " = ";
 
         const std::vector<std::string>& values = param->getValues();
         if (values.size() > 1) {

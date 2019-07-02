@@ -20,7 +20,12 @@
 
 namespace android {
 
-ScalarType::ScalarType(Kind kind, Scope* parent) : Type(parent), mKind(kind) {}
+static const char* const hidlIdentifiers[] = {"bool",     "int8_t",  "uint8_t",  "int16_t",
+                                              "uint16_t", "int32_t", "uint32_t", "int64_t",
+                                              "uint64_t", "float",   "double"};
+
+ScalarType::ScalarType(Kind kind, Scope* parent)
+    : Type(parent, hidlIdentifiers[kind]), mKind(kind) {}
 
 const ScalarType *ScalarType::resolveToScalarType() const {
     return this;

@@ -80,5 +80,9 @@ void TypeDef::emitTypeDeclarations(Formatter& out) const {
         << ";\n\n";
 }
 
+void TypeDef::emitHidlDefinition(Formatter& out) const {
+    out << "typedef " << mReferencedType.localName() << " " << localName() << ";\n";
+}
+
 }  // namespace android
 
