@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-package lint_test.safeunion@1.1;
+#pragma once
 
-/* Refers to a struct that contains a union. */
-interface IReferStructWithUnion {
-    someMethod(SomeStruct someStruct);
-};
+#include "hidl-gen_y.h"
+
+namespace android {
+struct Location;
+struct AST;
+}  // namespace android
+
+android::Location convertYYLoc(const yy::parser::location_type& loc, const android::AST* ast);

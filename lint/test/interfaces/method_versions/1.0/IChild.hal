@@ -19,6 +19,6 @@ package lint_test.method_versions@1.0;
 import IBase;
 
 interface IChild extends IBase {
-    // lint for wrong package
+    /* lint for wrong package */
     baseMethod_1_2();
 };

@@ -19,6 +19,6 @@ package lint_test.method_versions@1.0;
 import IBase;
 
 interface IWrongMinor extends IBase {
-    // minor version cannot be parsed
+    /* minor version cannot be parsed */
     someMethod_1_0A();
 };
