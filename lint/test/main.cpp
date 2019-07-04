@@ -259,5 +259,9 @@ TEST_F(HidlLintTest, EnumMaxAllTest) {
 TEST_F(HidlLintTest, UnhandledDocCommentTest) {
     EXPECT_LINT("lint_test.unhandled_comments@1.0::types",
                 "cannot be processed since it is in an unrecognized place");
+
+    // Even single line comments are unhandled
+    EXPECT_LINT("lint_test.unhandled_comments@1.0::ISingleComment",
+                "cannot be processed since it is in an unrecognized place");
 }
 }  // namespace android
