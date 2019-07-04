@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package lint_test.safeunion@1.1;
+package lint_test.unhandled_comments@1.0;
 
-/* Refers to a struct that contains a union. */
-interface IReferStructWithUnion {
-    someMethod(SomeStruct someStruct);
-};
+// All single line comments are unhandled
+interface ISingleComment {};
