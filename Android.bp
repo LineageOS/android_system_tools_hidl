@@ -110,6 +110,7 @@ cc_library_host_shared {
         "generateCppAdapter.cpp",
         "generateCppImpl.cpp",
         "generateDependencies.cpp",
+        "generateInheritanceHierarchy.cpp",
         "generateJava.cpp",
         "generateJavaImpl.cpp",
         "generateVts.cpp",
@@ -122,7 +123,7 @@ cc_library_host_shared {
         "libhidl-gen-hash",
         "libhidl-gen-host-utils",
         "libhidl-gen-utils",
-        "liblog",
+        "libjsoncpp",
     ],
     export_shared_lib_headers: [
         "libbase",
