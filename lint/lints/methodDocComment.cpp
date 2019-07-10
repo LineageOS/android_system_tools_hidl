@@ -87,14 +87,13 @@ static void methodDocComments(const AST& ast, std::vector<Lint>* errors) {
         const DocComment* docComment = method->getDocComment();
         if (docComment == nullptr) continue;
 
-        std::vector<std::string> lines = base::Split(docComment->string(), "\n");
         bool returnRefFound = false;
 
         std::vector<std::string> dcArgs;
         std::vector<std::string> dcReturns;
 
         // want a copy so that it can be mutated
-        for (const std::string& line : lines) {
+        for (const std::string& line : docComment->lines()) {
             std::string returnName;
 
             if (bool foundPrefix = getFirstWordAfterPrefix(line, "@return", &returnName);
