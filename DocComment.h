@@ -21,6 +21,7 @@
 #include <hidl-util/Formatter.h>
 
 #include <string>
+#include <vector>
 
 #include "Location.h"
 
@@ -33,12 +34,12 @@ struct DocComment {
 
     void emit(Formatter& out) const;
 
-    const std::string& string() const { return mComment; }
+    const std::vector<std::string>& lines() const { return mLines; }
 
     const Location& location() const { return mLocation; }
 
   private:
-    std::string mComment;
+    std::vector<std::string> mLines;
     Location mLocation;
 };
 
