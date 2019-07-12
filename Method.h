@@ -105,8 +105,6 @@ struct Method : DocCommentable {
 
     const NamedReference<Type>* canElideCallback() const;
 
-    void dumpAnnotations(Formatter &out) const;
-
     bool deepIsJavaCompatible(std::unordered_set<const Type*>* visited) const;
 
     const Location& location() const;
