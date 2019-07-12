@@ -1228,6 +1228,21 @@ static const std::vector<OutputHandler> kFormats = {
             },
         },
     },
+    {
+        "inheritance-hierarchy",
+        "Prints the hierarchy of inherited types as a JSON object.",
+        OutputMode::NOT_NEEDED,
+        Coordinator::Location::STANDARD_OUT,
+        GenerationGranularity::PER_FILE,
+        validateForSource,
+        {
+            {
+                FileGenerator::alwaysGenerate,
+                nullptr /* file name for fqName */,
+                astGenerationFunction(&AST::generateInheritanceHierarchy),
+            },
+        },
+    },
 };
 // clang-format on
 

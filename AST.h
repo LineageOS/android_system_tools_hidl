@@ -158,6 +158,7 @@ struct AST {
     void generateVts(Formatter& out) const;
 
     void generateDependencies(Formatter& out) const;
+    void generateInheritanceHierarchy(Formatter& out) const;
 
     const std::vector<ImportStatement>& getImportStatements() const;
     void getImportedPackages(std::set<FQName> *importSet) const;
