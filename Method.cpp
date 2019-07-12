@@ -263,21 +263,6 @@ void Method::emitJavaSignature(Formatter& out) const {
     out << ")";
 }
 
-void Method::dumpAnnotations(Formatter &out) const {
-    if (mAnnotations->size() == 0) {
-        return;
-    }
-
-    out << "// ";
-    for (size_t i = 0; i < mAnnotations->size(); ++i) {
-        if (i > 0) {
-            out << " ";
-        }
-        mAnnotations->at(i)->dump(out);
-    }
-    out << "\n";
-}
-
 bool Method::deepIsJavaCompatible(std::unordered_set<const Type*>* visited) const {
     if (!std::all_of(mArgs->begin(), mArgs->end(),
                      [&](const auto* arg) { return (*arg)->isJavaCompatible(visited); })) {

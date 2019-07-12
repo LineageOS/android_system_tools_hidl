@@ -325,8 +325,6 @@ void AST::generateInterfaceHeader(Formatter& out) const {
                 out << ")>;\n";
             }
 
-            method->dumpAnnotations(out);
-
             method->emitDocComment(out);
 
             if (elidedReturn) {
