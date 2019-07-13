@@ -454,7 +454,7 @@ bool isHidlTransportPackage(const FQName& fqName) {
 
 bool isSystemProcessSupportedPackage(const FQName& fqName) {
     // Technically, so is hidl IBase + IServiceManager, but
-    // these are part of libhidltransport.
+    // these are part of libhidlbase.
     return fqName.inPackage("android.hardware.graphics.common") ||
            fqName.inPackage("android.hardware.graphics.mapper") ||
            fqName.string() == "android.hardware.renderscript@1.0" ||
@@ -698,7 +698,6 @@ static status_t generateAndroidBpImplForPackage(Formatter& out, const FQName& pa
             << "shared_libs: [\n";
         out.indent([&] {
             out << "\"libhidlbase\",\n"
-                << "\"libhidltransport\",\n"
                 << "\"libutils\",\n"
                 << "\"" << makeLibraryName(packageFQName) << "\",\n";
 
@@ -1225,6 +1224,21 @@ static const std::vector<OutputHandler> kFormats = {
                 FileGenerator::alwaysGenerate,
                 nullptr /* file name for fqName */,
                 astGenerationFunction(&AST::generateDependencies),
+            },
+        },
+    },
+    {
+        "inheritance-hierarchy",
+        "Prints the hierarchy of inherited types as a JSON object.",
+        OutputMode::NOT_NEEDED,
+        Coordinator::Location::STANDARD_OUT,
+        GenerationGranularity::PER_FILE,
+        validateForSource,
+        {
+            {
+                FileGenerator::alwaysGenerate,
+                nullptr /* file name for fqName */,
+                astGenerationFunction(&AST::generateInheritanceHierarchy),
             },
         },
     },

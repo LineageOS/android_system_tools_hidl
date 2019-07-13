@@ -20,9 +20,12 @@ cc_defaults {
     ],
     target: {
         host: {
-            cflags: ["-O0", "-g"],
-        }
-    }
+            cflags: [
+                "-O0",
+                "-g",
+            ],
+        },
+    },
 }
 
 // This configuration is inherited by all hidl-gen-generated modules.
@@ -39,7 +42,7 @@ cc_defaults {
     ],
     product_variables: {
         debuggable: {
-            cflags: ["-D__ANDROID_DEBUGGABLE__"]
+            cflags: ["-D__ANDROID_DEBUGGABLE__"],
         },
     },
 }
@@ -66,6 +69,7 @@ cc_library_host_shared {
         "DeathRecipientType.cpp",
         "DocComment.cpp",
         "EnumType.cpp",
+        "FmqType.cpp",
         "HandleType.cpp",
         "HidlTypeAssertion.cpp",
         "Interface.cpp",
@@ -74,7 +78,6 @@ cc_library_host_shared {
         "Method.cpp",
         "NamedType.cpp",
         "PointerType.cpp",
-        "FmqType.cpp",
         "ScalarType.cpp",
         "Scope.cpp",
         "StringType.cpp",
@@ -84,10 +87,10 @@ cc_library_host_shared {
     ],
     shared_libs: [
         "libbase",
-        "liblog",
         "libhidl-gen-hash",
         "libhidl-gen-host-utils",
         "libhidl-gen-utils",
+        "liblog",
     ],
     export_shared_lib_headers: [
         "libbase",
@@ -101,25 +104,26 @@ cc_library_host_shared {
     name: "libhidl-gen-ast",
     defaults: ["hidl-gen-defaults"],
     srcs: [
+        "AST.cpp",
         "Coordinator.cpp",
         "generateCpp.cpp",
         "generateCppAdapter.cpp",
         "generateCppImpl.cpp",
         "generateDependencies.cpp",
+        "generateInheritanceHierarchy.cpp",
         "generateJava.cpp",
         "generateJavaImpl.cpp",
         "generateVts.cpp",
-        "hidl-gen_y.yy",
         "hidl-gen_l.ll",
-        "AST.cpp",
+        "hidl-gen_y.yy",
     ],
     shared_libs: [
         "libbase",
-        "liblog",
         "libhidl-gen",
         "libhidl-gen-hash",
         "libhidl-gen-host-utils",
         "libhidl-gen-utils",
+        "libjsoncpp",
     ],
     export_shared_lib_headers: [
         "libbase",
@@ -130,7 +134,7 @@ cc_library_host_shared {
     yacc: {
         gen_location_hh: true,
         gen_position_hh: true,
-    }
+    },
 }
 
 cc_binary_host {
@@ -139,11 +143,11 @@ cc_binary_host {
     srcs: ["main.cpp"],
     shared_libs: [
         "libbase",
-        "liblog",
         "libhidl-gen",
         "libhidl-gen-ast",
         "libhidl-gen-hash",
         "libhidl-gen-host-utils",
         "libhidl-gen-utils",
+        "liblog",
     ],
 }
