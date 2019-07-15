@@ -42,6 +42,7 @@ class FqInstance {
     std::pair<size_t, size_t> getVersion() const;
     const std::string& getInterface() const;
     const std::string& getInstance() const;
+    const FQName& getFqName() const;
 
     bool hasPackage() const;
     bool hasVersion() const;
