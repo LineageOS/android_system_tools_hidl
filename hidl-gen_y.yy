@@ -704,7 +704,7 @@ interface_declaration
               }
               superType = new Reference<Type>();
           } else {
-              if (!ast->addImport(gIBaseFqName.string().c_str(), convertYYLoc(@1, ast))) {
+              if (!ast->addImplicitImport(gIBaseFqName)) {
                   std::cerr << "ERROR: Unable to automatically import '"
                             << gIBaseFqName.string()
                             << "' at " << @$

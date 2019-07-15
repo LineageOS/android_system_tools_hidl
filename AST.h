@@ -55,6 +55,7 @@ struct AST {
 
     bool setPackage(const char *package);
     bool addImport(const char* import, const Location& location);
+    bool addImplicitImport(const FQName& fqName);
 
     // package and version really.
     FQName package() const;
@@ -240,6 +241,9 @@ struct AST {
     // A list of the FQNames present in the import statements
     std::vector<ImportStatement> mImportStatements;
 
+    // A list of FQNames that are imported implicitly
+    std::vector<FQName> mImplicitImports;
+
     // A set of all external interfaces/types that are _actually_ referenced
     // in this AST, this is a subset of those specified in import statements.
     // Note that this set only resolves to the granularity of either an
@@ -271,6 +275,9 @@ struct AST {
     size_t mSyntaxErrors = 0;
 
     std::set<FQName> mReferencedTypeNames;
+
+    // importFQName will try to import fqName by parsing any file that might contain it
+    bool importFQName(const FQName& fqName);
 
     // Helper functions for lookupType.
     Type* lookupTypeLocally(const FQName& fqName, Scope* scope);
