@@ -374,31 +374,19 @@ status_t AST::checkForwardReferenceRestrictions() const {
                                     &visited);
 }
 
-bool AST::addImport(const char* import, const Location& location) {
-    FQName fqName;
-    if (!FQName::parse(import, &fqName)) {
-        std::cerr << "ERROR: '" << import << "' is an invalid fully-qualified name." << std::endl;
-        return false;
-    }
-
-    fqName.applyDefaults(mPackage.package(), mPackage.version());
-
-    mImportStatements.push_back({fqName, location});
-
+bool AST::importFQName(const FQName& fqName) {
     if (fqName.name().empty()) {
         // import a package
 
         std::vector<FQName> packageInterfaces;
 
-        status_t err =
-            mCoordinator->appendPackageInterfacesToVector(fqName,
-                                                          &packageInterfaces);
+        status_t err = mCoordinator->appendPackageInterfacesToVector(fqName, &packageInterfaces);
 
         if (err != OK) {
             return false;
         }
 
-        for (const auto &subFQName : packageInterfaces) {
+        for (const auto& subFQName : packageInterfaces) {
             addToImportedNamesGranular(subFQName);
 
             // Do not enforce restrictions on imports.
@@ -442,7 +430,7 @@ bool AST::addImport(const char* import, const Location& location) {
         // import a single type from this file
         // cases like android.hardware.foo@1.0::IFoo.Internal
         FQName matchingName;
-        Type *match = importAST->findDefinedType(fqName, &matchingName);
+        Type* match = importAST->findDefinedType(fqName, &matchingName);
         if (match == nullptr) {
             return false;
         }
@@ -460,7 +448,7 @@ bool AST::addImport(const char* import, const Location& location) {
     if (importAST != nullptr) {
         // Attempt to find Abc.Internal in types.
         FQName matchingName;
-        Type *match = importAST->findDefinedType(fqName, &matchingName);
+        Type* match = importAST->findDefinedType(fqName, &matchingName);
         if (match == nullptr) {
             return false;
         }
@@ -470,6 +458,34 @@ bool AST::addImport(const char* import, const Location& location) {
     }
 
     // can't find an appropriate AST for fqName.
+    return false;
+}
+
+bool AST::addImplicitImport(const FQName& fqName) {
+    CHECK(fqName.isFullyQualified());
+
+    if (importFQName(fqName)) {
+        mImplicitImports.push_back(fqName);
+        return true;
+    }
+
+    return false;
+}
+
+bool AST::addImport(const char* import, const Location& location) {
+    FQName fqName;
+    if (!FQName::parse(import, &fqName)) {
+        std::cerr << "ERROR: '" << import << "' is an invalid fully-qualified name." << std::endl;
+        return false;
+    }
+
+    fqName.applyDefaults(mPackage.package(), mPackage.version());
+
+    if (importFQName(fqName)) {
+        mImportStatements.push_back({fqName, location});
+        return true;
+    }
+
     return false;
 }
 
