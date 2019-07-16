@@ -65,7 +65,7 @@ var (
 	}, "mode", "type", "inputDir", "genDir", "packagePath")
 
 	lintRule = pctx.StaticRule("lintRule", blueprint.RuleParams{
-		Command:     "rm -f ${output} && touch ${output} && ${lint} -j -R -p . ${roots} ${fqName} 2> ${output}",
+		Command:     "rm -f ${output} && touch ${output} && ${lint} -j -e -R -p . ${roots} ${fqName} 2> ${output}",
 		CommandDeps: []string{"${lint}"},
 		Description: "hidl-lint ${fqName}: ${out}",
 	}, "output", "roots", "fqName")
