@@ -23,6 +23,7 @@
 
 #include <unistd.h>
 
+#include <android/hidl/manager/1.2/IServiceManager.h>
 #include <gtest/gtest.h>
 #include <hidl/HidlSupport.h>
 #include <hidl/HidlTransportSupport.h>
@@ -30,8 +31,11 @@
 #include <hwbinder/IPCThreadState.h>
 
 using ::android::sp;
+using ::android::hardware::hidl_string;
+using ::android::hardware::hidl_vec;
 using ::android::hardware::IPCThreadState;
 using ::android::hidl::base::V1_0::IBase;
+using ::android::hidl::manager::V1_2::IServiceManager;
 
 static std::string gDescriptor;
 static std::string gInstance;
@@ -41,12 +45,52 @@ sp<IBase> getHal() {
                                                                true /*retry*/, false /*getStub*/);
 }
 
+class HidlLazyTest : public ::testing::Test {
+  protected:
+    sp<IServiceManager> manager;
+
+    void SetUp() override {
+        manager = IServiceManager::getService();
+        ASSERT_NE(manager, nullptr);
+
+        ASSERT_FALSE(isServiceRunning()) << "Service '" << gDescriptor << "/" << gInstance
+                                         << "' is already running. Please ensure this "
+                                         << "service is implemented as a lazy HAL, then kill all "
+                                         << "clients of this service and try again.";
+    }
+
+    static constexpr size_t SHUTDOWN_WAIT_TIME = 10;
+    void TearDown() override {
+        std::cout << "Waiting " << SHUTDOWN_WAIT_TIME << " seconds before checking that the "
+                  << "service has shut down." << std::endl;
+        IPCThreadState::self()->flushCommands();
+        sleep(SHUTDOWN_WAIT_TIME);
+        ASSERT_FALSE(isServiceRunning()) << "Service failed to shutdown.";
+    }
+
+    bool isServiceRunning() {
+        bool isRunning = false;
+        EXPECT_TRUE(
+                manager->listByInterface(gDescriptor,
+                                         [&isRunning](const hidl_vec<hidl_string>& instanceNames) {
+                                             for (const hidl_string& name : instanceNames) {
+                                                 if (name == gInstance) {
+                                                     isRunning = true;
+                                                     break;
+                                                 }
+                                             }
+                                         })
+                        .isOk());
+        return isRunning;
+    }
+};
+
 static constexpr size_t NUM_IMMEDIATE_GET_UNGETS = 100;
-TEST(LazyHidl, GetUnget) {
+TEST_F(HidlLazyTest, GetUnget) {
     for (size_t i = 0; i < NUM_IMMEDIATE_GET_UNGETS; i++) {
         IPCThreadState::self()->flushCommands();
         sp<IBase> hal = getHal();
-        ASSERT_NE(nullptr, hal.get());
+        ASSERT_NE(hal.get(), nullptr);
         EXPECT_TRUE(hal->ping().isOk());
     }
 }
@@ -69,7 +113,7 @@ static void testWithTimes(const std::vector<size_t>& waitTimes) {
         std::cout << "Thread waiting " << sleepTime << " while not holding HAL." << std::endl;
         sleep(sleepTime);
         sp<IBase> hal = getHal();
-        ASSERT_NE(nullptr, hal.get());
+        ASSERT_NE(hal.get(), nullptr);
         ASSERT_TRUE(hal->ping().isOk());
     }
 }
@@ -77,7 +121,7 @@ static void testWithTimes(const std::vector<size_t>& waitTimes) {
 static constexpr size_t NUM_TIMES_GET_UNGET = 5;
 static constexpr size_t MAX_WAITING_DURATION = 10;
 static constexpr size_t NUM_CONCURRENT_THREADS = 5;
-TEST(LazyHidl, GetWithWaitConcurrent) {
+TEST_F(HidlLazyTest, GetWithWaitConcurrent) {
     std::vector<std::vector<size_t>> threadWaitTimes(NUM_CONCURRENT_THREADS);
 
     for (size_t i = 0; i < threadWaitTimes.size(); i++) {
