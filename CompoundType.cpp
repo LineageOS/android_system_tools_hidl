@@ -103,9 +103,9 @@ status_t CompoundType::validateUniqueNames() const {
 
 void CompoundType::emitInvalidSubTypeNamesError(const std::string& subTypeName,
                                                 const Location& location) const {
-    std::cerr << "ERROR: Type name '" << subTypeName << "' defined at "
-              << location << " conflicts with a member function of "
-              << "safe_union " << localName() << ". Consider renaming or "
+    std::cerr << "ERROR: Type name '" << subTypeName << "' defined at " << location
+              << " conflicts with a member function of "
+              << "safe_union " << definedName() << ". Consider renaming or "
               << "moving its definition outside the safe_union scope.\n";
 }
 
@@ -114,9 +114,8 @@ status_t CompoundType::validateSubTypeNames() const {
     const auto& subTypes = Scope::getSubTypes();
 
     for (const auto& subType : subTypes) {
-        if (subType->localName() == "getDiscriminator") {
-            emitInvalidSubTypeNamesError(subType->localName(),
-                                         subType->location());
+        if (subType->definedName() == "getDiscriminator") {
+            emitInvalidSubTypeNamesError(subType->definedName(), subType->location());
             return UNKNOWN_ERROR;
         }
     }
@@ -143,13 +142,13 @@ bool CompoundType::deepCanCheckEquality(std::unordered_set<const Type*>* visited
 std::string CompoundType::typeName() const {
     switch (mStyle) {
         case STYLE_STRUCT: {
-            return "struct " + localName();
+            return "struct " + definedName();
         }
         case STYLE_UNION: {
-            return "union " + localName();
+            return "union " + definedName();
         }
         case STYLE_SAFE_UNION: {
-            return "safe_union " + localName();
+            return "safe_union " + definedName();
         }
     }
     CHECK(!"Should not be here");
@@ -501,9 +500,7 @@ void CompoundType::emitLayoutAsserts(Formatter& out, const Layout& layout,
 }
 
 void CompoundType::emitSafeUnionTypeDeclarations(Formatter& out) const {
-    out << "struct "
-        << localName()
-        << " final {\n";
+    out << "struct " << definedName() << " final {\n";
 
     out.indent();
 
@@ -533,12 +530,12 @@ void CompoundType::emitSafeUnionTypeDeclarations(Formatter& out) const {
     });
     out << ";\n\n";
 
-    out << localName() << "();\n"  // Constructor
-        << "~" << localName() << "();\n"  // Destructor
-        << localName() << "(" << localName() << "&&);\n"  // Move constructor
-        << localName() << "(const " << localName() << "&);\n"  // Copy constructor
-        << localName() << "& operator=(" << localName() << "&&);\n"  // Move assignment
-        << localName() << "& operator=(const " << localName() << "&);\n\n";  // Copy assignment
+    out << definedName() << "();\n"                                              // Constructor
+        << "~" << definedName() << "();\n"                                       // Destructor
+        << definedName() << "(" << definedName() << "&&);\n"                     // Move constructor
+        << definedName() << "(const " << definedName() << "&);\n"                // Copy constructor
+        << definedName() << "& operator=(" << definedName() << "&&);\n"          // Move assignment
+        << definedName() << "& operator=(const " << definedName() << "&);\n\n";  // Copy assignment
 
     for (const auto& field : *mFields) {
         // Setter (copy)
@@ -662,10 +659,7 @@ void CompoundType::emitTypeDeclarations(Formatter& out) const {
         return;
     }
 
-    out << ((mStyle == STYLE_STRUCT) ? "struct" : "union")
-        << " "
-        << localName()
-        << " final {\n";
+    out << ((mStyle == STYLE_STRUCT) ? "struct" : "union") << " " << definedName() << " final {\n";
 
     out.indent();
 
@@ -743,7 +737,7 @@ void CompoundType::emitTypeForwardDeclaration(Formatter& out) const {
             CHECK(!"Should not be here");
         }
     }
-    out << " " << localName() << ";\n";
+    out << " " << definedName() << ";\n";
 }
 
 void CompoundType::emitPackageTypeDeclarations(Formatter& out) const {
@@ -761,7 +755,7 @@ void CompoundType::emitPackageTypeDeclarations(Formatter& out) const {
         out << "static inline bool operator!=("
             << getCppArgumentType() << " lhs, " << getCppArgumentType() << " rhs);\n";
     } else {
-        out << "// operator== and operator!= are not generated for " << localName() << "\n";
+        out << "// operator== and operator!= are not generated for " << definedName() << "\n";
     }
 
     out.endl();
@@ -883,7 +877,7 @@ void CompoundType::emitPackageTypeHeaderDefinitions(Formatter& out) const {
             out << "return !(lhs == rhs);\n";
         }).endl().endl();
     } else {
-        out << "// operator== and operator!= are not generated for " << localName() << "\n\n";
+        out << "// operator== and operator!= are not generated for " << definedName() << "\n\n";
     }
 }
 
@@ -1049,10 +1043,7 @@ void CompoundType::emitSafeUnionCopyAndAssignDefinition(Formatter& out,
 void CompoundType::emitSafeUnionTypeConstructors(Formatter& out) const {
 
     // Default constructor
-    out << fullName()
-        << "::"
-        << localName()
-        << "() ";
+    out << fullName() << "::" << definedName() << "() ";
 
     out.block([&] {
         out << "static_assert(offsetof("
@@ -1075,54 +1066,32 @@ void CompoundType::emitSafeUnionTypeConstructors(Formatter& out) const {
     }).endl().endl();
 
     // Destructor
-    out << fullName()
-        << "::~"
-        << localName()
-        << "() ";
+    out << fullName() << "::~" << definedName() << "() ";
 
     out.block([&] {
         out << "hidl_destructUnion();\n";
     }).endl().endl();
 
     // Move constructor
-    out << fullName()
-        << "::"
-        << localName()
-        << "("
-        << localName()
-        << "&& other) ";
+    out << fullName() << "::" << definedName() << "(" << definedName() << "&& other) ";
 
     emitSafeUnionCopyAndAssignDefinition(
             out, "other", true /* isCopyConstructor */, true /* usesMoveSemantics */);
 
     // Copy constructor
-    out << fullName()
-        << "::"
-        << localName()
-        << "(const "
-        << localName()
-        << "& other) ";
+    out << fullName() << "::" << definedName() << "(const " << definedName() << "& other) ";
 
     emitSafeUnionCopyAndAssignDefinition(
         out, "other", true /* isCopyConstructor */, false /* usesMoveSemantics */);
 
     // Move assignment operator
-    out << fullName()
-        << "& ("
-        << fullName()
-        << "::operator=)("
-        << localName()
-        << "&& other) ";
+    out << fullName() << "& (" << fullName() << "::operator=)(" << definedName() << "&& other) ";
 
     emitSafeUnionCopyAndAssignDefinition(
             out, "other", false /* isCopyConstructor */, true /* usesMoveSemantics */);
 
     // Copy assignment operator
-    out << fullName()
-        << "& ("
-        << fullName()
-        << "::operator=)(const "
-        << localName()
+    out << fullName() << "& (" << fullName() << "::operator=)(const " << definedName()
         << "& other) ";
 
     emitSafeUnionCopyAndAssignDefinition(
@@ -1221,7 +1190,7 @@ void CompoundType::emitSafeUnionTypeDefinitions(Formatter& out) const {
 
 void CompoundType::emitTypeDefinitions(Formatter& out, const std::string& prefix) const {
     std::string space = prefix.empty() ? "" : (prefix + "::");
-    Scope::emitTypeDefinitions(out, space + localName());
+    Scope::emitTypeDefinitions(out, space + definedName());
 
     if (needsEmbeddedReadWrite()) {
         emitStructReaderWriter(out, prefix, true /* isReader */);
@@ -1252,16 +1221,14 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
         out << "static ";
     }
 
-    out << "class "
-        << localName()
-        << " {\n";
+    out << "class " << definedName() << " {\n";
 
     out.indent();
 
     Scope::emitJavaTypeDeclarations(out, false /* atTopLevel */);
 
     if (mStyle == STYLE_SAFE_UNION) {
-        out << "public " << localName() << "() ";
+        out << "public " << definedName() << "() ";
         out.block([&] {
             CHECK(!mFields->empty());
             mFields->at(0)->type().emitJavaFieldDefaultInitialValue(out, "hidl_o");
@@ -1443,7 +1410,7 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
             out << ");\n";
         }).endl().endl();
     } else {
-        out << "// equals() is not generated for " << localName() << "\n";
+        out << "// equals() is not generated for " << definedName() << "\n";
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -1552,11 +1519,11 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
     size_t vecAlign, vecSize;
     VectorType::getAlignmentAndSizeStatic(&vecAlign, &vecSize);
 
-    out << "public static final java.util.ArrayList<" << localName()
+    out << "public static final java.util.ArrayList<" << definedName()
         << "> readVectorFromParcel(android.os.HwParcel parcel) {\n";
     out.indent();
 
-    out << "java.util.ArrayList<" << localName() << "> _hidl_vec = new java.util.ArrayList();\n";
+    out << "java.util.ArrayList<" << definedName() << "> _hidl_vec = new java.util.ArrayList();\n";
 
     if (containsInterface()) {
         out << "int size = parcel.readInt32();\n";
@@ -1689,7 +1656,8 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
 
     out << "public static final void writeVectorToParcel(\n";
     out.indent(2);
-    out << "android.os.HwParcel parcel, java.util.ArrayList<" << localName() << "> _hidl_vec) {\n";
+    out << "android.os.HwParcel parcel, java.util.ArrayList<" << definedName()
+        << "> _hidl_vec) {\n";
     out.unindent();
 
     if (containsInterface()) {
@@ -1786,10 +1754,10 @@ void CompoundType::emitStructReaderWriter(
 
     const std::string name = "obj";
     if (isReader) {
-        out << "const " << space << localName() << " &" << name << ",\n";
+        out << "const " << space << definedName() << " &" << name << ",\n";
         out << "const ::android::hardware::Parcel &parcel,\n";
     } else {
-        out << "const " << space << localName() << " &" << name << ",\n";
+        out << "const " << space << definedName() << " &" << name << ",\n";
         out << "::android::hardware::Parcel *parcel,\n";
     }
 
