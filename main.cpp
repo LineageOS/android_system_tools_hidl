@@ -52,8 +52,10 @@ enum class GenerationGranularity {
 struct FileGenerator {
     using ShouldGenerateFunction = std::function<bool(const FQName& fqName)>;
     using FileNameForFQName = std::function<std::string(const FQName& fqName)>;
-    using GenerationFunction = std::function<status_t(Formatter& out, const FQName& fqName,
-                                                      const Coordinator* coordinator)>;
+    using GetFormatter = std::function<Formatter(void)>;
+    using GenerationFunction =
+            std::function<status_t(const FQName& fqName, const Coordinator* coordinator,
+                                   const GetFormatter& getFormatter)>;
 
     ShouldGenerateFunction mShouldGenerateForFqName;  // If generate function applies to this target
     FileNameForFQName mFileNameForFqName;             // Target -> filename
@@ -100,12 +102,9 @@ struct FileGenerator {
             return OK;
         }
 
-        Formatter out = coordinator->getFormatter(fqName, location, getFileName(fqName));
-        if (!out.isValid()) {
-            return UNKNOWN_ERROR;
-        }
-
-        return mGenerationFunction(out, fqName, coordinator);
+        return mGenerationFunction(fqName, coordinator, [&] {
+            return coordinator->getFormatter(fqName, location, getFileName(fqName));
+        });
     }
 
     // Helper methods for filling out this struct
@@ -260,8 +259,8 @@ status_t OutputHandler::writeDepFile(const FQName& fqName, const Coordinator* co
 // Use an AST function as a OutputHandler GenerationFunction
 static FileGenerator::GenerationFunction astGenerationFunction(void (AST::*generate)(Formatter&)
                                                                    const = nullptr) {
-    return [generate](Formatter& out, const FQName& fqName,
-                      const Coordinator* coordinator) -> status_t {
+    return [generate](const FQName& fqName, const Coordinator* coordinator,
+                      const FileGenerator::GetFormatter& getFormatter) -> status_t {
         AST* ast = coordinator->parse(fqName);
         if (ast == nullptr) {
             fprintf(stderr, "ERROR: Could not parse %s. Aborting.\n", fqName.string().c_str());
@@ -269,6 +268,12 @@ static FileGenerator::GenerationFunction astGenerationFunction(void (AST::*gener
         }
 
         if (generate == nullptr) return OK;  // just parsing AST
+
+        Formatter out = getFormatter();
+        if (!out.isValid()) {
+            return UNKNOWN_ERROR;
+        }
+
         (ast->*generate)(out);
 
         return OK;
@@ -284,8 +289,8 @@ static FileGenerator singleFileGenerator(
     };
 }
 
-static status_t generateJavaForPackage(Formatter& out, const FQName& fqName,
-                                       const Coordinator* coordinator) {
+static status_t generateJavaForPackage(const FQName& fqName, const Coordinator* coordinator,
+                                       const FileGenerator::GetFormatter& getFormatter) {
     AST* ast;
     std::string limitToType;
 
@@ -302,6 +307,12 @@ static status_t generateJavaForPackage(Formatter& out, const FQName& fqName,
         fprintf(stderr, "ERROR: Could not parse %s. Aborting.\n", fqName.string().c_str());
         return UNKNOWN_ERROR;
     }
+
+    Formatter out = getFormatter();
+    if (!out.isValid()) {
+        return UNKNOWN_ERROR;
+    }
+
     ast->generateJava(out, limitToType);
     return OK;
 };
@@ -492,14 +503,20 @@ status_t isTestPackage(const FQName& fqName, const Coordinator* coordinator, boo
     return OK;
 }
 
-static status_t generateAdapterMainSource(Formatter& out, const FQName& packageFQName,
-                                          const Coordinator* coordinator) {
+static status_t generateAdapterMainSource(const FQName& packageFQName,
+                                          const Coordinator* coordinator,
+                                          const FileGenerator::GetFormatter& getFormatter) {
     std::vector<FQName> packageInterfaces;
     status_t err =
         coordinator->appendPackageInterfacesToVector(packageFQName,
                                                      &packageInterfaces);
     if (err != OK) {
         return err;
+    }
+
+    Formatter out = getFormatter();
+    if (!out.isValid()) {
+        return UNKNOWN_ERROR;
     }
 
     out << "#include <hidladapter/HidlBinderAdapter.h>\n";
@@ -531,8 +548,9 @@ static status_t generateAdapterMainSource(Formatter& out, const FQName& packageF
     return OK;
 }
 
-static status_t generateAndroidBpForPackage(Formatter& out, const FQName& packageFQName,
-                                            const Coordinator* coordinator) {
+static status_t generateAndroidBpForPackage(const FQName& packageFQName,
+                                            const Coordinator* coordinator,
+                                            const FileGenerator::GetFormatter& getFormatter) {
     CHECK(!packageFQName.isFullyQualified() && packageFQName.name().empty());
 
     std::vector<FQName> packageInterfaces;
@@ -590,6 +608,11 @@ static status_t generateAndroidBpForPackage(Formatter& out, const FQName& packag
     err = coordinator->getPackageRoot(packageFQName, &packageRoot);
     if (err != OK) return err;
 
+    Formatter out = getFormatter();
+    if (!out.isValid()) {
+        return UNKNOWN_ERROR;
+    }
+
     out << "// This file is autogenerated by hidl-gen -Landroidbp.\n\n";
 
     out << "hidl_interface ";
@@ -633,8 +656,9 @@ static status_t generateAndroidBpForPackage(Formatter& out, const FQName& packag
     return OK;
 }
 
-static status_t generateAndroidBpImplForPackage(Formatter& out, const FQName& packageFQName,
-                                                const Coordinator* coordinator) {
+static status_t generateAndroidBpImplForPackage(const FQName& packageFQName,
+                                                const Coordinator* coordinator,
+                                                const FileGenerator::GetFormatter& getFormatter) {
     const std::string libraryName = makeLibraryName(packageFQName) + "-impl";
 
     std::vector<FQName> packageInterfaces;
@@ -661,6 +685,11 @@ static status_t generateAndroidBpImplForPackage(Formatter& out, const FQName& pa
         }
 
         ast->getImportedPackages(&importedPackages);
+    }
+
+    Formatter out = getFormatter();
+    if (!out.isValid()) {
+        return UNKNOWN_ERROR;
     }
 
     out << "// FIXME: your file license if you have one\n\n";
@@ -768,8 +797,8 @@ bool validateForSource(const FQName& fqName, const Coordinator* coordinator,
 }
 
 FileGenerator::GenerationFunction generateExportHeaderForPackage(bool forJava) {
-    return [forJava](Formatter& out, const FQName& packageFQName,
-                     const Coordinator* coordinator) -> status_t {
+    return [forJava](const FQName& packageFQName, const Coordinator* coordinator,
+                     const FileGenerator::GetFormatter& getFormatter) -> status_t {
         CHECK(!packageFQName.package().empty() && !packageFQName.version().empty() &&
               packageFQName.name().empty());
 
@@ -802,6 +831,7 @@ FileGenerator::GenerationFunction generateExportHeaderForPackage(bool forJava) {
             return OK;
         }
 
+        Formatter out = getFormatter();
         if (!out.isValid()) {
             return UNKNOWN_ERROR;
         }
@@ -850,8 +880,8 @@ FileGenerator::GenerationFunction generateExportHeaderForPackage(bool forJava) {
     };
 }
 
-static status_t generateHashOutput(Formatter& out, const FQName& fqName,
-                                   const Coordinator* coordinator) {
+static status_t generateHashOutput(const FQName& fqName, const Coordinator* coordinator,
+                                   const FileGenerator::GetFormatter& getFormatter) {
     CHECK(fqName.isFullyQualified());
 
     AST* ast = coordinator->parse(fqName, {} /* parsed */,
@@ -863,13 +893,18 @@ static status_t generateHashOutput(Formatter& out, const FQName& fqName,
         return UNKNOWN_ERROR;
     }
 
+    Formatter out = getFormatter();
+    if (!out.isValid()) {
+        return UNKNOWN_ERROR;
+    }
+
     out << Hash::getHash(ast->getFilename()).hexString() << " " << fqName.string() << "\n";
 
     return OK;
 }
 
-static status_t generateFunctionCount(Formatter& out, const FQName& fqName,
-                                      const Coordinator* coordinator) {
+static status_t generateFunctionCount(const FQName& fqName, const Coordinator* coordinator,
+                                      const FileGenerator::GetFormatter& getFormatter) {
     CHECK(fqName.isFullyQualified());
 
     AST* ast = coordinator->parse(fqName, {} /* parsed */,
@@ -883,6 +918,11 @@ static status_t generateFunctionCount(Formatter& out, const FQName& fqName,
     const Interface* interface = ast->getInterface();
     if (interface == nullptr) {
         fprintf(stderr, "ERROR: Function count requires interface: %s.\n", fqName.string().c_str());
+        return UNKNOWN_ERROR;
+    }
+
+    Formatter out = getFormatter();
+    if (!out.isValid()) {
         return UNKNOWN_ERROR;
     }
 
