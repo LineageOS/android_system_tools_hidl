@@ -152,7 +152,7 @@ const ScalarType *EnumType::resolveToScalarType() const {
 }
 
 std::string EnumType::typeName() const {
-    return "enum " + localName();
+    return "enum " + definedName();
 }
 
 bool EnumType::isEnum() const {
@@ -186,7 +186,7 @@ std::string EnumType::getVtsType() const {
 
 std::string EnumType::getBitfieldCppType(StorageMode /* mode */, bool specifyNamespaces) const {
     const std::string space = specifyNamespaces ? "::android::hardware::" : "";
-    return space + "hidl_bitfield<" + (specifyNamespaces ? fullName() : localName()) + ">";
+    return space + "hidl_bitfield<" + (specifyNamespaces ? fullName() : definedName()) + ">";
 }
 
 std::string EnumType::getBitfieldJavaType(bool forInitializer) const {
@@ -282,11 +282,7 @@ void EnumType::emitTypeDeclarations(Formatter& out) const {
 
     const std::string storageType = scalarType->getCppStackType();
 
-    out << "enum class "
-        << localName()
-        << " : "
-        << storageType
-        << " {\n";
+    out << "enum class " << definedName() << " : " << storageType << " {\n";
 
     out.indent();
 
@@ -314,7 +310,7 @@ void EnumType::emitTypeForwardDeclaration(Formatter& out) const {
     const ScalarType* scalarType = mStorageType->resolveToScalarType();
     const std::string storageType = scalarType->getCppStackType();
 
-    out << "enum class " << localName() << " : " << storageType << ";\n";
+    out << "enum class " << definedName() << " : " << storageType << ";\n";
 }
 
 void EnumType::emitIteratorDeclaration(Formatter& out) const {
@@ -495,11 +491,7 @@ void EnumType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) const {
     const ScalarType *scalarType = mStorageType->resolveToScalarType();
     CHECK(scalarType != nullptr);
 
-    out << "public "
-        << (atTopLevel ? "" : "static ")
-        << "final class "
-        << localName()
-        << " {\n";
+    out << "public " << (atTopLevel ? "" : "static ") << "final class " << definedName() << " {\n";
 
     out.indent();
 
@@ -668,7 +660,7 @@ void EnumType::emitExportedHeader(Formatter& out, bool forJava) const {
     const Annotation *annotation = findExportAnnotation();
     CHECK(annotation != nullptr);
 
-    std::string name = localName();
+    std::string name = definedName();
 
     const AnnotationParam *nameParam = annotation->getParam("name");
     if (nameParam != nullptr) {
@@ -711,7 +703,7 @@ void EnumType::emitExportedHeader(Formatter& out, bool forJava) const {
 
             out.indent();
         } else {
-            out << "// Values declared in " << localName() << " follow.\n";
+            out << "// Values declared in " << definedName() << " follow.\n";
         }
 
         const std::string typeName =

@@ -76,7 +76,7 @@ Interface::Interface(const char* localName, const FQName& fullName, const Locati
     : Scope(localName, fullName, location, parent), mSuperType(superType), mFileHash(fileHash) {}
 
 std::string Interface::typeName() const {
-    return "interface " + localName();
+    return "interface " + definedName();
 }
 
 const Hash* Interface::getFileHash() const {
@@ -746,7 +746,7 @@ std::string Interface::getJavaType(bool /* forInitializer */) const {
 }
 
 std::string Interface::getVtsType() const {
-    if (StringHelper::EndsWith(localName(), "Callback")) {
+    if (StringHelper::EndsWith(definedName(), "Callback")) {
         return "TYPE_HIDL_CALLBACK";
     } else {
         return "TYPE_HIDL_INTERFACE";
@@ -870,7 +870,7 @@ void Interface::emitPackageTypeHeaderDefinitions(Formatter& out) const {
 void Interface::emitTypeDefinitions(Formatter& out, const std::string& prefix) const {
     std::string space = prefix.empty() ? "" : (prefix + "::");
 
-    Scope::emitTypeDefinitions(out, space + localName());
+    Scope::emitTypeDefinitions(out, space + definedName());
 }
 
 void Interface::emitJavaReaderWriter(

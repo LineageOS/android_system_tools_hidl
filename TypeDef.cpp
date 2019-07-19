@@ -47,7 +47,7 @@ bool TypeDef::isEnum() const {
 }
 
 std::string TypeDef::typeName() const {
-    return "typedef " + localName();
+    return "typedef " + definedName();
 }
 
 bool TypeDef::isTypeDef() const {
@@ -73,15 +73,11 @@ bool TypeDef::resultNeedsDeref() const {
 }
 
 void TypeDef::emitTypeDeclarations(Formatter& out) const {
-    out << "typedef "
-        << mReferencedType->getCppStackType()
-        << " "
-        << localName()
-        << ";\n\n";
+    out << "typedef " << mReferencedType->getCppStackType() << " " << definedName() << ";\n\n";
 }
 
 void TypeDef::emitHidlDefinition(Formatter& out) const {
-    out << "typedef " << mReferencedType.localName() << " " << localName() << ";\n";
+    out << "typedef " << mReferencedType.localName() << " " << definedName() << ";\n";
 }
 
 }  // namespace android

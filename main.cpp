@@ -167,7 +167,7 @@ static status_t appendPerTypeTargets(const FQName& fqName, const Coordinator* co
     for (const NamedType* rootType : rootTypes) {
         if (rootType->isTypeDef()) continue;
 
-        FQName rootTypeName(fqName.package(), fqName.version(), "types." + rootType->localName());
+        FQName rootTypeName(fqName.package(), fqName.version(), "types." + rootType->definedName());
         exportedPackageInterfaces->push_back(rootTypeName);
     }
     return OK;

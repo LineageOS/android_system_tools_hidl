@@ -49,7 +49,7 @@ void AST::generateJavaTypes(Formatter& out, const std::string& limitToType) cons
     CHECK(!limitToType.empty()) << getFilename();
 
     for (const auto& type : mRootScope.getSubTypes()) {
-        std::string typeName = type->localName();
+        std::string typeName = type->definedName();
 
         if (type->isTypeDef()) continue;
         if (typeName != limitToType) continue;
@@ -140,7 +140,7 @@ void AST::generateJava(Formatter& out, const std::string& limitToType) const {
     }
 
     const Interface* iface = mRootScope.getInterface();
-    const std::string ifaceName = iface->localName();
+    const std::string ifaceName = iface->definedName();
     const std::string baseName = iface->getBaseName();
 
     out << "package " << mPackage.javaPackage() << ";\n\n";
