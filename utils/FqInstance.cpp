@@ -62,6 +62,10 @@ bool FqInstance::hasInstance() const {
     return !mInstance.empty();
 }
 
+const FQName& FqInstance::getFqName() const {
+    return mFqName;
+}
+
 bool FqInstance::isValid() const {
     bool hasPkg = hasPackage();
     bool hasVer = hasVersion();
