@@ -821,7 +821,11 @@ const_expr
     | '-' const_expr %prec UNARY_MINUS { $$ = new UnaryConstantExpression("-", $2); }
     | '!' const_expr { $$ = new UnaryConstantExpression("!", $2); }
     | '~' const_expr { $$ = new UnaryConstantExpression("~", $2); }
-    | '(' const_expr ')' { $$ = $2; }
+    | '(' const_expr ')'
+      {
+        $2->surroundWithParens();
+        $$ = $2;
+      }
     | '(' error ')'
       {
         ast->addSyntaxError();
