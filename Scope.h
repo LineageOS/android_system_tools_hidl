@@ -21,6 +21,7 @@
 #include "NamedType.h"
 
 #include <map>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -33,7 +34,8 @@ struct Interface;
 struct LocalIdentifier;
 
 struct Scope : public NamedType {
-    Scope(const char* localName, const FQName& fullName, const Location& location, Scope* parent);
+    Scope(const std::string& localName, const FQName& fullName, const Location& location,
+          Scope* parent);
     virtual ~Scope();
 
     void addType(NamedType* type);

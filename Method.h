@@ -52,7 +52,7 @@ enum MethodImplType {
 using MethodImpl = std::map<MethodImplType, std::function<void(Formatter &)>>;
 
 struct Method : DocCommentable {
-    Method(const char* name, std::vector<NamedReference<Type>*>* args,
+    Method(const std::string& name, std::vector<NamedReference<Type>*>* args,
            std::vector<NamedReference<Type>*>* results, bool oneway,
            std::vector<Annotation*>* annotations, const Location& location);
 
