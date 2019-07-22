@@ -674,12 +674,16 @@ void ConstantExpression::setPostParseCompleted() {
     mIsPostParseCompleted = true;
 }
 
+void ConstantExpression::surroundWithParens() {
+    mExpr = "(" + mExpr + ")";
+}
+
 std::vector<const ConstantExpression*> LiteralConstantExpression::getConstantExpressions() const {
     return {};
 }
 
 UnaryConstantExpression::UnaryConstantExpression(const std::string& op, ConstantExpression* value)
-    : ConstantExpression(std::string("(") + op + value->mExpr + ")"), mUnary(value), mOp(op) {}
+    : ConstantExpression(op + value->mExpr), mUnary(value), mOp(op) {}
 
 std::vector<const ConstantExpression*> UnaryConstantExpression::getConstantExpressions() const {
     return {mUnary};
@@ -687,7 +691,7 @@ std::vector<const ConstantExpression*> UnaryConstantExpression::getConstantExpre
 
 BinaryConstantExpression::BinaryConstantExpression(ConstantExpression* lval, const std::string& op,
                                                    ConstantExpression* rval)
-    : ConstantExpression(std::string("(") + lval->mExpr + " " + op + " " + rval->mExpr + ")"),
+    : ConstantExpression(lval->mExpr + " " + op + " " + rval->mExpr),
       mLval(lval),
       mRval(rval),
       mOp(op) {}
@@ -699,8 +703,7 @@ std::vector<const ConstantExpression*> BinaryConstantExpression::getConstantExpr
 TernaryConstantExpression::TernaryConstantExpression(ConstantExpression* cond,
                                                      ConstantExpression* trueVal,
                                                      ConstantExpression* falseVal)
-    : ConstantExpression(std::string("(") + cond->mExpr + "?" + trueVal->mExpr + ":" +
-                         falseVal->mExpr + ")"),
+    : ConstantExpression(cond->mExpr + "?" + trueVal->mExpr + ":" + falseVal->mExpr),
       mCond(cond),
       mTrueVal(trueVal),
       mFalseVal(falseVal) {}
