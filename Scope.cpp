@@ -122,6 +122,16 @@ std::vector<const Type*> Scope::getDefinedTypes() const {
     return ret;
 }
 
+std::vector<const NamedType*> Scope::getSortedDefinedTypes() const {
+    std::vector<const NamedType*> ret;
+    ret.insert(ret.end(), mTypes.begin(), mTypes.end());
+
+    std::sort(ret.begin(), ret.end(), [](const NamedType* lhs, const NamedType* rhs) -> bool {
+        return lhs->location() < rhs->location();
+    });
+    return ret;
+}
+
 std::vector<const ConstantExpression*> Scope::getConstantExpressions() const {
     std::vector<const ConstantExpression*> ret;
     for (const auto* annotation : mAnnotations) {
@@ -144,6 +154,12 @@ void Scope::topologicalReorder(const std::unordered_map<const Type*, size_t>& re
     for (size_t i = 0; i != mTypes.size(); ++i) {
         mTypeIndexByName.at(mTypes[i]->localName()) = i;
     }
+}
+
+void Scope::emitHidlDefinition(Formatter& out) const {
+    const std::vector<const NamedType*>& definedTypes = getSortedDefinedTypes();
+    out.join(definedTypes.begin(), definedTypes.end(), "\n",
+             [&](auto t) { t->emitHidlDefinition(out); });
 }
 
 void Scope::emitTypeDeclarations(Formatter& out) const {

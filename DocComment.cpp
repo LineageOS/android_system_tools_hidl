@@ -63,8 +63,16 @@ void DocComment::merge(const DocComment* comment) {
     mLocation.setLocation(mLocation.begin(), comment->mLocation.end());
 }
 
-void DocComment::emit(Formatter& out) const {
-    out << "/**\n";
+void DocComment::emit(Formatter& out, CommentType type) const {
+    switch (type) {
+        case CommentType::DOC_MULTILINE:
+            out << "/**\n";
+            break;
+        case CommentType::MULTILINE:
+            out << "/*\n";
+            break;
+    }
+
     out.setLinePrefix(" *");
 
     for (const std::string& line : mLines) {

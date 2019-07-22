@@ -38,7 +38,7 @@ struct ScalarType;
 struct Scope;
 
 struct Type : DocCommentable {
-    Type(Scope* parent);
+    Type(Scope* parent, const std::string& definedName);
     virtual ~Type();
 
     virtual bool isArray() const;
@@ -147,6 +147,8 @@ struct Type : DocCommentable {
     Scope* parent();
     const Scope* parent() const;
 
+    const std::string& definedName() const;
+
     enum StorageMode {
         StorageMode_Stack,
         StorageMode_Argument,
@@ -251,6 +253,8 @@ struct Type : DocCommentable {
             const std::string &offset,
             bool isReader) const;
 
+    virtual void emitHidlDefinition(Formatter& out) const;
+
     virtual void emitTypeDeclarations(Formatter& out) const;
 
     virtual void emitGlobalTypeDeclarations(Formatter& out) const;
@@ -344,7 +348,10 @@ struct Type : DocCommentable {
             const std::string &methodName,
             const std::string &name) const;
 
-   private:
+    // This is the name given to the type in the hidl file
+    std::string mDefinedName;
+
+  private:
     ParseStage mParseStage = ParseStage::PARSE;
     Scope* const mParent;
 
@@ -370,8 +377,8 @@ struct TemplatedType : public Type {
     void emitVtsAttributeType(Formatter& out) const override;
 
    protected:
-    TemplatedType(Scope* parent);
-    Reference<Type> mElementType;
+     TemplatedType(Scope* parent, const std::string& definedName);
+     Reference<Type> mElementType;
 
    private:
     DISALLOW_COPY_AND_ASSIGN(TemplatedType);

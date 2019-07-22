@@ -1282,6 +1282,21 @@ static const std::vector<OutputHandler> kFormats = {
             },
         },
     },
+    {
+        "format",
+        "Reformats the .hal files",
+        OutputMode::NEEDS_SRC,
+        Coordinator::Location::PACKAGE_ROOT,
+        GenerationGranularity::PER_FILE,
+        validateForSource,
+        {
+            {
+                FileGenerator::alwaysGenerate,
+                [](const FQName& fqName) { return fqName.name() + ".hal"; },
+                astGenerationFunction(&AST::generateFormattedHidl),
+            },
+        }
+    },
 };
 // clang-format on
 
