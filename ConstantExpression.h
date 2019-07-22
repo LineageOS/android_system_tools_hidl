@@ -51,6 +51,8 @@ struct ConstantExpression {
 
     virtual bool isReferenceConstantExpression() const;
 
+    void surroundWithParens();
+
     // Proceeds recursive pass
     // Makes sure to visit each node only once
     // Used to provide lookup and lazy evaluation
@@ -137,7 +139,7 @@ struct ConstantExpression {
     /* If the result value has been evaluated. */
     bool mIsEvaluated = false;
     /* The formatted expression. */
-    const std::string mExpr;
+    std::string mExpr;
     /* The kind of the result value. */
     ScalarType::Kind mValueKind;
     /* The stored result value. */
