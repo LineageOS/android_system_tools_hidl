@@ -20,7 +20,7 @@ namespace android {
 
 NamedType::NamedType(const char* localName, const FQName& fullName, const Location& loc,
                      Scope* parent)
-    : Type(parent), mLocalName(localName), mFullName(fullName), mLocation(loc) {}
+    : Type(parent, localName), mLocalName(localName), mFullName(fullName), mLocation(loc) {}
 
 bool NamedType::isNamedType() const {
     return true;
@@ -54,4 +54,3 @@ void NamedType::emitDump(
 }
 
 }  // namespace android
-

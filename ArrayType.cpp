@@ -25,12 +25,15 @@
 namespace android {
 
 ArrayType::ArrayType(const Reference<Type>& elementType, ConstantExpression* size, Scope* parent)
-    : Type(parent), mElementType(elementType), mSizes{size} {
+    : Type(parent, elementType.localName()), mElementType(elementType) {
     CHECK(!elementType.isEmptyReference());
+
+    appendDimension(size);
 }
 
 void ArrayType::appendDimension(ConstantExpression *size) {
     mSizes.push_back(size);
+    mDefinedName = mDefinedName + "[" + size->expression() + "]";
 }
 
 size_t ArrayType::countDimensions() const {

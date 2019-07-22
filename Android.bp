@@ -110,6 +110,7 @@ cc_library_host_shared {
         "generateCppAdapter.cpp",
         "generateCppImpl.cpp",
         "generateDependencies.cpp",
+        "generateFormattedHidl.cpp",
         "generateInheritanceHierarchy.cpp",
         "generateJava.cpp",
         "generateJavaImpl.cpp",

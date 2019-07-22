@@ -160,6 +160,31 @@ bool FQName::setTo(const std::string &s) {
     return !invalid;
 }
 
+std::string FQName::getRelativeFQName(const FQName& relativeTo) const {
+    if (relativeTo.mPackage != mPackage) {
+        return string();
+    }
+
+    // Package is the same
+    std::string out;
+    if (relativeTo.version() != version()) {
+        out.append(atVersion());
+        if (!mName.empty() && !version().empty()) {
+            out.append("::");
+        }
+    }
+
+    if (!mName.empty()) {
+        out.append(mName);
+        if (!mValueName.empty()) {
+            out.append(":");
+            out.append(mValueName);
+        }
+    }
+
+    return out;
+}
+
 const std::string& FQName::package() const {
     return mPackage;
 }

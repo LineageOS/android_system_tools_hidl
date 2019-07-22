@@ -46,6 +46,7 @@ struct ConstantExpression {
     static std::unique_ptr<ConstantExpression> One(ScalarType::Kind kind);
     static std::unique_ptr<ConstantExpression> ValueOf(ScalarType::Kind kind, uint64_t value);
 
+    ConstantExpression(const std::string& expr);
     virtual ~ConstantExpression() {}
 
     virtual bool isReferenceConstantExpression() const;
@@ -136,7 +137,7 @@ struct ConstantExpression {
     /* If the result value has been evaluated. */
     bool mIsEvaluated = false;
     /* The formatted expression. */
-    std::string mExpr;
+    const std::string mExpr;
     /* The kind of the result value. */
     ScalarType::Kind mValueKind;
     /* The stored result value. */
