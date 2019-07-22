@@ -161,6 +161,8 @@ struct AST {
     void generateDependencies(Formatter& out) const;
     void generateInheritanceHierarchy(Formatter& out) const;
 
+    void generateFormattedHidl(Formatter& out) const;
+
     const std::vector<ImportStatement>& getImportStatements() const;
     void getImportedPackages(std::set<FQName> *importSet) const;
 
