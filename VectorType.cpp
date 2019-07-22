@@ -25,7 +25,7 @@
 
 namespace android {
 
-VectorType::VectorType(Scope* parent) : TemplatedType(parent) {}
+VectorType::VectorType(Scope* parent) : TemplatedType(parent, "vec") {}
 
 std::string VectorType::templatedTypeName() const {
     return "vector";

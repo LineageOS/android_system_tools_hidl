@@ -44,8 +44,9 @@ struct TypeDef : public NamedType {
     std::vector<const Reference<Type>*> getReferences() const override;
 
     void emitTypeDeclarations(Formatter& out) const override;
+    void emitHidlDefinition(Formatter& out) const override;
 
-   private:
+  private:
     Reference<Type> mReferencedType;
 
     DISALLOW_COPY_AND_ASSIGN(TypeDef);

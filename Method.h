@@ -103,6 +103,8 @@ struct Method : DocCommentable {
     void emitJavaResultSignature(Formatter &out) const;
     void emitJavaSignature(Formatter& out) const;
 
+    void emitHidlDefinition(Formatter& out) const;
+
     const NamedReference<Type>* canElideCallback() const;
 
     bool deepIsJavaCompatible(std::unordered_set<const Type*>* visited) const;

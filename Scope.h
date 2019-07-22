@@ -69,6 +69,8 @@ struct Scope : public NamedType {
     void emitPackageTypeHeaderDefinitions(Formatter& out) const override;
     void emitPackageHwDeclarations(Formatter& out) const override;
 
+    void emitHidlDefinition(Formatter& out) const override;
+
     void emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) const override;
 
     void emitTypeDefinitions(Formatter& out, const std::string& prefix) const override;
@@ -82,7 +84,10 @@ struct Scope : public NamedType {
     void appendToExportedTypesVector(
             std::vector<const Type *> *exportedTypes) const override;
 
-   private:
+  protected:
+    std::vector<const NamedType*> getSortedDefinedTypes() const;
+
+  private:
     std::vector<NamedType *> mTypes;
     std::map<std::string, size_t> mTypeIndexByName;
     std::vector<Annotation*> mAnnotations;

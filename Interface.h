@@ -111,6 +111,8 @@ struct Interface : public Scope {
             bool isReader,
             ErrorMode mode) const override;
 
+    void emitHidlDefinition(Formatter& out) const override;
+
     void emitPackageTypeDeclarations(Formatter& out) const override;
     void emitPackageTypeHeaderDefinitions(Formatter& out) const override;
     void emitTypeDefinitions(Formatter& out, const std::string& prefix) const override;

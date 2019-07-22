@@ -251,6 +251,31 @@ void EnumType::emitJavaFieldReaderWriter(
             out, depth, parcelName, blobName, fieldName, offset, isReader);
 }
 
+void EnumType::emitHidlDefinition(Formatter& out) const {
+    if (getDocComment() != nullptr) getDocComment()->emit(out);
+
+    if (annotations().size() != 0) {
+        out.join(annotations().begin(), annotations().end(), " ",
+                 [&](auto annotation) { annotation->dump(out); });
+        out << "\n";
+    }
+
+    out << typeName() << " : " << mStorageType.localName() << " {\n";
+
+    out.indent([&] {
+        for (const EnumValue* val : mValues) {
+            if (val->getDocComment() != nullptr) val->getDocComment()->emit(out);
+            out << val->name();
+            if (!val->isAutoFill()) {
+                out << " = " << val->constExpr()->expression();
+            }
+            out << ",\n";
+        }
+    });
+
+    out << "};\n";
+}
+
 void EnumType::emitTypeDeclarations(Formatter& out) const {
     const ScalarType *scalarType = mStorageType->resolveToScalarType();
     CHECK(scalarType != nullptr);
@@ -783,7 +808,7 @@ void EnumValue::autofill(const EnumType* prevType, EnumValue* prevValue, const S
     } else {
         std::string description = prevType->fullName() + "." + prevValue->name() + " implicitly";
         auto* prevReference = new ReferenceConstantExpression(
-            Reference<LocalIdentifier>(prevValue, mLocation), description);
+                Reference<LocalIdentifier>(prevValue->mName, prevValue, mLocation), description);
         mValue = prevReference->addOne(type->getKind()).release();
     }
 }
@@ -802,7 +827,7 @@ const Location& EnumValue::location() const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-BitFieldType::BitFieldType(Scope* parent) : TemplatedType(parent) {}
+BitFieldType::BitFieldType(Scope* parent) : TemplatedType(parent, "bitfield") {}
 
 bool BitFieldType::isBitField() const {
     return true;
