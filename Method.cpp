@@ -19,6 +19,7 @@
 #include "Annotation.h"
 #include "ConstantExpression.h"
 #include "FormattingConstants.h"
+#include "Reference.h"
 #include "ScalarType.h"
 #include "Type.h"
 
@@ -268,19 +269,19 @@ void Method::emitJavaSignature(Formatter& out) const {
 }
 
 static void fillHidlArgResultTokens(const std::vector<NamedReference<Type>*>& args,
-                                    WrappedOutput* wrappedOutput) {
-    for (auto iter = args.begin(); iter != args.end(); ++iter) {
-        auto arg = *iter;
+                                    WrappedOutput* wrappedOutput, const std::string& attachToLast) {
+    for (size_t i = 0; i < args.size(); i++) {
+        const NamedReference<Type>* arg = args[i];
         std::string out = arg->localName() + " " + arg->name();
-        if (iter != args.begin()) {
-            *wrappedOutput << ",";
-            wrappedOutput->group([&] {
-                wrappedOutput->printUnlessWrapped(" ");
-                *wrappedOutput << out;
-            });
-        } else {
-            wrappedOutput->group([&] { *wrappedOutput << out; });
-        }
+        wrappedOutput->group([&] {
+            if (i != 0) wrappedOutput->printUnlessWrapped(" ");
+            *wrappedOutput << out;
+            if (i == args.size() - 1) {
+                if (!attachToLast.empty()) *wrappedOutput << attachToLast;
+            } else {
+                *wrappedOutput << ",";
+            }
+        });
     }
 }
 
@@ -296,20 +297,19 @@ void Method::emitHidlDefinition(Formatter& out) const {
     if (isOneway()) wrappedOutput << "oneway ";
     wrappedOutput << name() << "(";
 
-    wrappedOutput.group([&] { fillHidlArgResultTokens(args(), &wrappedOutput); });
-
-    wrappedOutput << ")";
+    if (!args().empty()) {
+        fillHidlArgResultTokens(args(), &wrappedOutput, results().empty() ? ");\n" : ")");
+    } else {
+        wrappedOutput << (results().empty() ? ");\n" : ")");
+    }
 
     if (!results().empty()) {
         wrappedOutput.group([&] {
             wrappedOutput.printUnlessWrapped(" ");
             wrappedOutput << "generates (";
-            fillHidlArgResultTokens(results(), &wrappedOutput);
-            wrappedOutput << ")";
+            fillHidlArgResultTokens(results(), &wrappedOutput, ");\n");
         });
     }
-
-    wrappedOutput << ";\n";
 
     out << wrappedOutput;
 }
