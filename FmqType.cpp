@@ -18,12 +18,14 @@
 
 #include "HidlTypeAssertion.h"
 
-#include <hidl-util/Formatter.h>
 #include <android-base/logging.h>
+#include <hidl-util/Formatter.h>
+#include <string>
 
 namespace android {
 
-FmqType::FmqType(const char* nsp, const char* name, Scope* parent, const char* definedName)
+FmqType::FmqType(const std::string& nsp, const std::string& name, Scope* parent,
+                 const std::string& definedName)
     : TemplatedType(parent, definedName), mNamespace(nsp), mName(name) {}
 
 std::string FmqType::templatedTypeName() const {
