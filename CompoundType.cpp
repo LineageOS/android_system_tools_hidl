@@ -632,6 +632,29 @@ void CompoundType::emitSafeUnionTypeDeclarations(Formatter& out) const {
     }
 }
 
+void CompoundType::emitHidlDefinition(Formatter& out) const {
+    if (getDocComment() != nullptr) getDocComment()->emit(out);
+    out << typeName() << " ";
+
+    const std::vector<const NamedType*>& sortedTypes = getSortedDefinedTypes();
+    if (sortedTypes.empty() && mFields->empty()) {
+        out << "{}";
+    } else {
+        out.block([&] {
+            for (const Type* t : sortedTypes) {
+                t->emitHidlDefinition(out);
+            }
+
+            for (const NamedReference<Type>* ref : *mFields) {
+                if (ref->getDocComment() != nullptr) ref->getDocComment()->emit(out);
+                out << ref->localName() << " " << ref->name() << ";\n";
+            }
+        });
+    }
+
+    out << ";\n";
+}
+
 void CompoundType::emitTypeDeclarations(Formatter& out) const {
     if (mStyle == STYLE_SAFE_UNION) {
         emitSafeUnionTypeDeclarations(out);

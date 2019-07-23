@@ -27,12 +27,19 @@
 
 namespace android {
 
+enum class CommentType {
+    // multiline comment that begins with /**
+    DOC_MULTILINE,
+    // begins with /* (used for headers)
+    MULTILINE
+};
+
 struct DocComment {
     DocComment(const std::string& comment, const Location& location);
 
     void merge(const DocComment* comment);
 
-    void emit(Formatter& out) const;
+    void emit(Formatter& out, CommentType type = CommentType::DOC_MULTILINE) const;
 
     const std::vector<std::string>& lines() const { return mLines; }
 

@@ -129,8 +129,8 @@ using token = yy::parser::token;
 "pointer"           { yylval->type = new PointerType(*scope); return token::TYPE; }
 "string"            { yylval->type = new StringType(*scope); return token::TYPE; }
 
-"fmq_sync"          { yylval->type = new FmqType("::android::hardware", "MQDescriptorSync", *scope); return token::TEMPLATED; }
-"fmq_unsync"        { yylval->type = new FmqType("::android::hardware", "MQDescriptorUnsync", *scope); return token::TEMPLATED; }
+"fmq_sync"          { yylval->type = new FmqType("::android::hardware", "MQDescriptorSync", *scope, "fmq_sync"); return token::TEMPLATED; }
+"fmq_unsync"        { yylval->type = new FmqType("::android::hardware", "MQDescriptorUnsync", *scope, "fmq_unsync"); return token::TEMPLATED; }
 
 "("                 { return('('); }
 ")"                 { return(')'); }

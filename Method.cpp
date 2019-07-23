@@ -18,12 +18,15 @@
 
 #include "Annotation.h"
 #include "ConstantExpression.h"
+#include "FormattingConstants.h"
 #include "ScalarType.h"
 #include "Type.h"
 
 #include <android-base/logging.h>
+#include <hidl-util/FQName.h>
 #include <hidl-util/Formatter.h>
 #include <algorithm>
+#include <vector>
 
 namespace android {
 
@@ -261,6 +264,53 @@ void Method::emitJavaSignature(Formatter& out) const {
     }
 
     out << ")";
+}
+
+static void fillHidlArgResultTokens(const std::vector<NamedReference<Type>*>& args,
+                                    WrappedOutput* wrappedOutput) {
+    for (auto iter = args.begin(); iter != args.end(); ++iter) {
+        auto arg = *iter;
+        std::string out = arg->localName() + " " + arg->name();
+        if (iter != args.begin()) {
+            *wrappedOutput << ",";
+            wrappedOutput->group([&] {
+                wrappedOutput->printUnlessWrapped(" ");
+                *wrappedOutput << out;
+            });
+        } else {
+            wrappedOutput->group([&] { *wrappedOutput << out; });
+        }
+    }
+}
+
+void Method::emitHidlDefinition(Formatter& out) const {
+    if (getDocComment() != nullptr) getDocComment()->emit(out);
+
+    out.join(mAnnotations->begin(), mAnnotations->end(), "\n",
+             [&](auto annotation) { annotation->dump(out); });
+    if (!mAnnotations->empty()) out << "\n";
+
+    WrappedOutput wrappedOutput(MAX_LINE_LENGTH);
+
+    if (isOneway()) wrappedOutput << "oneway ";
+    wrappedOutput << name() << "(";
+
+    wrappedOutput.group([&] { fillHidlArgResultTokens(args(), &wrappedOutput); });
+
+    wrappedOutput << ")";
+
+    if (!results().empty()) {
+        wrappedOutput.group([&] {
+            wrappedOutput.printUnlessWrapped(" ");
+            wrappedOutput << "generates (";
+            fillHidlArgResultTokens(results(), &wrappedOutput);
+            wrappedOutput << ")";
+        });
+    }
+
+    wrappedOutput << ";\n";
+
+    out << wrappedOutput;
 }
 
 bool Method::deepIsJavaCompatible(std::unordered_set<const Type*>* visited) const {

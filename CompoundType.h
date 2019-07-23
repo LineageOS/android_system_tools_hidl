@@ -100,6 +100,7 @@ struct CompoundType : public Scope {
             const std::string &offset,
             bool isReader) const override;
 
+    void emitHidlDefinition(Formatter& out) const override;
     void emitTypeDeclarations(Formatter& out) const override;
     void emitTypeForwardDeclaration(Formatter& out) const override;
     void emitPackageTypeDeclarations(Formatter& out) const override;
