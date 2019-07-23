@@ -591,7 +591,7 @@ interface_declarations
 
           std::string errorMsg;
           if ($2 != nullptr && $2->isNamedType() &&
-              !isValidInterfaceField(static_cast<NamedType*>($2)->localName().c_str(),
+              !isValidInterfaceField(static_cast<NamedType*>($2)->definedName().c_str(),
                     &errorMsg)) {
               std::cerr << "ERROR: " << errorMsg << " at "
                         << @2 << "\n";
@@ -1011,7 +1011,7 @@ field_declaration
 
           if ($1 != nullptr && $1->isNamedType() &&
               !isValidCompoundTypeField(style, static_cast<NamedType*>(
-                        $1)->localName().c_str(), &errorMsg)) {
+                        $1)->definedName().c_str(), &errorMsg)) {
               std::cerr << "ERROR: " << errorMsg << " at "
                         << @2 << "\n";
               YYERROR;

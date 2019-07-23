@@ -289,10 +289,10 @@ status_t Coordinator::parseOptional(const FQName& fqName, AST** ast, std::set<AS
                 fprintf(stderr,
                         "ERROR: File at '%s' declares an interface '%s' "
                         "instead of the expected types common to the package.\n",
-                        path.c_str(), (*ast)->getInterface()->localName().c_str());
+                        path.c_str(), (*ast)->getInterface()->definedName().c_str());
 
                 err = UNKNOWN_ERROR;
-            } else if ((*ast)->getInterface()->localName() != fqName.name()) {
+            } else if ((*ast)->getInterface()->definedName() != fqName.name()) {
                 fprintf(stderr,
                         "ERROR: File at '%s' does not declare interface type "
                         "'%s'.\n",
