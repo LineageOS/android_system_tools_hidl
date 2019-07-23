@@ -22,7 +22,7 @@ namespace android {
 
 NamedType::NamedType(const std::string& localName, const FQName& fullName, const Location& loc,
                      Scope* parent)
-    : Type(parent, localName), mLocalName(localName), mFullName(fullName), mLocation(loc) {}
+    : Type(parent, localName), mFullName(fullName), mLocation(loc) {}
 
 bool NamedType::isNamedType() const {
     return true;
@@ -30,10 +30,6 @@ bool NamedType::isNamedType() const {
 
 const FQName &NamedType::fqName() const {
     return mFullName;
-}
-
-std::string NamedType::localName() const {
-    return mLocalName;
 }
 
 std::string NamedType::fullName() const {
