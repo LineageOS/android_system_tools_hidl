@@ -23,11 +23,12 @@
 #include <android-base/logging.h>
 #include <hidl-util/Formatter.h>
 #include <iostream>
+#include <string>
 #include <unordered_set>
 
 namespace android {
 
-CompoundType::CompoundType(Style style, const char* localName, const FQName& fullName,
+CompoundType::CompoundType(Style style, const std::string& localName, const FQName& fullName,
                            const Location& location, Scope* parent)
     : Scope(localName, fullName, location, parent), mStyle(style), mFields(nullptr) {}
 

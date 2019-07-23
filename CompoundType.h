@@ -21,6 +21,7 @@
 #include "Reference.h"
 #include "Scope.h"
 
+#include <string>
 #include <vector>
 
 namespace android {
@@ -32,7 +33,7 @@ struct CompoundType : public Scope {
         STYLE_SAFE_UNION,
     };
 
-    CompoundType(Style style, const char* localName, const FQName& fullName,
+    CompoundType(Style style, const std::string& localName, const FQName& fullName,
                  const Location& location, Scope* parent);
 
     Style style() const;

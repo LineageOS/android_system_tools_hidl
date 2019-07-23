@@ -19,6 +19,7 @@
 #include <hidl-util/Formatter.h>
 #include <inttypes.h>
 #include <iostream>
+#include <string>
 #include <unordered_map>
 
 #include "Annotation.h"
@@ -27,7 +28,7 @@
 
 namespace android {
 
-EnumType::EnumType(const char* localName, const FQName& fullName, const Location& location,
+EnumType::EnumType(const std::string& localName, const FQName& fullName, const Location& location,
                    const Reference<Type>& storageType, Scope* parent)
     : Scope(localName, fullName, location, parent), mValues(), mStorageType(storageType) {}
 
@@ -777,7 +778,7 @@ void EnumType::emitExportedHeader(Formatter& out, bool forJava) const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-EnumValue::EnumValue(const char* name, ConstantExpression* value, const Location& location)
+EnumValue::EnumValue(const std::string& name, ConstantExpression* value, const Location& location)
     : mName(name), mValue(value), mLocation(location), mIsAutoFill(false) {}
 
 std::string EnumValue::name() const {
