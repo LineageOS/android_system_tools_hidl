@@ -26,11 +26,12 @@
 #include <hidl-util/FQName.h>
 #include <hidl-util/Formatter.h>
 #include <algorithm>
+#include <string>
 #include <vector>
 
 namespace android {
 
-Method::Method(const char* name, std::vector<NamedReference<Type>*>* args,
+Method::Method(const std::string& name, std::vector<NamedReference<Type>*>* args,
                std::vector<NamedReference<Type>*>* results, bool oneway,
                std::vector<Annotation*>* annotations, const Location& location)
     : mName(name),

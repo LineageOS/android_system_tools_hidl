@@ -25,11 +25,13 @@
 #include <hidl-util/StringHelper.h>
 #include <algorithm>
 #include <iostream>
+#include <string>
 #include <vector>
 
 namespace android {
 
-Scope::Scope(const char* localName, const FQName& fullName, const Location& location, Scope* parent)
+Scope::Scope(const std::string& localName, const FQName& fullName, const Location& location,
+             Scope* parent)
     : NamedType(localName, fullName, location, parent) {}
 Scope::~Scope(){}
 
