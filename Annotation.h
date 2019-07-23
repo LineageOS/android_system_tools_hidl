@@ -78,7 +78,7 @@ struct ConstantExpressionAnnotationParam : AnnotationParam {
 using AnnotationParamVector = std::vector<AnnotationParam*>;
 
 struct Annotation {
-    Annotation(const char *name, AnnotationParamVector *params);
+    Annotation(const std::string& name, AnnotationParamVector* params);
 
     std::string name() const;
     const AnnotationParamVector &params() const;
