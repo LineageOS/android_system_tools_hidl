@@ -25,24 +25,26 @@
 #include <hidl-util/StringHelper.h>
 #include <algorithm>
 #include <iostream>
+#include <string>
 #include <vector>
 
 namespace android {
 
-Scope::Scope(const char* localName, const FQName& fullName, const Location& location, Scope* parent)
+Scope::Scope(const std::string& localName, const FQName& fullName, const Location& location,
+             Scope* parent)
     : NamedType(localName, fullName, location, parent) {}
 Scope::~Scope(){}
 
 void Scope::addType(NamedType* type) {
     size_t index = mTypes.size();
     mTypes.push_back(type);
-    mTypeIndexByName[type->localName()] = index;
+    mTypeIndexByName[type->definedName()] = index;
 }
 
 status_t Scope::validateUniqueNames() const {
     for (const auto* type : mTypes) {
-        if (mTypes[mTypeIndexByName.at(type->localName())] != type) {
-            std::cerr << "ERROR: A type named '" << type->localName()
+        if (mTypes[mTypeIndexByName.at(type->definedName())] != type) {
+            std::cerr << "ERROR: A type named '" << type->definedName()
                       << "' is already declared in the scope at " << type->location() << std::endl;
             return UNKNOWN_ERROR;
         }
@@ -152,7 +154,7 @@ void Scope::topologicalReorder(const std::unordered_map<const Type*, size_t>& re
     std::sort(mTypes.begin(), mTypes.end(), less);
 
     for (size_t i = 0; i != mTypes.size(); ++i) {
-        mTypeIndexByName.at(mTypes[i]->localName()) = i;
+        mTypeIndexByName.at(mTypes[i]->definedName()) = i;
     }
 }
 

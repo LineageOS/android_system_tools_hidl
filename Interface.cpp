@@ -30,6 +30,7 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include <string>
 #include <unordered_map>
 
 #include <android-base/logging.h>
@@ -71,12 +72,12 @@ enum {
 const std::unique_ptr<ConstantExpression> Interface::FLAG_ONE_WAY =
     std::make_unique<LiteralConstantExpression>(ScalarType::KIND_UINT32, 0x01, "oneway");
 
-Interface::Interface(const char* localName, const FQName& fullName, const Location& location,
+Interface::Interface(const std::string& localName, const FQName& fullName, const Location& location,
                      Scope* parent, const Reference<Type>& superType, const Hash* fileHash)
     : Scope(localName, fullName, location, parent), mSuperType(superType), mFileHash(fileHash) {}
 
 std::string Interface::typeName() const {
-    return "interface " + localName();
+    return "interface " + definedName();
 }
 
 const Hash* Interface::getFileHash() const {
@@ -746,7 +747,7 @@ std::string Interface::getJavaType(bool /* forInitializer */) const {
 }
 
 std::string Interface::getVtsType() const {
-    if (StringHelper::EndsWith(localName(), "Callback")) {
+    if (StringHelper::EndsWith(definedName(), "Callback")) {
         return "TYPE_HIDL_CALLBACK";
     } else {
         return "TYPE_HIDL_INTERFACE";
@@ -870,7 +871,7 @@ void Interface::emitPackageTypeHeaderDefinitions(Formatter& out) const {
 void Interface::emitTypeDefinitions(Formatter& out, const std::string& prefix) const {
     std::string space = prefix.empty() ? "" : (prefix + "::");
 
-    Scope::emitTypeDefinitions(out, space + localName());
+    Scope::emitTypeDefinitions(out, space + definedName());
 }
 
 void Interface::emitJavaReaderWriter(

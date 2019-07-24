@@ -31,9 +31,9 @@ void AST::generateJavaImpl(Formatter& out) const {
     out << "// FIXME: your file license if you have one\n\n";
     out << "// FIXME: add package information\n\n";
 
-    out << "import " << mPackage.javaPackage() << "." << iface->localName() << ";\n\n";
+    out << "import " << mPackage.javaPackage() << "." << iface->definedName() << ";\n\n";
 
-    out << "class " << baseName << " extends " << iface->localName() << ".Stub"
+    out << "class " << baseName << " extends " << iface->definedName() << ".Stub"
         << " {\n";
 
     out.indent([&] {
