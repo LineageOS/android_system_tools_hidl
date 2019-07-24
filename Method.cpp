@@ -154,7 +154,7 @@ bool Method::overridesJavaImpl(MethodImplType type) const {
 }
 
 Method* Method::copySignature() const {
-    Method* method = new Method(mName.c_str(), mArgs, mResults, mOneway, mAnnotations, location());
+    Method* method = new Method(mName, mArgs, mResults, mOneway, mAnnotations, location());
     method->setDocComment(getDocComment());
     return method;
 }
