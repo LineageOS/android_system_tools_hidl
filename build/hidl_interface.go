@@ -564,7 +564,8 @@ func hidlInterfaceMutator(mctx android.LoadHookContext, i *hidlInterface) {
 
 hidl_package_root {
 name: "%s",
-path: "<some path>",
+// if you want to require <some path>/current.txt for interface versioning
+use_current: true,
 }
 
 This corresponds to the "-r%s:<some path>" option that would be passed into hidl-gen.`,
