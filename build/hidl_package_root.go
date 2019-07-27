@@ -57,6 +57,14 @@ func (r *hidlPackageRoot) GenerateAndroidBuildActions(ctx android.ModuleContext)
 	}
 
 	if proptools.BoolDefault(r.properties.Use_current, false) {
+		if *r.properties.Path != ctx.ModuleDir() {
+			ctx.PropertyErrorf("path", "Cannot use unrelated path with use_current. "+
+				"Presumably this hidl_package_root should be at %s. Otherwise, current.txt "+
+				"could be located at %s, but use_current must be removed. path is by default "+
+				"the path of hidl_package_root.", *r.properties.Path, ctx.ModuleDir())
+			return
+		}
+
 		r.currentPath = android.OptionalPathForPath(android.PathForModuleSrc(ctx, "current.txt"))
 	} else {
 		r.currentPath = android.ExistentPathForSource(ctx, ctx.ModuleDir(), "current.txt")
