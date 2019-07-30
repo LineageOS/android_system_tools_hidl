@@ -16,10 +16,7 @@ cc_test {
     name: "libhidl-gen-utils_test",
     defaults: ["hidl-gen-defaults"],
     host_supported: true,
-
-    shared_libs: [
-        "libhidl-gen-utils",
-    ],
-
+    shared_libs: ["libhidl-gen-utils"],
     srcs: ["main.cpp"],
+    test_suites: ["device-tests"],
 }
