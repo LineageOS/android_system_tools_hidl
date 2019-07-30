@@ -38,6 +38,7 @@ struct CompoundType : public Scope {
 
     Style style() const;
 
+    std::vector<const NamedReference<Type>*> getFields() const;
     void setFields(std::vector<NamedReference<Type>*>* fields);
 
     bool isCompoundType() const override;
