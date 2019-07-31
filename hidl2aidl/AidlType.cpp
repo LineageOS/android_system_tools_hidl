@@ -17,6 +17,7 @@
 #include <string>
 
 #include "AidlHelper.h"
+#include "NamedType.h"
 #include "Type.h"
 #include "VectorType.h"
 
@@ -29,6 +30,9 @@ std::string AidlHelper::getAidlType(const Type& type) {
 
         // Aidl doesn't support List<*> for C++ and NDK backends
         return AidlHelper::getAidlType(*elementType) + "[]";
+    } else if (type.isNamedType()) {
+        const NamedType& namedType = static_cast<const NamedType&>(type);
+        return AidlHelper::getAidlFQName(namedType.fqName());
     } else {
         return type.getJavaType();
     }
