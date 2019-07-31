@@ -239,7 +239,7 @@ TEST_F(HidlLintTest, MethodVersionsTest) {
                 "Methods should follow the camelCase naming convention.");
     EXPECT_LINT("lint_test.method_versions@1.0::IHybrid",
                 "Methods should follow the camelCase naming convention.");
-    EXPECT_LINT("lint_test.method_versions@1.0::Isnake_case",
+    EXPECT_LINT("lint_test.method_versions@1.0::ISnakeCase",
                 "Methods should follow the camelCase naming convention.");
 }
 
@@ -263,5 +263,24 @@ TEST_F(HidlLintTest, UnhandledDocCommentTest) {
     // Even single line comments are unhandled
     EXPECT_LINT("lint_test.unhandled_comments@1.0::ISingleComment",
                 "cannot be processed since it is in an unrecognized place");
+}
+
+TEST_F(HidlLintTest, NamingConventionsTest) {
+    EXPECT_LINT("lint_test.naming_conventions@1.0::IBad_Interface",
+                "type .* should be named .* PascalCase");
+    EXPECT_LINT("lint_test.naming_conventions@1.0::IBadStruct",
+                "type .* should be named .* PascalCase");
+    EXPECT_LINT("lint_test.naming_conventions@1.0::IBadEnum",
+                "type .* should be named .* PascalCase");
+    EXPECT_A_LINT("lint_test.naming_conventions@1.0::IBadUnion",
+                  "type .* should be named .* PascalCase");
+
+    EXPECT_LINT("lint_test.naming_conventions@1.0::IBadStructMember",
+                "member .* of type .* should be named .* camelCase");
+    EXPECT_A_LINT("lint_test.naming_conventions@1.0::IBadUnionMember",
+                  "member .* of type .* should be named .* camelCase");
+
+    EXPECT_LINT("lint_test.naming_conventions@1.0::IBadEnumValue",
+                "enumeration .* of enum .* should be named .* UPPER_SNAKE_CASE");
 }
 }  // namespace android
