@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-package lint_test.method_versions@1.0;
+package lint_test.naming_conventions@1.0;
 
-interface Isnake_case {
-    base_method();
+interface IBadEnum {
+    enum BAD_ENUM : uint8_t {};
 };
