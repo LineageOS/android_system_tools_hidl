@@ -15,20 +15,79 @@
  */
 
 genrule {
-    name: "hidl2aidl_test",
-    tools: [
-        "aidl",
-        "hidl2aidl",
-    ],
-    cmd: "$(location hidl2aidl) -o $(genDir)/hidl2aidl/ " +
+    name: "hidl2aidl_test_gen_aidl",
+    tools: ["hidl2aidl"],
+    cmd: "$(location hidl2aidl) -o $(genDir)/ " +
         "-rhidl2aidl:system/tools/hidl/hidl2aidl/test " +
-        "hidl2aidl@1.0" + " && " +
-        "$(location aidl) -o $(genDir)/aidl " +
-        "$(genDir)/hidl2aidl/hidl2aidl/V1_0/IFoo.aidl",
+        "hidl2aidl@1.0 hidl2aidl@2.0",
     srcs: [
         "1.0/IFoo.hal",
+        "2.0/IFoo.hal",
     ],
     out: [
-        "aidl/hidl2aidl/V1_0/IFoo.java",
+        "hidl2aidl/IFoo.aidl",
+        "hidl2aidl2/IFoo.aidl",
+    ],
+}
+
+genrule {
+    name: "hidl2aidl_test_gen_java",
+    tools: ["aidl"],
+    cmd: "$(location aidl) --lang=java -o $(genDir) $(in)",
+    srcs: [":hidl2aidl_test_gen_aidl"],
+    out: [
+        "hidl2aidl/IFoo.java",
+        "hidl2aidl2/IFoo.java",
+    ],
+}
+
+genrule {
+    name: "hidl2aidl_test_gen_cpp_srcs",
+    tools: ["aidl"],
+    cmd: "$(location aidl) --lang=cpp -o $(genDir) --header_out=$(genDir) $(in)",
+    srcs: [":hidl2aidl_test_gen_aidl"],
+    out: [
+        "hidl2aidl/IFoo.cpp",
+        "hidl2aidl2/IFoo.cpp",
+    ],
+}
+
+genrule {
+    name: "hidl2aidl_test_gen_cpp_headers",
+    tools: ["aidl"],
+    cmd: "$(location aidl) --lang=cpp -o $(genDir) --header_out=$(genDir) $(in)",
+    srcs: [":hidl2aidl_test_gen_aidl"],
+    out: [
+        "hidl2aidl/BnFoo.h",
+        "hidl2aidl/BpFoo.h",
+        "hidl2aidl/IFoo.h",
+        "hidl2aidl2/BnFoo.h",
+        "hidl2aidl2/BpFoo.h",
+        "hidl2aidl2/IFoo.h",
+    ],
+}
+
+java_library {
+    name: "hidl2aidl_test_comp_java",
+    srcs: [":hidl2aidl_test_gen_java"],
+}
+
+cc_test_library {
+    name: "hidl2aidl_test_comp_cc",
+    generated_sources: ["hidl2aidl_test_gen_cpp_srcs"],
+    generated_headers: ["hidl2aidl_test_gen_cpp_headers"],
+    export_generated_headers: ["hidl2aidl_test_gen_cpp_headers"],
+    shared_libs: [
+        "libbinder",
+        "libutils",
+    ],
+    gtest: false,
+}
+
+phony {
+    name: "hidl2aidl_test",
+    required: [
+        "hidl2aidl_test_comp_cc",
+        "hidl2aidl_test_comp_java",
     ],
 }

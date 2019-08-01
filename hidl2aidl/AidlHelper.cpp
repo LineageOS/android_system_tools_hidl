@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
+#include <android-base/strings.h>
 #include <hidl-util/FQName.h>
 #include <hidl-util/Formatter.h>
 #include <hidl-util/StringHelper.h>
 #include <string>
 
 #include "AidlHelper.h"
+#include "Coordinator.h"
 #include "NamedType.h"
 
 namespace android {
@@ -32,16 +34,33 @@ std::string AidlHelper::getAidlName(const FQName& fqName) {
     return StringHelper::JoinStrings(names, "");
 }
 
-std::string AidlHelper::getAidlName(const NamedType& type) {
-    return getAidlName(type.fqName());
+std::string AidlHelper::getAidlPackage(const FQName& fqName) {
+    std::string aidlPackage = fqName.package();
+    if (fqName.getPackageMajorVersion() != 1) {
+        aidlPackage += std::to_string(fqName.getPackageMajorVersion());
+    }
+
+    return aidlPackage;
+}
+
+std::string AidlHelper::getAidlFQName(const FQName& fqName) {
+    return getAidlPackage(fqName) + "." + getAidlName(fqName);
 }
 
 void AidlHelper::emitFileHeader(Formatter& out, const NamedType& type) {
-    // TODO: Add imports
-
     out << "// FIXME: license file if you have one\n\n";
     out << "// TODO(hidl2aidl): Add imports\n\n";
-    out << "package " << type.fqName().javaPackage() << ";\n\n";
+    out << "package " << getAidlPackage(type.fqName()) << ";\n\n";
+}
+
+Formatter AidlHelper::getFileWithHeader(const NamedType& namedType,
+                                        const Coordinator& coordinator) {
+    std::string aidlPackage = getAidlPackage(namedType.fqName());
+    Formatter out = coordinator.getFormatter(namedType.fqName(), Coordinator::Location::DIRECT,
+                                             base::Join(base::Split(aidlPackage, "."), "/") + "/" +
+                                                     getAidlName(namedType.fqName()) + ".aidl");
+    emitFileHeader(out, namedType);
+    return out;
 }
 
 }  // namespace android
