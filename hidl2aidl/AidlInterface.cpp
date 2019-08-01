@@ -38,19 +38,15 @@ static void emitAidlMethodParams(Formatter& out, const std::vector<NamedReferenc
 }
 
 void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordinator) {
-    Formatter out(coordinator.getFormatter(interface.fqName(), Coordinator::Location::GEN_SANITIZED,
-                                           getAidlName(interface) + ".aidl"));
-
-    emitFileHeader(out, interface);
+    Formatter out = getFileWithHeader(interface, coordinator);
 
     interface.emitDocComment(out);
-
     if (interface.superType() && interface.superType()->fqName() != gIBaseFqName) {
         out << "// Interface inherits from " << interface.superType()->fqName().string()
             << " but AIDL does not support interface inheritance.\n";
     }
 
-    out << "interface " << interface.fqName().name() << " ";
+    out << "interface " << getAidlName(interface.fqName()) << " ";
     out.block([&] {
         for (const NamedType* type : interface.getSubTypes()) {
             emitAidl(*type, coordinator);

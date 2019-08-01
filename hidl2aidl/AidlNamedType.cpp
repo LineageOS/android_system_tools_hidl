@@ -59,12 +59,7 @@ static void emitCompoundTypeAidlDefinition(Formatter& out, const CompoundType& c
 
 // TODO: Enum/Typedef should just emit to hidl-error.log or similar
 void AidlHelper::emitAidl(const NamedType& namedType, const Coordinator& coordinator) {
-    Formatter out =
-            coordinator.getFormatter(namedType.fqName(), Coordinator::Location::GEN_SANITIZED,
-                                     getAidlName(namedType) + ".aidl");
-
-    emitFileHeader(out, namedType);
-
+    Formatter out = getFileWithHeader(namedType, coordinator);
     if (namedType.isTypeDef()) {
         const TypeDef& typeDef = static_cast<const TypeDef&>(namedType);
         emitTypeDefAidlDefinition(out, typeDef);
