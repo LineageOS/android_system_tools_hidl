@@ -17,6 +17,7 @@
 #include "CompoundType.h"
 
 #include "ArrayType.h"
+#include "Reference.h"
 #include "ScalarType.h"
 #include "VectorType.h"
 
@@ -25,6 +26,7 @@
 #include <iostream>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 namespace android {
 
@@ -38,6 +40,11 @@ CompoundType::Style CompoundType::style() const {
 
 void CompoundType::setFields(std::vector<NamedReference<Type>*>* fields) {
     mFields = fields;
+}
+
+std::vector<const NamedReference<Type>*> CompoundType::getFields() const {
+    return mFields ? std::vector<const NamedReference<Type>*>(mFields->begin(), mFields->end())
+                   : std::vector<const NamedReference<Type>*>();
 }
 
 std::vector<const Reference<Type>*> CompoundType::getReferences() const {
