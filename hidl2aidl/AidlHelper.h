@@ -29,10 +29,21 @@ struct Scope;
 struct Type;
 
 struct AidlHelper {
+    /* FQName helpers */
+    // getAidlName returns the type names
+    // android.hardware.foo@1.0::IBar.Bar -> IBarBaz
     static std::string getAidlName(const FQName& fqName);
-    static std::string getAidlName(const NamedType& type);
+
+    // getAidlPackage returns the AIDL package
+    // android.harware.foo@1.x -> android.hardware.foo
+    // android.hardware.foo@2.x -> android.hardware.foo2
+    static std::string getAidlPackage(const FQName& fqName);
+
+    // getAidlFQName = getAidlPackage + "." + getAidlName
+    static std::string getAidlFQName(const FQName& fqName);
 
     static void emitFileHeader(Formatter& out, const NamedType& type);
+    static Formatter getFileWithHeader(const NamedType& namedType, const Coordinator& coordinator);
 
     /* Methods for Type */
     static std::string getAidlType(const Type& type);
