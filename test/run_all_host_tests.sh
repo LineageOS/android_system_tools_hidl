@@ -4,9 +4,10 @@ function run() {
     local FAILED_TESTS=()
 
     local COMPILE_TIME_TESTS=(\
+        hidl_hash_test \
+        hidl2aidl_test \
         hidl_error_test \
         hidl_export_test \
-        hidl_hash_test \
         hidl_cpp_impl_test \
         hidl_java_impl_test \
         hidl_system_api_test \
