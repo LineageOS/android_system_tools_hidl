@@ -17,16 +17,9 @@
 package hidl2aidl@1.0;
 
 interface IFoo {
-    struct BigStruct {
-        uint8_t type;
-    };
-
     oneway someFoo(int8_t a);
     retVec(int8_t a) generates (vec<string> b);
     someBar(string a, int8_t b) generates (string foo);
-
-    useStruct() generates (BigStruct type);
-    useImportedStruct(Outer outer);
 
     // This case fails since string cannot be an out param in aidl.
     // someBar(string a, int8_t b) generates (string foo, int8_t[2] bar);
