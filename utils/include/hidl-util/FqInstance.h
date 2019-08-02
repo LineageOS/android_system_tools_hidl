@@ -72,6 +72,10 @@ class FqInstance {
     // TODO(b/73774955): deprecate this and use std::optional.
     __attribute__((warn_unused_result)) bool setTo(const std::string& s);
 
+    // Convenience method when an FQName and instance are already available.
+    __attribute__((warn_unused_result)) bool setTo(const FQName& fqName,
+                                                   const std::string& instance);
+
     // Convenience method for the following formats:
     // android.hardware.foo@1.0
     // android.hardware.foo@1.0::IFoo
