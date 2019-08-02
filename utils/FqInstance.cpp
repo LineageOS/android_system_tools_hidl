@@ -99,6 +99,12 @@ bool FqInstance::setTo(const std::string& s) {
     return isValid();
 }
 
+bool FqInstance::setTo(const FQName& fqName, const std::string& instance) {
+    mFqName = fqName;
+    mInstance = instance;
+    return isValid();
+}
+
 bool FqInstance::setTo(const std::string& package, size_t majorVer, size_t minorVer,
                        const std::string& interface, const std::string& instance) {
     if (!mFqName.setTo(package, majorVer, minorVer, interface)) return false;
