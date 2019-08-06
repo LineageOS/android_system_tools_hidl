@@ -40,13 +40,11 @@ static void emitCompoundTypeAidlDefinition(Formatter& out, const CompoundType& c
     }
 
     compoundType.emitDocComment(out);
-    out << "parcelable " << compoundType.definedName() << " ";
+    out << "parcelable " << AidlHelper::getAidlName(compoundType.fqName()) << " ";
     if (compoundType.style() == CompoundType::STYLE_STRUCT) {
         out.block([&] {
             for (const NamedReference<Type>* field : compoundType.getFields()) {
                 field->emitDocComment(out);
-                // TODO: nested types now should not be referenced as nested types. instead they
-                // should be refered to by their direct (fully qualified) name.
                 out << AidlHelper::getAidlType(*field->get()) << " " << field->name() << ";\n";
             }
         });

@@ -37,6 +37,16 @@ static void emitAidlMethodParams(Formatter& out, const std::vector<NamedReferenc
     });
 }
 
+std::vector<const Method*> AidlHelper::getUserDefinedMethods(const Interface& interface) {
+    std::vector<const Method*> methods;
+    for (const Interface* iface : interface.typeChain()) {
+        const std::vector<Method*> userDefined = iface->userDefinedMethods();
+        methods.insert(methods.end(), userDefined.begin(), userDefined.end());
+    }
+
+    return methods;
+}
+
 void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordinator) {
     Formatter out = getFileWithHeader(interface, coordinator);
 
@@ -52,12 +62,7 @@ void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordin
             emitAidl(*type, coordinator);
         }
 
-        std::vector<const Method*> methods;
-        for (const Interface* iface : interface.typeChain()) {
-            const std::vector<Method*> userDefined = iface->userDefinedMethods();
-            methods.insert(methods.end(), userDefined.begin(), userDefined.end());
-        }
-
+        const std::vector<const Method*>& methods = getUserDefinedMethods(interface);
         out.join(methods.begin(), methods.end(), "\n", [&](const Method* method) {
             method->emitDocComment(out);
 
