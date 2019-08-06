@@ -17,6 +17,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 namespace android {
 
@@ -24,6 +25,7 @@ struct Coordinator;
 struct Formatter;
 struct FQName;
 struct Interface;
+struct Method;
 struct NamedType;
 struct Scope;
 struct Type;
@@ -56,6 +58,8 @@ struct AidlHelper {
 
     /* Methods for Interface */
     static void emitAidl(const Interface& interface, const Coordinator& coordinator);
+    // Returns all methods that would exist in an AIDL equivalent interface
+    static std::vector<const Method*> getUserDefinedMethods(const Interface& interface);
 };
 
 }  // namespace android
