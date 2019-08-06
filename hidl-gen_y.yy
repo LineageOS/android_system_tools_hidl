@@ -1166,7 +1166,7 @@ type_or_inplace_compound_declaration
     : type { $$ = $1; }
     | annotated_compound_declaration ignore_doc_comments
       {
-          $$ = new Reference<Type>($1->definedName(), $1, convertYYLoc(@1, ast));
+          $$ = new Reference<Type>($1->definedName(), $1, convertYYLoc(@1, ast), true);
       }
     ;
 

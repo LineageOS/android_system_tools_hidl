@@ -145,6 +145,9 @@ private:
     Style mStyle;
     std::vector<NamedReference<Type>*>* mFields;
 
+    // only emits the struct body. doesn't emit the last ";\n" from the definition
+    void emitInlineHidlDefinition(Formatter& out) const;
+
     void emitLayoutAsserts(Formatter& out, const Layout& localLayout,
                            const std::string& localLayoutName) const;
 
