@@ -134,15 +134,6 @@ std::vector<const NamedType*> Scope::getSortedDefinedTypes() const {
     return ret;
 }
 
-std::vector<const ConstantExpression*> Scope::getConstantExpressions() const {
-    std::vector<const ConstantExpression*> ret;
-    for (const auto* annotation : mAnnotations) {
-        const auto& retAnnotation = annotation->getConstantExpressions();
-        ret.insert(ret.end(), retAnnotation.begin(), retAnnotation.end());
-    }
-    return ret;
-}
-
 void Scope::topologicalReorder(const std::unordered_map<const Type*, size_t>& reversedOrder) {
     auto less = [&](const Type* lhs, const Type* rhs) {
         return reversedOrder.at(lhs) < reversedOrder.at(rhs);

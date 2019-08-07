@@ -97,8 +97,6 @@ struct Interface : public Scope {
     std::vector<const Reference<Type>*> getReferences() const override;
     std::vector<const Reference<Type>*> getStrongReferences() const override;
 
-    std::vector<const ConstantExpression*> getConstantExpressions() const override;
-
     status_t resolveInheritance() override;
     status_t validate() const override;
     status_t validateUniqueNames() const;
