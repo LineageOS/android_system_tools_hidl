@@ -462,15 +462,6 @@ std::vector<const Reference<Type>*> Interface::getReferences() const {
     return ret;
 }
 
-std::vector<const ConstantExpression*> Interface::getConstantExpressions() const {
-    std::vector<const ConstantExpression*> ret;
-    for (const auto* method : methods()) {
-        const auto& retMethod = method->getConstantExpressions();
-        ret.insert(ret.end(), retMethod.begin(), retMethod.end());
-    }
-    return ret;
-}
-
 std::vector<const Reference<Type>*> Interface::getStrongReferences() const {
     // Interface is a special case as a reference:
     // its definiton must be completed for extension but

@@ -107,23 +107,6 @@ std::vector<const Reference<Type>*> Method::getStrongReferences() const {
     return ret;
 }
 
-std::vector<ConstantExpression*> Method::getConstantExpressions() {
-    const auto& constRet = static_cast<const Method*>(this)->getConstantExpressions();
-    std::vector<ConstantExpression*> ret(constRet.size());
-    std::transform(constRet.begin(), constRet.end(), ret.begin(),
-                   [](const auto* ce) { return const_cast<ConstantExpression*>(ce); });
-    return ret;
-}
-
-std::vector<const ConstantExpression*> Method::getConstantExpressions() const {
-    std::vector<const ConstantExpression*> ret;
-    for (const auto* annotation : *mAnnotations) {
-        const auto& retAnnotation = annotation->getConstantExpressions();
-        ret.insert(ret.end(), retAnnotation.begin(), retAnnotation.end());
-    }
-    return ret;
-}
-
 void Method::cppImpl(MethodImplType type, Formatter &out) const {
     CHECK(mIsHidlReserved);
     auto it = mCppImpl.find(type);
