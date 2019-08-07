@@ -306,7 +306,6 @@ bool isValidTypeName(const std::string& identifier, std::string *errorMsg) {
 %type<method> method_declaration commentable_method_declaration
 %type<compoundStyle> struct_or_union_keyword
 %type<stringVec> annotation_string_values annotation_string_value
-%type<constExprVec> annotation_const_expr_values annotation_const_expr_value
 %type<annotationParam> annotation_param
 %type<annotationParams> opt_annotation_params annotation_params
 %type<annotation> annotation
@@ -332,7 +331,6 @@ bool isValidTypeName(const std::string& identifier, std::string *errorMsg) {
     android::Method *method;
     android::CompoundType::Style compoundStyle;
     std::vector<std::string> *stringVec;
-    std::vector<android::ConstantExpression *> *constExprVec;
     android::AnnotationParam *annotationParam;
     android::AnnotationParamVector *annotationParams;
     android::Annotation *annotation;
@@ -436,10 +434,6 @@ annotation_param
       {
           $$ = new StringAnnotationParam($1, $3);
       }
-    | IDENTIFIER '=' annotation_const_expr_value
-      {
-          $$ = new ConstantExpressionAnnotationParam($1, $3);
-      }
     ;
 
 annotation_string_value
@@ -458,28 +452,6 @@ annotation_string_values
           $$->push_back($1);
       }
     | annotation_string_values ',' STRING_LITERAL
-      {
-          $$ = $1;
-          $$->push_back($3);
-      }
-    ;
-
-annotation_const_expr_value
-    : const_expr
-      {
-          $$ = new std::vector<ConstantExpression *>;
-          $$->push_back($1);
-      }
-    | '{' annotation_const_expr_values '}' { $$ = $2; }
-    ;
-
-annotation_const_expr_values
-    : const_expr
-      {
-          $$ = new std::vector<ConstantExpression *>;
-          $$->push_back($1);
-      }
-    | annotation_const_expr_values ',' const_expr
       {
           $$ = $1;
           $$->push_back($3);
