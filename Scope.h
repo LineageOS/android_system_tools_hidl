@@ -61,8 +61,6 @@ struct Scope : public NamedType {
 
     std::vector<const Type*> getDefinedTypes() const override;
 
-    std::vector<const ConstantExpression*> getConstantExpressions() const override;
-
     void topologicalReorder(const std::unordered_map<const Type*, size_t>& reversedOrder);
 
     void emitTypeDeclarations(Formatter& out) const override;

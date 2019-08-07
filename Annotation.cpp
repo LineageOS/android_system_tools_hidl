@@ -31,18 +31,6 @@ const std::string& AnnotationParam::getName() const {
     return mName;
 }
 
-std::vector<ConstantExpression*> AnnotationParam::getConstantExpressions() {
-    const auto& constRet = static_cast<const AnnotationParam*>(this)->getConstantExpressions();
-    std::vector<ConstantExpression*> ret(constRet.size());
-    std::transform(constRet.begin(), constRet.end(), ret.begin(),
-                   [](const auto* ce) { return const_cast<ConstantExpression*>(ce); });
-    return ret;
-}
-
-std::vector<const ConstantExpression*> AnnotationParam::getConstantExpressions() const {
-    return {};
-}
-
 std::string AnnotationParam::getSingleString() const {
     std::string value = getSingleValue();
 
@@ -81,30 +69,6 @@ std::string StringAnnotationParam::getSingleValue() const {
     return mValues->at(0);
 }
 
-ConstantExpressionAnnotationParam::ConstantExpressionAnnotationParam(
-    const std::string& name, std::vector<ConstantExpression*>* values)
-    : AnnotationParam(name), mValues(values) {}
-
-std::vector<std::string> ConstantExpressionAnnotationParam::getValues() const {
-    std::vector<std::string> ret;
-    for (const auto* value : *mValues) {
-        ret.push_back(value->value());
-    };
-    return ret;
-}
-
-std::string ConstantExpressionAnnotationParam::getSingleValue() const {
-    CHECK_EQ(mValues->size(), 1u) << mName << " requires one value but has multiple";
-    return mValues->at(0)->value();
-}
-
-std::vector<const ConstantExpression*> ConstantExpressionAnnotationParam::getConstantExpressions()
-    const {
-    std::vector<const ConstantExpression*> ret;
-    ret.insert(ret.end(), mValues->begin(), mValues->end());
-    return ret;
-}
-
 Annotation::Annotation(const std::string& name, AnnotationParamVector* params)
     : mName(name), mParams(params) {}
 
@@ -124,23 +88,6 @@ const AnnotationParam *Annotation::getParam(const std::string &name) const {
     }
 
     return nullptr;
-}
-
-std::vector<ConstantExpression*> Annotation::getConstantExpressions() {
-    const auto& constRet = static_cast<const Annotation*>(this)->getConstantExpressions();
-    std::vector<ConstantExpression*> ret(constRet.size());
-    std::transform(constRet.begin(), constRet.end(), ret.begin(),
-                   [](const auto* ce) { return const_cast<ConstantExpression*>(ce); });
-    return ret;
-}
-
-std::vector<const ConstantExpression*> Annotation::getConstantExpressions() const {
-    std::vector<const ConstantExpression*> ret;
-    for (const auto* param : *mParams) {
-        const auto& retParam = param->getConstantExpressions();
-        ret.insert(ret.end(), retParam.begin(), retParam.end());
-    }
-    return ret;
 }
 
 void Annotation::dump(Formatter &out) const {
