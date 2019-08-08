@@ -26,11 +26,13 @@
 #include <android-base/macros.h>
 
 #define UPPERCASE "[A-Z0-9]"
-#define LOWERCASE "[a-z0-9]+"
-#define CAPCASE "[A-Z0-9][a-z0-9]*"
+#define LOWERCASE "[a-z][a-z0-9]*"
+#define NUMCASE "[0-9]"
+#define CAPCASE "[A-Z][a-z][a-z0-9]*"
 static const std::regex kStartUppercase("^" UPPERCASE);
 static const std::regex kStartLowercase("^" LOWERCASE);
 static const std::regex kStartCapcase("^" CAPCASE);
+static const std::regex kStartNumcase("^" CAPCASE);
 
 namespace android {
 
@@ -114,6 +116,7 @@ void StringHelper::Tokenize(const std::string& in, std::vector<std::string>* vec
         if (std::regex_search(copy, match, kStartLowercase)) matches.push_back(match.str(0));
         if (std::regex_search(copy, match, kStartCapcase)) matches.push_back(match.str(0));
         if (std::regex_search(copy, match, kStartUppercase)) matches.push_back(match.str(0));
+        if (std::regex_search(copy, match, kStartNumcase)) matches.push_back(match.str(0));
 
         if (!matches.empty()) {
             std::string& maxmatch = matches[0];
