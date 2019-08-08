@@ -25,10 +25,12 @@ cc_binary_host {
         "AidlType.cpp",
         "main.cpp",
     ],
-    shared_libs: [
+    static_libs: [
         "libbase",
+        "libcrypto",
         "libhidl-gen",
         "libhidl-gen-ast",
+        "libhidl-gen-hash",
         "libhidl-gen-host-utils",
         "libhidl-gen-utils",
         "liblog",
