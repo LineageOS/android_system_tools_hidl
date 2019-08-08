@@ -36,11 +36,20 @@ struct Reference {
     Reference() = default;
     virtual ~Reference() {}
 
-    Reference(const std::string& localName, const FQName& fqName, const Location& location)
-        : mResolved(nullptr), mFqName(fqName), mLocation(location), mLocalName(localName) {}
+    Reference(const std::string& localName, const FQName& fqName, const Location& location,
+              bool definedInline = false)
+        : mResolved(nullptr),
+          mFqName(fqName),
+          mLocation(location),
+          mDefinedInline(definedInline),
+          mLocalName(localName) {}
 
-    Reference(const std::string& localName, T* type, const Location& location)
-        : mResolved(type), mLocation(location), mLocalName(localName) {
+    Reference(const std::string& localName, T* type, const Location& location,
+              bool definedInline = false)
+        : mResolved(type),
+          mLocation(location),
+          mDefinedInline(definedInline),
+          mLocalName(localName) {
         CHECK(type != nullptr);
     }
 
@@ -49,6 +58,7 @@ struct Reference {
         : mResolved(ref.mResolved),
           mFqName(ref.mFqName),
           mLocation(ref.mLocation),
+          mDefinedInline(ref.mDefinedInline),
           mLocalName(ref.mLocalName) {}
 
     template <class OtherT>
@@ -56,6 +66,7 @@ struct Reference {
         : mResolved(ref.mResolved),
           mFqName(ref.mFqName),
           mLocation(location),
+          mDefinedInline(ref.mDefinedInline),
           mLocalName(ref.mLocalName) {}
 
     /* Returns true iff referred type is resolved
@@ -109,6 +120,8 @@ struct Reference {
         return mLocation;
     }
 
+    bool definedInline() const { return mDefinedInline; }
+
     const std::string& localName() const { return mLocalName; }
 
   private:
@@ -119,6 +132,8 @@ struct Reference {
     /* Reference location is mainly used for printing errors
        and handling forward reference restrictions */
     Location mLocation;
+    /* definedInline is true if T is defined where it is referenced */
+    bool mDefinedInline;
 
     /* Name used in the .hal file */
     std::string mLocalName;
@@ -144,7 +159,7 @@ struct NamedReference : public Reference<T>, DocCommentable {
     // TODO(b/64715470) Legacy
     const T& type() const { return *Reference<T>::get(); }
 
-   private:
+  private:
     const std::string mName;
 };
 
