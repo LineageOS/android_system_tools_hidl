@@ -73,9 +73,6 @@ struct Method : DocCommentable {
     std::vector<Reference<Type>*> getStrongReferences();
     std::vector<const Reference<Type>*> getStrongReferences() const;
 
-    std::vector<ConstantExpression*> getConstantExpressions();
-    std::vector<const ConstantExpression*> getConstantExpressions() const;
-
     // Make a copy with the same name, args, results, oneway, annotations.
     // Implementations, serial are not copied.
     Method *copySignature() const;
