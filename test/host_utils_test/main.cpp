@@ -130,7 +130,7 @@ TEST_F(LibHidlGenUtilsTest, JoinStrings) {
 
 // This test checks if Tokenize is working correctly. Since that is private, this just converts
 // everything to upper snake case.
-TEST_F(LibHidlGenUtilsTest, Case) {
+TEST_F(LibHidlGenUtilsTest, TokenizeTest) {
     // Basic cases
     EXPECT_EQ("UPPER_SNAKE_CASE", StringHelper::ToUpperSnakeCase("UPPER_SNAKE_CASE"));
     EXPECT_EQ("UPPER_SNAKE_CASE", StringHelper::ToUpperSnakeCase("upper_snake_case"));
@@ -149,6 +149,10 @@ TEST_F(LibHidlGenUtilsTest, Case) {
     EXPECT_EQ("UI_ERROR", StringHelper::ToUpperSnakeCase("UI_Error"));
     EXPECT_EQ("PROTOCOL_B_PRIME", StringHelper::ToUpperSnakeCase("protocolBPrime"));
     EXPECT_EQ("PROTOCOL_B_PRIME", StringHelper::ToUpperSnakeCase("protocol_B_Prime"));
+
+    // Fully uppercase
+    EXPECT_EQ("VAL2", StringHelper::ToUpperSnakeCase("VAL2"));
+    EXPECT_EQ("VAL2OTHER", StringHelper::ToUpperSnakeCase("VAL2OTHER"));
 }
 
 int main(int argc, char** argv) {
