@@ -24,6 +24,7 @@
 #include <android-base/logging.h>
 #include <hidl-util/Formatter.h>
 #include <iostream>
+#include <set>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -638,26 +639,55 @@ void CompoundType::emitSafeUnionTypeDeclarations(Formatter& out) const {
 }
 
 void CompoundType::emitHidlDefinition(Formatter& out) const {
+    emitInlineHidlDefinition(out);
+    out << ";\n";
+}
+
+void CompoundType::emitInlineHidlDefinition(Formatter& out) const {
     if (getDocComment() != nullptr) getDocComment()->emit(out);
     out << typeName() << " ";
 
-    const std::vector<const NamedType*>& sortedTypes = getSortedDefinedTypes();
-    if (sortedTypes.empty() && mFields->empty()) {
+    std::set<FQName> namesDeclaredInScope;
+    for (const NamedReference<Type>* ref : *mFields) {
+        if (ref->definedInline()) {
+            const Type* type = ref->get();
+            CHECK(type->isCompoundType()) << " only compound types can be defined inline";
+            namesDeclaredInScope.insert(static_cast<const CompoundType*>(type)->fqName());
+        }
+    }
+
+    std::vector<const NamedType*> preDeclaredTypes;
+    for (const NamedType* namedType : getSortedDefinedTypes()) {
+        if (namesDeclaredInScope.find(namedType->fqName()) == namesDeclaredInScope.end()) {
+            // have to predeclare it
+            preDeclaredTypes.push_back(namedType);
+        }
+    }
+
+    if (preDeclaredTypes.empty() && mFields->empty()) {
         out << "{}";
     } else {
         out.block([&] {
-            for (const Type* t : sortedTypes) {
+            for (const Type* t : preDeclaredTypes) {
                 t->emitHidlDefinition(out);
             }
 
+            if (!preDeclaredTypes.empty() && !mFields->empty()) out << "\n";
+
             for (const NamedReference<Type>* ref : *mFields) {
                 if (ref->getDocComment() != nullptr) ref->getDocComment()->emit(out);
-                out << ref->localName() << " " << ref->name() << ";\n";
+
+                if (ref->definedInline()) {
+                    // Same check as above, this is for sanity
+                    CHECK(ref->get()->isCompoundType());
+                    static_cast<const CompoundType*>(ref->get())->emitInlineHidlDefinition(out);
+                    out << " " << ref->name() << ";\n";
+                } else {
+                    out << ref->localName() << " " << ref->name() << ";\n";
+                }
             }
         });
     }
-
-    out << ";\n";
 }
 
 void CompoundType::emitTypeDeclarations(Formatter& out) const {
