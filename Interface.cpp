@@ -823,10 +823,12 @@ void Interface::emitHidlDefinition(Formatter& out) const {
         out << "extends " << super->fqName().getRelativeFQName(fqName()) << " ";
     }
 
-    out << "{\n";
+    out << "{";
 
     out.indent([&] {
         const std::vector<const NamedType*>& definedTypes = getSortedDefinedTypes();
+        if (definedTypes.size() > 0 || userDefinedMethods().size() > 0) out << "\n";
+
         out.join(definedTypes.begin(), definedTypes.end(), "\n",
                  [&](auto t) { t->emitHidlDefinition(out); });
 
