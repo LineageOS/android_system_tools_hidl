@@ -8,6 +8,7 @@ function run() {
         hidl2aidl_test \
         hidl_error_test \
         hidl_export_test \
+        hidl_format_test \
         hidl_cpp_impl_test \
         hidl_java_impl_test \
         hidl_system_api_test \
