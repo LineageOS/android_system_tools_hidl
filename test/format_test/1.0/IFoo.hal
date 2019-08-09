@@ -21,33 +21,50 @@ package hidl_format_test_pkg@1.0;
  */
 interface IFoo {
     struct BigStruct {
-        struct Foo {};
-
         uint8_t type;
+
+        /**
+         * This should also be emitted
+         */
         struct Bar {
             int32_t c;
         } c;
+
+        struct Foo {};
+
         Foo b;
     };
 
     struct Everything {
         int8_t number;
+
         int32_t anotherNumber;
+
         string s;
+
         vec<string> vs;
+
+        /**
+         * Some doc comment which will be emitted
+         */
         string[2][2] multidimArray;
+
         string[3] sArray;
+
         BigStruct anotherStruct;
+
         bitfield<SomeEnum> bf;
     };
 
     safe_union SafeUnion {
         string a;
+
         uint8_t num;
     };
 
     union Union {
         uint32_t a;
+
         uint8_t num;
     };
 

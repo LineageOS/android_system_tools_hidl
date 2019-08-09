@@ -638,9 +638,17 @@ void CompoundType::emitSafeUnionTypeDeclarations(Formatter& out) const {
     }
 }
 
-void CompoundType::emitHidlDefinition(Formatter& out) const {
-    emitInlineHidlDefinition(out);
-    out << ";\n";
+void CompoundType::emitFieldHidlDefinition(Formatter& out, const NamedReference<Type>& ref) const {
+    if (ref.getDocComment() != nullptr) ref.getDocComment()->emit(out);
+
+    if (ref.definedInline()) {
+        // Same check as above, this is for sanity
+        CHECK(ref.get()->isCompoundType());
+        static_cast<const CompoundType*>(ref.get())->emitInlineHidlDefinition(out);
+        out << " " << ref.name() << ";\n";
+    } else {
+        out << ref.localName() << " " << ref.name() << ";\n";
+    }
 }
 
 void CompoundType::emitInlineHidlDefinition(Formatter& out) const {
@@ -664,30 +672,36 @@ void CompoundType::emitInlineHidlDefinition(Formatter& out) const {
         }
     }
 
-    if (preDeclaredTypes.empty() && mFields->empty()) {
-        out << "{}";
-    } else {
-        out.block([&] {
-            for (const Type* t : preDeclaredTypes) {
-                t->emitHidlDefinition(out);
+    out << "{";
+    out.indent([&] {
+        size_t preDeclaredTypesIdx = 0;
+        size_t fieldIdx = 0;
+        while (preDeclaredTypesIdx < preDeclaredTypes.size() && fieldIdx < mFields->size()) {
+            out << "\n";
+            if (preDeclaredTypes.at(preDeclaredTypesIdx)->location() <
+                mFields->at(fieldIdx)->location()) {
+                preDeclaredTypes.at(preDeclaredTypesIdx++)->emitHidlDefinition(out);
+            } else {
+                emitFieldHidlDefinition(out, *mFields->at(fieldIdx++));
             }
+        }
 
-            if (!preDeclaredTypes.empty() && !mFields->empty()) out << "\n";
+        while (preDeclaredTypesIdx < preDeclaredTypes.size()) {
+            out << "\n";
+            preDeclaredTypes.at(preDeclaredTypesIdx++)->emitHidlDefinition(out);
+        }
 
-            for (const NamedReference<Type>* ref : *mFields) {
-                if (ref->getDocComment() != nullptr) ref->getDocComment()->emit(out);
+        while (fieldIdx < mFields->size()) {
+            out << "\n";
+            emitFieldHidlDefinition(out, *mFields->at(fieldIdx++));
+        }
+    });
+    out << "}";
+}
 
-                if (ref->definedInline()) {
-                    // Same check as above, this is for sanity
-                    CHECK(ref->get()->isCompoundType());
-                    static_cast<const CompoundType*>(ref->get())->emitInlineHidlDefinition(out);
-                    out << " " << ref->name() << ";\n";
-                } else {
-                    out << ref->localName() << " " << ref->name() << ";\n";
-                }
-            }
-        });
-    }
+void CompoundType::emitHidlDefinition(Formatter& out) const {
+    emitInlineHidlDefinition(out);
+    out << ";\n";
 }
 
 void CompoundType::emitTypeDeclarations(Formatter& out) const {

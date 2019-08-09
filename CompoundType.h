@@ -147,6 +147,8 @@ private:
 
     // only emits the struct body. doesn't emit the last ";\n" from the definition
     void emitInlineHidlDefinition(Formatter& out) const;
+    // emits the hidl definition line for a field inside the struct. used by emitHidlDefinition
+    void emitFieldHidlDefinition(Formatter& out, const NamedReference<Type>& ref) const;
 
     void emitLayoutAsserts(Formatter& out, const Layout& localLayout,
                            const std::string& localLayoutName) const;
