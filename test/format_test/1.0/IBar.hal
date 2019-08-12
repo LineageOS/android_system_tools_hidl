@@ -21,5 +21,4 @@ import IFoo;
 /**
  * This is just to check that inheritance is emitted correctly
  */
-interface IBar extends IFoo {
-};
+interface IBar extends IFoo {};
