@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-cc_library_host_shared {
+cc_library_host_static {
     name: "libhidl-lint",
     defaults: ["hidl-gen-defaults"],
     export_shared_lib_headers: ["libjsoncpp"],
@@ -25,12 +25,16 @@ cc_library_host_shared {
     ],
     shared_libs: [
         "libbase",
-        "libhidl-gen",
-        "libhidl-gen-ast",
-        "libhidl-gen-host-utils",
-        "libhidl-gen-utils",
         "libjsoncpp",
         "liblog",
+    ],
+    static_libs: [
+        "libcrypto",
+        "libhidl-gen",
+        "libhidl-gen-ast",
+        "libhidl-gen-hash",
+        "libhidl-gen-host-utils",
+        "libhidl-gen-utils",
     ],
 }
 
@@ -38,14 +42,16 @@ cc_binary_host {
     name: "hidl-lint",
     defaults: ["hidl-gen-defaults"],
     srcs: ["main.cpp"],
-    shared_libs: [
+    static_libs: [
         "libbase",
+        "libcrypto",
         "libhidl-gen",
         "libhidl-gen-ast",
+        "libhidl-gen-hash",
         "libhidl-gen-host-utils",
         "libhidl-gen-utils",
-        "libhidl-lint",
         "libjsoncpp",
         "liblog",
     ],
+    whole_static_libs: ["libhidl-lint"],
 }
