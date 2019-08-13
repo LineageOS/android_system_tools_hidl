@@ -17,12 +17,17 @@
 cc_test_host {
     name: "hidl-lint_test",
     defaults: ["hidl-gen-defaults"],
-    shared_libs: [
+    srcs: ["main.cpp"],
+    static_libs: [
+        "libbase",
+        "libcrypto",
+        "libgmock",
         "libhidl-gen",
         "libhidl-gen-ast",
+        "libhidl-gen-hash",
+        "libhidl-gen-host-utils",
         "libhidl-gen-utils",
-        "libhidl-lint",
+        "libjsoncpp",
     ],
-    static_libs: ["libgmock"],
-    srcs: ["main.cpp"],
+    whole_static_libs: ["libhidl-lint"],
 }
