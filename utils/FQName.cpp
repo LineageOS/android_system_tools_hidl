@@ -560,6 +560,13 @@ FQName FQName::downRev() const {
     return ret;
 }
 
+FQName FQName::upRev() const {
+    FQName ret(*this);
+    ret.mMinor++;
+    CHECK(ret.mMinor > 0);
+    return ret;
+}
+
 const FQName gIBaseFqName = FQName("android.hidl.base", "1.0", "IBase");
 const FQName gIManagerFqName = FQName("android.hidl.manager", "1.0", "IServiceManager");
 

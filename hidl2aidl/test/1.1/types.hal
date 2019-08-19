@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-package hidl2aidl@1.0;
-
-struct Outer {
-    struct Inner {
-        uint8_t a;
-    } inner;
-};
+package hidl2aidl@1.1;
 
 struct OverrideMe {
-    uint8_t a;
+    string a;
 };
 
-struct OnlyIn10 {
-    string str;
+struct OnlyIn11 {
+    int32_t str;
 };
