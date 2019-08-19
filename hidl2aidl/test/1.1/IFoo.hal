@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-package hidl2aidl@1.0;
+package hidl2aidl@1.1;
 
-struct Outer {
-    struct Inner {
-        uint8_t a;
-    } inner;
-};
+import @1.0::IFoo;
+import @1.0::Outer;
 
-struct OverrideMe {
-    uint8_t a;
-};
+interface IFoo extends @1.0::IFoo {
+    struct BigStruct {
+        uint8_t type;
+    };
 
-struct OnlyIn10 {
-    string str;
+    // Should take precedence over @1.0::someBar
+    someBar_1_1(string a);
+
+    useStruct() generates (BigStruct type);
+    useImportedStruct(Outer outer);
 };
