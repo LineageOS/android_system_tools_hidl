@@ -15,9 +15,11 @@
  */
 
 #include <android-base/logging.h>
+#include <android-base/parseint.h>
 #include <hidl-util/FQName.h>
 #include <hidl-util/Formatter.h>
 #include <hidl-util/StringHelper.h>
+#include <cstddef>
 #include <vector>
 
 #include "AidlHelper.h"
@@ -47,7 +49,58 @@ std::vector<const Method*> AidlHelper::getUserDefinedMethods(const Interface& in
     return methods;
 }
 
+struct MethodWithVersion {
+    size_t major;
+    size_t minor;
+    const Method* method;
+    std::string name;
+};
+
+static void pushVersionedMethodOntoMap(MethodWithVersion versionedMethod,
+                                       std::map<std::string, MethodWithVersion>* map,
+                                       std::vector<const Method*>* ignored) {
+    const Method* method = versionedMethod.method;
+    std::string name = method->name();
+    size_t underscore = name.find("_");
+    if (underscore != std::string::npos) {
+        std::string version = name.substr(underscore + 1);  // don't include _
+        std::string nameWithoutVersion = name.substr(0, underscore);
+        underscore = version.find("_");
+
+        size_t major, minor;
+        if (underscore != std::string::npos &&
+            base::ParseUint(version.substr(0, underscore), &major) &&
+            base::ParseUint(version.substr(underscore + 1), &minor)) {
+            // contains major and minor version. consider it's nameWithoutVersion now.
+            name = nameWithoutVersion;
+            versionedMethod.name = nameWithoutVersion;
+        }
+    }
+
+    // push name onto map
+    auto [it, inserted] = map->emplace(std::move(name), versionedMethod);
+    if (!inserted) {
+        auto* current = &it->second;
+
+        // Method in the map is more recent
+        if ((current->major > versionedMethod.major) ||
+            (current->major == versionedMethod.major && current->minor > versionedMethod.minor)) {
+            // ignoring versionedMethod
+            ignored->push_back(versionedMethod.method);
+            return;
+        }
+
+        // Either current.major < versioned.major OR versioned.minor >= current.minor
+        ignored->push_back(current->method);
+        *current = std::move(versionedMethod);
+    }
+}
+
 void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordinator) {
+    for (const NamedType* type : interface.getSubTypes()) {
+        emitAidl(*type, coordinator);
+    }
+
     Formatter out = getFileWithHeader(interface, coordinator);
 
     interface.emitDocComment(out);
@@ -62,8 +115,26 @@ void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordin
             emitAidl(*type, coordinator);
         }
 
-        const std::vector<const Method*>& methods = getUserDefinedMethods(interface);
-        out.join(methods.begin(), methods.end(), "\n", [&](const Method* method) {
+        std::map<std::string, MethodWithVersion> methodMap;
+        std::vector<const Method*> ignoredMethods;
+        for (const Interface* iface : interface.typeChain()) {
+            const std::vector<Method*> userDefined = iface->userDefinedMethods();
+            for (const Method* method : iface->userDefinedMethods()) {
+                pushVersionedMethodOntoMap(
+                        {iface->fqName().getPackageMajorVersion(),
+                         iface->fqName().getPackageMinorVersion(), method, method->name()},
+                        &methodMap, &ignoredMethods);
+            }
+        }
+
+        out.join(ignoredMethods.begin(), ignoredMethods.end(), "\n", [&](const Method* method) {
+            out << "// Ignoring method " << method->name()
+                << " since a newer alternative is available.";
+        });
+        if (!ignoredMethods.empty()) out << "\n\n";
+
+        out.join(methodMap.begin(), methodMap.end(), "\n", [&](const auto& pair) {
+            const Method* method = pair.second.method;
             method->emitDocComment(out);
 
             std::vector<NamedReference<Type>*> results;
@@ -77,6 +148,11 @@ void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordin
                 }
             }
 
+            if (method->name() != pair.second.name) {
+                out << "// Changing method name from " << method->name() << " to "
+                    << pair.second.name << "\n";
+            }
+
             std::string returnType = "void";
             if (results.size() == 1) {
                 returnType = getAidlType(*results[0]->get());
@@ -88,7 +164,7 @@ void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordin
             }
 
             if (method->isOneway()) out << "oneway ";
-            out << returnType << " " << method->name() << "(";
+            out << returnType << " " << pair.second.name << "(";
             emitAidlMethodParams(out, method->args(), "in ");
 
             // Join these

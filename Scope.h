@@ -60,6 +60,7 @@ struct Scope : public NamedType {
     void setAnnotations(std::vector<Annotation*>* annotations);
 
     std::vector<const Type*> getDefinedTypes() const override;
+    std::vector<const NamedType*> getSortedDefinedTypes() const;
 
     void topologicalReorder(const std::unordered_map<const Type*, size_t>& reversedOrder);
 
@@ -83,9 +84,6 @@ struct Scope : public NamedType {
 
     void appendToExportedTypesVector(
             std::vector<const Type *> *exportedTypes) const override;
-
-  protected:
-    std::vector<const NamedType*> getSortedDefinedTypes() const;
 
   private:
     std::vector<NamedType *> mTypes;
