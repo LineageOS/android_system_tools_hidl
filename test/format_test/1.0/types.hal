@@ -31,3 +31,5 @@ enum AutoGenValues : int8_t {
     B,
     C,
 };
+
+struct AnotherEmptyStruct {};
