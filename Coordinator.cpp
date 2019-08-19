@@ -653,6 +653,21 @@ status_t Coordinator::enforceRestrictionsOnPackage(const FQName& fqName,
     return OK;
 }
 
+status_t Coordinator::packageExists(const FQName& package, bool* result) const {
+    std::string packagePath;
+    status_t err =
+            getPackagePath(package, false /* relative */, false /* sanitized */, &packagePath);
+    if (err != OK) return err;
+
+    if (existdir(makeAbsolute(packagePath).c_str())) {
+        *result = true;
+        return OK;
+    }
+
+    *result = false;
+    return OK;
+}
+
 status_t Coordinator::enforceMinorVersionUprevs(const FQName& currentPackage,
                                                 Enforce enforcement) const {
     if(!currentPackage.hasVersion()) {
@@ -670,12 +685,11 @@ status_t Coordinator::enforceMinorVersionUprevs(const FQName& currentPackage,
     while (prevPackage.getPackageMinorVersion() > 0) {
         prevPackage = prevPackage.downRev();
 
-        std::string prevPackagePath;
-        status_t err = getPackagePath(prevPackage, false /* relative */, false /* sanitized */,
-                                      &prevPackagePath);
+        bool result;
+        status_t err = packageExists(prevPackage, &result);
         if (err != OK) return err;
 
-        if (existdir(makeAbsolute(prevPackagePath).c_str())) {
+        if (result) {
             hasPrevPackage = true;
             break;
         }

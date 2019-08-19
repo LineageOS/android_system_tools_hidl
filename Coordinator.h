@@ -114,6 +114,9 @@ struct Coordinator {
             const FQName &package,
             std::vector<std::string> *fileNames) const;
 
+    // Returns true if the package points to a directory that exists
+    status_t packageExists(const FQName& package, bool* result) const;
+
     status_t appendPackageInterfacesToVector(
             const FQName &package,
             std::vector<FQName> *packageInterfaces) const;
