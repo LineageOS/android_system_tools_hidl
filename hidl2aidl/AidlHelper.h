@@ -48,7 +48,7 @@ struct AidlHelper {
     static Formatter getFileWithHeader(const NamedType& namedType, const Coordinator& coordinator);
 
     /* Methods for Type */
-    static std::string getAidlType(const Type& type);
+    static std::string getAidlType(const Type& type, const FQName& relativeTo);
 
     /* Methods for NamedType */
     static void emitAidl(const NamedType& namedType, const Coordinator& coordinator);

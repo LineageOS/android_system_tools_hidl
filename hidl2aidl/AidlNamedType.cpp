@@ -55,7 +55,8 @@ static void emitCompoundTypeAidlDefinition(Formatter& out, const CompoundType& c
         out.block([&] {
             for (const NamedReference<Type>* field : compoundType.getFields()) {
                 field->emitDocComment(out);
-                out << AidlHelper::getAidlType(*field->get()) << " " << field->name() << ";\n";
+                out << AidlHelper::getAidlType(*field->get(), compoundType.fqName()) << " "
+                    << field->name() << ";\n";
             }
         });
     } else {
