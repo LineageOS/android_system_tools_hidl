@@ -47,18 +47,13 @@ static void enumValueNames(const AST& ast, std::vector<Lint>* errors) {
 
                     std::string errorString;
                     for (const std::string& token : tokens) {
-                        if (token == "ALL") {
-                            errorString =
-                                    "\"ALL\" enum values are considered harmful since they make it "
-                                    "hard to inherit from enum types.\n";
-                            break;
-                        }
-
-                        if (token == "MAX") {
-                            errorString =
-                                    "\"MAX\" enum values are considered harmful since they make it "
-                                    "hard to change constraints in the interface in the future. "
-                                    "Consider changing this to an API.\n";
+                        if (token == "ALL" || token == "COUNT" || token == "MAX") {
+                            errorString = "\"" + token + "\"" +
+                                          " enum values have been known to become out of date when "
+                                          "people add minor version upgrades, extensions to "
+                                          "interfaces, or when more functionality is added later. "
+                                          "In order to make it easier to maintain interfaces, "
+                                          "consider avoiding adding this as part of an enum.\n";
                             break;
                         }
                     }
