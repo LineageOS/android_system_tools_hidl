@@ -248,12 +248,20 @@ TEST_F(HidlLintTest, EnumMaxAllTest) {
     EXPECT_NO_LINT("lint_test.enum_max_all@1.0::IFoo");
 
     // Lint since MAX and ALL are enum values
-    EXPECT_LINT("lint_test.enum_max_all@1.0::IMax", "\"MAX\" enum values are considered harmful");
-    EXPECT_LINT("lint_test.enum_max_all@1.0::IAll", "\"ALL\" enum values are considered harmful");
+    EXPECT_LINT("lint_test.enum_max_all@1.0::IMax",
+                "\"MAX\" enum values have been known to become out of date");
+    EXPECT_LINT("lint_test.enum_max_all@1.0::IAll",
+                "\"ALL\" enum values have been known to become out of date");
+    EXPECT_LINT("lint_test.enum_max_all@1.0::ICount",
+                "\"COUNT\" enum values have been known to become out of date");
 
     // Lint since MAX and ALL are parts of the enum values
-    EXPECT_LINT("lint_test.enum_max_all@1.0::IMax2", "\"MAX\" enum values are considered harmful");
-    EXPECT_LINT("lint_test.enum_max_all@1.0::IAll2", "\"ALL\" enum values are considered harmful");
+    EXPECT_LINT("lint_test.enum_max_all@1.0::IMax2",
+                "\"MAX\" enum values have been known to become out of date");
+    EXPECT_LINT("lint_test.enum_max_all@1.0::IAll2",
+                "\"ALL\" enum values have been known to become out of date");
+    EXPECT_LINT("lint_test.enum_max_all@1.0::ICount2",
+                "\"COUNT\" enum values have been known to become out of date");
 }
 
 TEST_F(HidlLintTest, UnhandledDocCommentTest) {
