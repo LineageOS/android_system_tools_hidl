@@ -296,7 +296,7 @@ bool isValidTypeName(const std::string& identifier, std::string *errorMsg) {
 %type<type> named_struct_or_union_declaration named_enum_declaration
 %type<type> compound_declaration annotated_compound_declaration
 
-%type<field> field_declaration commentable_field_declaration
+%type<docCommentable> field_declaration commentable_field_declaration
 %type<fields> field_declarations struct_or_union_body
 %type<constantExpression> const_expr
 %type<enumValue> enum_value commentable_enum_value
@@ -336,6 +336,7 @@ bool isValidTypeName(const std::string& identifier, std::string *errorMsg) {
     android::Annotation *annotation;
     std::vector<android::Annotation *> *annotations;
     android::DocComment* docComment;
+    android::DocCommentable* docCommentable;
 }
 
 %%
@@ -925,7 +926,6 @@ named_struct_or_union_declaration
       {
           CHECK((*scope)->isCompoundType());
           CompoundType *container = static_cast<CompoundType *>(*scope);
-          container->setFields($4);
 
           leaveScope(ast, scope);
           ast->addScopedType(container, *scope);
@@ -938,15 +938,10 @@ struct_or_union_body
     ;
 
 field_declarations
-    : /* empty */ { $$ = new std::vector<NamedReference<Type>*>; }
+    : /* empty */ { $$ = nullptr; }
     | field_declarations commentable_field_declaration
       {
-          $$ = $1;
-
-          // Compound declaration or error
-          if ($2 != nullptr) {
-              $$->push_back($2);
-          }
+          $$ = nullptr;
       }
     ;
 
@@ -965,14 +960,18 @@ field_declaration
           CHECK((*scope)->isCompoundType());
 
           std::string errorMsg;
-          auto style = static_cast<CompoundType *>(*scope)->style();
+          CompoundType* compoundType = static_cast<CompoundType *>(*scope);
+          auto style = compoundType->style();
 
           if (!isValidCompoundTypeField(style, $2, &errorMsg)) {
               std::cerr << "ERROR: " << errorMsg << " at "
                         << @2 << "\n";
               YYERROR;
           }
-          $$ = new NamedReference<Type>($2, *$1, convertYYLoc(@2, ast));
+
+          NamedReference<Type>* field = new NamedReference<Type>($2, *$1, convertYYLoc(@2, ast));
+          compoundType->addField(field);
+          $$ = field;
       }
     | annotated_compound_declaration ';'
       {
@@ -988,8 +987,8 @@ field_declaration
                         << @2 << "\n";
               YYERROR;
           }
-          // Returns fields only
-          $$ = nullptr;
+
+          $$ = $1;
       }
     ;
 
@@ -1149,4 +1148,3 @@ void yy::parser::error(
         const std::string &errstr) {
     std::cerr << "ERROR: " << errstr << " at " << where << "\n";
 }
-
