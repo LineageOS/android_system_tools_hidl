@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <android-base/logging.h>
 #include <android-base/strings.h>
 #include <hidl-util/FQName.h>
 #include <hidl-util/Formatter.h>
@@ -31,6 +32,18 @@
 #include "Scope.h"
 
 namespace android {
+
+Formatter* AidlHelper::notesFormatter = nullptr;
+
+Formatter& AidlHelper::notes() {
+    CHECK(notesFormatter != nullptr);
+    return *notesFormatter;
+}
+
+void AidlHelper::setNotes(Formatter* formatter) {
+    CHECK(formatter != nullptr);
+    notesFormatter = formatter;
+}
 
 std::string AidlHelper::getAidlName(const FQName& fqName) {
     std::vector<std::string> names;
