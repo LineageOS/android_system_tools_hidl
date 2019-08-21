@@ -38,6 +38,7 @@ genrule {
         "hidl2aidl/Outer.aidl",
         "hidl2aidl/OuterInner.aidl",
         "hidl2aidl/OverrideMe.aidl",
+        // "hidl2aidl/conversion.log",
         "hidl2aidl2/IFoo.aidl",
     ],
 }
