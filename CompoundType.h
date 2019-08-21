@@ -39,7 +39,7 @@ struct CompoundType : public Scope {
     Style style() const;
 
     std::vector<const NamedReference<Type>*> getFields() const;
-    void setFields(std::vector<NamedReference<Type>*>* fields);
+    void addField(NamedReference<Type>* field);
 
     bool isCompoundType() const override;
 
@@ -143,7 +143,7 @@ private:
     };
 
     Style mStyle;
-    std::vector<NamedReference<Type>*>* mFields;
+    std::vector<NamedReference<Type>*> mFields;
 
     // only emits the struct body. doesn't emit the last ";\n" from the definition
     void emitInlineHidlDefinition(Formatter& out) const;
