@@ -60,6 +60,13 @@ struct AidlHelper {
     static void emitAidl(const Interface& interface, const Coordinator& coordinator);
     // Returns all methods that would exist in an AIDL equivalent interface
     static std::vector<const Method*> getUserDefinedMethods(const Interface& interface);
+
+    static Formatter& notes();
+    static void setNotes(Formatter* formatter);
+
+  private:
+    // This is the formatter to use for additional conversion output
+    static Formatter* notesFormatter;
 };
 
 }  // namespace android
