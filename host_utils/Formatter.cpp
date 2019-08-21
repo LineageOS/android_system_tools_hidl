@@ -19,6 +19,7 @@
 #include <assert.h>
 
 #include <android-base/logging.h>
+#include <android-base/strings.h>
 #include <string>
 #include <vector>
 
@@ -65,12 +66,12 @@ Formatter& Formatter::block(const std::function<void(void)>& func) {
     return (*this) << "}";
 }
 
-void Formatter::setLinePrefix(const std::string &prefix) {
-    mLinePrefix = prefix;
+void Formatter::pushLinePrefix(const std::string& prefix) {
+    mLinePrefix.push_back(prefix);
 }
 
-void Formatter::unsetLinePrefix() {
-    mLinePrefix = "";
+void Formatter::popLinePrefix() {
+    mLinePrefix.pop_back();
 }
 
 Formatter &Formatter::endl() {
@@ -120,14 +121,16 @@ Formatter& Formatter::sWhile(const std::string& cond, const std::function<void(v
 Formatter& Formatter::operator<<(const std::string& out) {
     const size_t len = out.length();
     size_t start = 0;
+
+    const std::string& prefix = base::Join(mLinePrefix, "");
     while (start < len) {
         size_t pos = out.find('\n', start);
 
         if (pos == std::string::npos) {
             if (mCurrentPosition == 0) {
                 fprintf(mFile, "%*s", (int)(getIndentation()), "");
-                fprintf(mFile, "%s", mLinePrefix.c_str());
-                mCurrentPosition = getIndentation() + mLinePrefix.size();
+                fprintf(mFile, "%s", prefix.c_str());
+                mCurrentPosition = getIndentation() + prefix.size();
             }
 
             std::string sub = out.substr(start);
@@ -136,10 +139,10 @@ Formatter& Formatter::operator<<(const std::string& out) {
             break;
         }
 
-        if (mCurrentPosition == 0 && (pos > start || !mLinePrefix.empty())) {
+        if (mCurrentPosition == 0 && (pos > start || !prefix.empty())) {
             fprintf(mFile, "%*s", (int)(getIndentation()), "");
-            fprintf(mFile, "%s", mLinePrefix.c_str());
-            mCurrentPosition = getIndentation() + mLinePrefix.size();
+            fprintf(mFile, "%s", prefix.c_str());
+            mCurrentPosition = getIndentation() + prefix.size();
         }
 
         if (pos == start) {
@@ -157,7 +160,12 @@ Formatter& Formatter::operator<<(const std::string& out) {
 }
 
 void Formatter::printBlock(const WrappedOutput::Block& block, size_t lineLength) {
-    size_t lineStart = mCurrentPosition ?: (getIndentation() + mLinePrefix.size());
+    size_t prefixSize = 0;
+    for (const std::string& prefix : mLinePrefix) {
+        prefixSize += prefix.size();
+    }
+
+    size_t lineStart = mCurrentPosition ?: (getIndentation() + prefixSize);
     size_t blockSize = block.computeSize(false);
     if (blockSize + lineStart < lineLength) {
         block.print(*this, false);
@@ -166,7 +174,7 @@ void Formatter::printBlock(const WrappedOutput::Block& block, size_t lineLength)
 
     // Everything will not fit on this line. Try to fit it on the next line.
     blockSize = block.computeSize(true);
-    if ((blockSize + getIndentation() + mSpacesPerIndent + mLinePrefix.size()) < lineLength) {
+    if ((blockSize + getIndentation() + mSpacesPerIndent + prefixSize) < lineLength) {
         *this << "\n";
         indent();
 

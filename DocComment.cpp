@@ -73,13 +73,13 @@ void DocComment::emit(Formatter& out, CommentType type) const {
             break;
     }
 
-    out.setLinePrefix(" *");
+    out.pushLinePrefix(" *");
 
     for (const std::string& line : mLines) {
         out << (line.empty() ? "" : " ") << line << "\n";
     }
 
-    out.unsetLinePrefix();
+    out.popLinePrefix();
     out << " */\n";
 }
 
