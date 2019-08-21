@@ -30,6 +30,9 @@ interface IFoo {
             int32_t c;
         } c;
 
+        /**
+         * This doc comment should show up
+         */
         struct Foo {};
 
         Foo b;
