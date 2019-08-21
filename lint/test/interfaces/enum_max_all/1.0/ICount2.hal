@@ -14,22 +14,11 @@
  * limitations under the License.
  */
 
-package hidl_format_test_pkg@1.0;
+package lint_test.enum_max_all@1.0;
 
-enum SomeEnum : uint32_t {
-    VAL = (1 << 2),
-    VAL2 = 1 << 3,
+interface ICount2 {
+    enum ContainsCount : uint8_t {
+        SOME_VAL = 3,
+        SOME_COUNT = 1
+    };
 };
-
-enum OtherEnum : SomeEnum {
-    VAL3 = (1 << 4) + 8 - 1 * 12,
-    VAL4 = ((1 << 5)) + 8 - 1 * 12,
-};
-
-enum AutoGenValues : int8_t {
-    A,
-    B,
-    C,
-};
-
-struct AnotherEmptyStruct {};

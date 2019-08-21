@@ -14,22 +14,12 @@
  * limitations under the License.
  */
 
-package hidl_format_test_pkg@1.0;
+package hidl2aidl@1.1;
 
-enum SomeEnum : uint32_t {
-    VAL = (1 << 2),
-    VAL2 = 1 << 3,
+struct OverrideMe {
+    string a;
 };
 
-enum OtherEnum : SomeEnum {
-    VAL3 = (1 << 4) + 8 - 1 * 12,
-    VAL4 = ((1 << 5)) + 8 - 1 * 12,
+struct OnlyIn11 {
+    int32_t str;
 };
-
-enum AutoGenValues : int8_t {
-    A,
-    B,
-    C,
-};
-
-struct AnotherEmptyStruct {};

@@ -21,3 +21,11 @@ struct Outer {
         uint8_t a;
     } inner;
 };
+
+struct OverrideMe {
+    uint8_t a;
+};
+
+struct OnlyIn10 {
+    string str;
+};
