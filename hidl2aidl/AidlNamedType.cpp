@@ -23,14 +23,24 @@
 
 namespace android {
 
+static void emitConversionNotes(Formatter& out, const NamedType& namedType) {
+    out << "// Check the conversion.log file to see the hidl definition.\n";
+
+    AidlHelper::notes() << "This is the HIDL definition of " << namedType.fqName().string() << "\n";
+    namedType.emitHidlDefinition(AidlHelper::notes());
+    AidlHelper::notes() << "\n";
+}
+
 static void emitTypeDefAidlDefinition(Formatter& out, const TypeDef& typeDef) {
     out << "// Cannot convert typedef " << typeDef.referencedType()->definedName() << " "
         << typeDef.fqName().string() << " since AIDL does not support typedefs.\n";
+    emitConversionNotes(out, typeDef);
 }
 
 static void emitEnumAidlDefinition(Formatter& out, const EnumType& enumType) {
     out << "// Cannot convert enum " << enumType.fqName().string()
         << " since AIDL does not support enums.\n";
+    emitConversionNotes(out, enumType);
 }
 
 static void emitCompoundTypeAidlDefinition(Formatter& out, const CompoundType& compoundType,
@@ -50,7 +60,8 @@ static void emitCompoundTypeAidlDefinition(Formatter& out, const CompoundType& c
         });
     } else {
         out << "{}\n";
-        out << "// FIXME: Add union/safe_union implementations";
+        out << "// Cannot convert unions/safe_unions since AIDL does not support them.\n";
+        emitConversionNotes(out, compoundType);
     }
     out << "\n\n";
 }
