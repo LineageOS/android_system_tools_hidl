@@ -141,7 +141,7 @@ void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordin
             for (NamedReference<Type>* res : method->results()) {
                 if (StringHelper::EndsWith(StringHelper::Uppercase(res->name()), "STATUS") ||
                     StringHelper::EndsWith(StringHelper::Uppercase(res->name()), "ERROR")) {
-                    out << "// Ignoring result " << res->get()->getJavaType() << " " << res->name()
+                    out << "// Ignoring result " << getAidlType(*res->get()) << " " << res->name()
                         << " since AIDL has built in status types.\n";
                 } else {
                     results.push_back(res);
@@ -157,9 +157,8 @@ void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordin
             if (results.size() == 1) {
                 returnType = getAidlType(*results[0]->get());
 
-                out << "// Adding return type to method instead of out param "
-                    << results[0]->get()->getJavaType() << " " << results[0]->name()
-                    << " since there is only one return value.\n";
+                out << "// Adding return type to method instead of out param " << returnType << " "
+                    << results[0]->name() << " since there is only one return value.\n";
                 results.clear();
             }
 
