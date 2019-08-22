@@ -33,9 +33,9 @@
 namespace android {
 
 static void emitAidlMethodParams(Formatter& out, const std::vector<NamedReference<Type>*> args,
-                                 const std::string& prefix) {
+                                 const std::string& prefix, const Interface& iface) {
     out.join(args.begin(), args.end(), ", ", [&](const NamedReference<Type>* arg) {
-        out << prefix << AidlHelper::getAidlType(*arg->get()) << " " << arg->name();
+        out << prefix << AidlHelper::getAidlType(*arg->get(), iface.fqName()) << " " << arg->name();
     });
 }
 
@@ -141,8 +141,8 @@ void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordin
             for (NamedReference<Type>* res : method->results()) {
                 if (StringHelper::EndsWith(StringHelper::Uppercase(res->name()), "STATUS") ||
                     StringHelper::EndsWith(StringHelper::Uppercase(res->name()), "ERROR")) {
-                    out << "// Ignoring result " << getAidlType(*res->get()) << " " << res->name()
-                        << " since AIDL has built in status types.\n";
+                    out << "// Ignoring result " << getAidlType(*res->get(), interface.fqName())
+                        << " " << res->name() << " since AIDL has built in status types.\n";
                 } else {
                     results.push_back(res);
                 }
@@ -155,7 +155,7 @@ void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordin
 
             std::string returnType = "void";
             if (results.size() == 1) {
-                returnType = getAidlType(*results[0]->get());
+                returnType = getAidlType(*results[0]->get(), interface.fqName());
 
                 out << "// Adding return type to method instead of out param " << returnType << " "
                     << results[0]->name() << " since there is only one return value.\n";
@@ -164,13 +164,13 @@ void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordin
 
             if (method->isOneway()) out << "oneway ";
             out << returnType << " " << pair.second.name << "(";
-            emitAidlMethodParams(out, method->args(), "in ");
+            emitAidlMethodParams(out, method->args(), "in ", interface);
 
             // Join these
             if (!results.empty()) {
                 // TODO: Emit warning if a primitive is given as a out param.
                 if (!method->args().empty()) out << ", ";
-                emitAidlMethodParams(out, results, "out ");
+                emitAidlMethodParams(out, results, "out ", interface);
             }
 
             out << ");\n";
