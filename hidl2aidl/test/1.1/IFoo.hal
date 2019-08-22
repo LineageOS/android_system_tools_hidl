@@ -27,6 +27,11 @@ interface IFoo extends @1.0::IFoo {
     // Should take precedence over @1.0::someBar
     someBar_1_1(string a);
 
+    versionTest_(string a);
+    versionTest_two_(string a) generates (bool bl);
+
     useStruct() generates (BigStruct type);
     useImportedStruct(Outer outer);
+
+    useMemory(memory mem);
 };

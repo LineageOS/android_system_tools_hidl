@@ -38,17 +38,13 @@ static inline InterfaceMethodType operator|(InterfaceMethodType lhs, InterfaceMe
 // This function returns what kind of methods the interface contains
 static InterfaceMethodType getInterfaceOnewayType(const Interface& iface,
                                                   bool includeParentMethods) {
-    // Don't consider IBase since it is always mixed.
-    if (iface.isIBase()) {
-        return NONE;
-    }
-
     InterfaceMethodType onewayType = NONE;
 
     const std::vector<Method*>& methods = iface.userDefinedMethods();
     if (methods.empty()) {
-        CHECK(iface.superType() != nullptr);
-        return includeParentMethods ? getInterfaceOnewayType(*iface.superType(), true) : NONE;
+        return (iface.superType() != nullptr && includeParentMethods)
+                       ? getInterfaceOnewayType(*iface.superType(), true)
+                       : NONE;
     }
 
     for (auto method : methods) {
