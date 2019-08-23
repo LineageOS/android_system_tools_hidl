@@ -144,7 +144,7 @@ void AST::generateCppImplSource(Formatter& out) const {
         generateStubImplMethod(out, baseName, method);
     });
 
-    out.setLinePrefix("//");
+    out.pushLinePrefix("//");
     out << iface->definedName() << "* ";
     generateFetchSymbol(out, iface->definedName());
     out << "(const char* /* name */) {\n";
@@ -152,7 +152,7 @@ void AST::generateCppImplSource(Formatter& out) const {
     out << "return new " << baseName << "();\n";
     out.unindent();
     out << "}\n\n";
-    out.unsetLinePrefix();
+    out.popLinePrefix();
 
     out << "}  // namespace implementation\n";
     enterLeaveNamespace(out, false /* leave */);
