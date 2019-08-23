@@ -171,9 +171,10 @@ struct Formatter {
     // you want to start a // comment block, for example.
     // The prefix will be put before the indentation.
     // Will be effective the next time cursor is at the start of line.
-    void setLinePrefix(const std::string& prefix);
-    // Remove the line prefix.
-    void unsetLinePrefix();
+    // Adding two prefixes will output them in the order they were added
+    void pushLinePrefix(const std::string& prefix);
+    // Remove the last line prefix.
+    void popLinePrefix();
 
     bool isValid() const;
     size_t getIndentation() const;
@@ -187,7 +188,7 @@ struct Formatter {
     size_t mSpacesPerIndent;
     size_t mCurrentPosition;
 
-    std::string mLinePrefix;
+    std::vector<std::string> mLinePrefix;
 
     void printBlock(const WrappedOutput::Block& block, size_t lineLength);
     void output(const std::string &text) const;
