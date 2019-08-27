@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <hidl-util/FQName.h>
 #include <string>
 
 #include "AidlHelper.h"
@@ -28,22 +29,26 @@ static std::string getPlaceholderType(const std::string& type) {
     return "IBinder /* FIXME: " + type + " */";
 }
 
-std::string AidlHelper::getAidlType(const Type& type) {
+std::string AidlHelper::getAidlType(const Type& type, const FQName& relativeTo) {
     if (type.isVector()) {
         const VectorType& vec = static_cast<const VectorType&>(type);
         const Type* elementType = vec.getElementType();
 
         // Aidl doesn't support List<*> for C++ and NDK backends
-        return getAidlType(*elementType) + "[]";
+        return getAidlType(*elementType, relativeTo) + "[]";
     } else if (type.isNamedType()) {
         const NamedType& namedType = static_cast<const NamedType&>(type);
-        return getAidlFQName(namedType.fqName());
+        if (getAidlPackage(relativeTo) == getAidlPackage(namedType.fqName())) {
+            return getAidlName(namedType.fqName());
+        } else {
+            return getAidlFQName(namedType.fqName());
+        }
     } else if (type.isMemory()) {
         return getPlaceholderType("memory");
     } else if (type.isFmq()) {
         const FmqType& fmq = static_cast<const FmqType&>(type);
         return getPlaceholderType(fmq.templatedTypeName() + "<" +
-                                  getAidlType(*fmq.getElementType()) + ">");
+                                  getAidlType(*fmq.getElementType(), relativeTo) + ">");
     } else if (type.isPointer()) {
         return getPlaceholderType("pointer");
     } else {

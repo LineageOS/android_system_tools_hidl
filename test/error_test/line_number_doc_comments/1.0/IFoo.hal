@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 The Android Open Source Project
+ * Copyright (C) 2018 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package test.line_number_doc_comments@1.0;
 
-package hidl2aidl@1.1;
+/**
+ * This is a doc comment
+ */
+/*
+ * Different type of comment
+ */
+// Unhandled comment
+interface IFoo {
+    struct A {};
 
-import @1.0::IFoo;
-import @1.0::Outer;
-
-interface IFoo extends @1.0::IFoo {
-    struct BigStruct {
-        uint8_t type;
+    enum B : uint32_t {
+        C = 2, // bad (A is not an enum)
+        /* more unhandled stuff */
+        /** some more */
     };
 
-    // Should take precedence over @1.0::someBar
-    someBar_1_1(string a);
-
-    versionTest_(string a);
-    versionTest_two_(string a) generates (bool bl);
-
-    useStruct() generates (BigStruct type);
-    useImportedStruct(Outer outer);
-
-    useMemory(memory mem);
-    shouldImportCorrectTypes() generates (vec<OnlyIn11> lst);
+    // The error is on the next line. Should say 35 in the output.
+    foo()
 };

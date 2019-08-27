@@ -24,11 +24,11 @@
 namespace android {
 
 static void emitConversionNotes(Formatter& out, const NamedType& namedType) {
-    out << "// Check the conversion.log file to see the hidl definition.\n";
-
-    AidlHelper::notes() << "This is the HIDL definition of " << namedType.fqName().string() << "\n";
-    namedType.emitHidlDefinition(AidlHelper::notes());
-    AidlHelper::notes() << "\n";
+    out << "// This is the HIDL definition of " << namedType.fqName().string() << "\n";
+    out.pushLinePrefix("// ");
+    namedType.emitHidlDefinition(out);
+    out.popLinePrefix();
+    out << "\n";
 }
 
 static void emitTypeDefAidlDefinition(Formatter& out, const TypeDef& typeDef) {
@@ -55,7 +55,8 @@ static void emitCompoundTypeAidlDefinition(Formatter& out, const CompoundType& c
         out.block([&] {
             for (const NamedReference<Type>* field : compoundType.getFields()) {
                 field->emitDocComment(out);
-                out << AidlHelper::getAidlType(*field->get()) << " " << field->name() << ";\n";
+                out << AidlHelper::getAidlType(*field->get(), compoundType.fqName()) << " "
+                    << field->name() << ";\n";
             }
         });
     } else {

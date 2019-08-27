@@ -24,6 +24,7 @@
 
 #include "AidlHelper.h"
 #include "Coordinator.h"
+#include "FormattingConstants.h"
 #include "Interface.h"
 #include "Method.h"
 #include "NamedType.h"
@@ -32,11 +33,29 @@
 
 namespace android {
 
-static void emitAidlMethodParams(Formatter& out, const std::vector<NamedReference<Type>*> args,
-                                 const std::string& prefix) {
-    out.join(args.begin(), args.end(), ", ", [&](const NamedReference<Type>* arg) {
-        out << prefix << AidlHelper::getAidlType(*arg->get()) << " " << arg->name();
-    });
+static void emitAidlMethodParams(WrappedOutput* wrappedOutput,
+                                 const std::vector<NamedReference<Type>*> args,
+                                 const std::string& prefix, const std::string& attachToLast,
+                                 const Interface& iface) {
+    if (args.size() == 0) {
+        *wrappedOutput << attachToLast;
+        return;
+    }
+
+    for (size_t i = 0; i < args.size(); i++) {
+        const NamedReference<Type>* arg = args[i];
+        std::string out =
+                prefix + AidlHelper::getAidlType(*arg->get(), iface.fqName()) + " " + arg->name();
+        wrappedOutput->group([&] {
+            if (i != 0) wrappedOutput->printUnlessWrapped(" ");
+            *wrappedOutput << out;
+            if (i == args.size() - 1) {
+                if (!attachToLast.empty()) *wrappedOutput << attachToLast;
+            } else {
+                *wrappedOutput << ",";
+            }
+        });
+    }
 }
 
 std::vector<const Method*> AidlHelper::getUserDefinedMethods(const Interface& interface) {
@@ -141,8 +160,8 @@ void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordin
             for (NamedReference<Type>* res : method->results()) {
                 if (StringHelper::EndsWith(StringHelper::Uppercase(res->name()), "STATUS") ||
                     StringHelper::EndsWith(StringHelper::Uppercase(res->name()), "ERROR")) {
-                    out << "// Ignoring result " << getAidlType(*res->get()) << " " << res->name()
-                        << " since AIDL has built in status types.\n";
+                    out << "// Ignoring result " << getAidlType(*res->get(), interface.fqName())
+                        << " " << res->name() << " since AIDL has built in status types.\n";
                 } else {
                     results.push_back(res);
                 }
@@ -155,25 +174,33 @@ void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordin
 
             std::string returnType = "void";
             if (results.size() == 1) {
-                returnType = getAidlType(*results[0]->get());
+                returnType = getAidlType(*results[0]->get(), interface.fqName());
 
                 out << "// Adding return type to method instead of out param " << returnType << " "
                     << results[0]->name() << " since there is only one return value.\n";
                 results.clear();
             }
 
-            if (method->isOneway()) out << "oneway ";
-            out << returnType << " " << pair.second.name << "(";
-            emitAidlMethodParams(out, method->args(), "in ");
+            WrappedOutput wrappedOutput(MAX_LINE_LENGTH);
 
-            // Join these
-            if (!results.empty()) {
+            if (method->isOneway()) wrappedOutput << "oneway ";
+            wrappedOutput << returnType << " " << pair.second.name << "(";
+
+            if (results.empty()) {
+                emitAidlMethodParams(&wrappedOutput, method->args(), /* prefix */ "in ",
+                                     /* attachToLast */ ");\n", interface);
+            } else {
+                emitAidlMethodParams(&wrappedOutput, method->args(), /* prefix */ "in ",
+                                     /* attachToLast */ ",", interface);
+                wrappedOutput.printUnlessWrapped(" ");
+
                 // TODO: Emit warning if a primitive is given as a out param.
                 if (!method->args().empty()) out << ", ";
-                emitAidlMethodParams(out, results, "out ");
+                emitAidlMethodParams(&wrappedOutput, results, /* prefix */ "out ",
+                                     /* attachToLast */ ");\n", interface);
             }
 
-            out << ");\n";
+            out << wrappedOutput;
         });
     });
 }
