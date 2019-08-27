@@ -33,6 +33,25 @@ interface IFoo extends @1.0::IFoo {
     useStruct() generates (BigStruct type);
     useImportedStruct(Outer outer);
 
+    /**
+     * @param mem memory
+     */
     useMemory(memory mem);
     shouldImportCorrectTypes() generates (vec<OnlyIn11> lst);
+
+    /**
+     * @return output output
+     */
+    oneOutput() generates (string output);
+
+    /**
+     * @return out1 out
+     * @return out2 out
+     */
+     multipleOutputs() generates (BigStruct out1, BigStruct out2);
+
+    /**
+     * @return status removed
+     */
+    removedOutput() generates (string status);
 };
