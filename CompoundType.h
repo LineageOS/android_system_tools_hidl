@@ -137,8 +137,12 @@ private:
     };
 
     struct CompoundLayout {
+        // Layout of this entire object including metadata.
+        // For struct/union, this is the same as innerStruct.
         Layout overall;
+        // Layout of user-specified data
         Layout innerStruct;
+        // Layout of discriminator for safe union (otherwise zero)
         Layout discriminator;
     };
 
@@ -170,6 +174,7 @@ private:
                                               bool usesMoveSemantics) const;
 
     CompoundLayout getCompoundAlignmentAndSize() const;
+    void emitPaddingZero(Formatter& out, size_t offset, size_t size) const;
 
     void emitSafeUnionReaderWriterForInterfaces(
             Formatter &out,

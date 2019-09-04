@@ -465,7 +465,7 @@ bool isHidlTransportPackage(const FQName& fqName) {
 
 bool isSystemProcessSupportedPackage(const FQName& fqName) {
     // Technically, so is hidl IBase + IServiceManager, but
-    // these are part of libhidltransport.
+    // these are part of libhidlbase.
     return fqName.inPackage("android.hardware.graphics.common") ||
            fqName.inPackage("android.hardware.graphics.mapper") ||
            fqName.string() == "android.hardware.renderscript@1.0" ||
@@ -727,7 +727,6 @@ static status_t generateAndroidBpImplForPackage(const FQName& packageFQName,
             << "shared_libs: [\n";
         out.indent([&] {
             out << "\"libhidlbase\",\n"
-                << "\"libhidltransport\",\n"
                 << "\"libutils\",\n"
                 << "\"" << makeLibraryName(packageFQName) << "\",\n";
 
