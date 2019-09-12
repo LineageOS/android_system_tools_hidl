@@ -601,8 +601,8 @@ static status_t generateAndroidBpForPackage(const FQName& packageFQName,
     bool isVndkSp = isVndk && isSystemProcessSupportedPackage(packageFQName);
 
     // Currently, all platform-provided interfaces are in the VNDK, so if it isn't in the VNDK, it
-    // is device specific and so should be put in the product partition.
-    bool isProduct = !isCoreAndroid;
+    // is device specific and so should be put in the system_ext partition.
+    bool isSystemExt = !isCoreAndroid;
 
     std::string packageRoot;
     err = coordinator->getPackageRoot(packageFQName, &packageRoot);
@@ -631,8 +631,8 @@ static status_t generateAndroidBpForPackage(const FQName& packageFQName,
                 }
             }) << ",\n";
         }
-        if (isProduct) {
-            out << "product_specific: true,\n";
+        if (isSystemExt) {
+            out << "system_ext_specific: true,\n";
         }
         (out << "srcs: [\n").indent([&] {
            for (const auto& fqName : packageInterfaces) {
