@@ -113,10 +113,9 @@ std::string VectorType::getCppType(StorageMode mode,
 }
 
 std::string VectorType::getJavaType(bool /* forInitializer */) const {
-    const std::string elementJavaType = mElementType->isTemplatedType()
-        ? mElementType->getJavaType()
-        : mElementType->getJavaTypeClass();
-
+    // this will break if the type is templated in Java, but there are no types
+    // like this currently
+    const std::string elementJavaType = mElementType->getJavaTypeClass();
     return "java.util.ArrayList<" + elementJavaType + ">";
 }
 
