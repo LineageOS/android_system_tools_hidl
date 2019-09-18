@@ -597,6 +597,7 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 	if shouldGenerateLibrary {
 		mctx.CreateModule(android.ModuleFactoryAdaptor(cc.LibraryFactory), &ccProperties{
 			Name:               proptools.StringPtr(name.string()),
+			Host_supported:     proptools.BoolPtr(true),
 			Recovery_available: proptools.BoolPtr(true),
 			Vendor_available:   proptools.BoolPtr(true),
 			Double_loadable:    proptools.BoolPtr(isDoubleLoadable(name.string())),
