@@ -900,6 +900,13 @@ public final class HidlTestJava {
             ExpectTrue(expectedOutVec.equals(proxy.haveAStringVec(stringVec)));
         }
 
+        {
+            ArrayList<Byte> bytes = new ArrayList<Byte>();
+            bytes.add(IBaz.BitField.V1);
+            bytes.add(IBaz.BitField.V2);
+            ExpectTrue(bytes.equals(proxy.repeatBitfieldVec(bytes)));
+        }
+
         proxy.returnABunchOfStrings(
                 new IBaz.returnABunchOfStringsCallback() {
                     @Override
@@ -1428,6 +1435,8 @@ public final class HidlTestJava {
 
             return result;
         }
+
+        public ArrayList<Byte> repeatBitfieldVec(ArrayList<Byte> vector) { return vector; }
 
         public void returnABunchOfStrings(returnABunchOfStringsCallback cb) {
             cb.onValues("Eins", "Zwei", "Drei");
