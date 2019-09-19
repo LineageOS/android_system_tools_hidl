@@ -538,6 +538,12 @@ TEST_F(HidlTest, BazHaveAStringVecMethodTest) {
                 }));
 }
 
+TEST_F(HidlTest, BazRepeatBitfieldVecTest) {
+    hidl_vec<uint8_t> vec{0 | IBaz::BitField::V1, 0 | IBaz::BitField::V2};
+
+    EXPECT_OK(baz->repeatBitfieldVec(vec, [&](const auto& result) { EXPECT_EQ(vec, result); }));
+}
+
 TEST_F(HidlTest, BazReturnABunchOfStringsMethodTest) {
     std::string expectedA = "Eins";
     std::string expectedB = "Zwei";
