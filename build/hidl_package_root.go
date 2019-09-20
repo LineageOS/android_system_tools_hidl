@@ -17,9 +17,17 @@ package hidl
 import (
 	"sync"
 
+	"github.com/google/blueprint"
 	"github.com/google/blueprint/proptools"
 
 	"android/soong/android"
+)
+
+var (
+	currentTxtRule = pctx.StaticRule("currentTxtRule", blueprint.RuleParams{
+		Command:     "cp -f ${in} ${output}",
+		Description: "copy current.txt: ${in} => ${output}",
+	}, "output")
 )
 
 func init() {
@@ -41,7 +49,10 @@ type hidlPackageRoot struct {
 	}
 
 	currentPath android.OptionalPath
+	genOutputs  android.Paths
 }
+
+var _ android.SourceFileProducer = (*hidlPackageRoot)(nil)
 
 func (r *hidlPackageRoot) getFullPackageRoot() string {
 	return "-r" + r.Name() + ":" + *r.properties.Path
@@ -49,6 +60,28 @@ func (r *hidlPackageRoot) getFullPackageRoot() string {
 
 func (r *hidlPackageRoot) getCurrentPath() android.OptionalPath {
 	return r.currentPath
+}
+
+func (r *hidlPackageRoot) generateCurrentFile(ctx android.ModuleContext) {
+	if !r.currentPath.Valid() {
+		return
+	}
+
+	output := android.PathForModuleGen(ctx, r.Name()+".txt")
+	r.genOutputs = append(r.genOutputs, output)
+
+	ctx.ModuleBuild(pctx, android.ModuleBuildParams{
+		Rule:   currentTxtRule,
+		Input:  r.currentPath.Path(),
+		Output: output,
+		Args: map[string]string{
+			"output": output.String(),
+		},
+	})
+}
+
+func (r *hidlPackageRoot) Srcs() android.Paths {
+	return r.genOutputs
 }
 
 func (r *hidlPackageRoot) GenerateAndroidBuildActions(ctx android.ModuleContext) {
@@ -69,7 +102,10 @@ func (r *hidlPackageRoot) GenerateAndroidBuildActions(ctx android.ModuleContext)
 	} else {
 		r.currentPath = android.ExistentPathForSource(ctx, ctx.ModuleDir(), "current.txt")
 	}
+
+	r.generateCurrentFile(ctx)
 }
+
 func (r *hidlPackageRoot) DepsMutator(ctx android.BottomUpMutatorContext) {
 }
 
