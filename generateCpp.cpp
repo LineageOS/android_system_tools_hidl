@@ -1291,12 +1291,10 @@ void AST::generateStubSource(Formatter& out, const Interface* iface) const {
         << "\") { \n";
     out.indent();
     out << "_hidl_mImpl = _hidl_impl;\n";
-    out << "auto prio = ::android::hardware::details::gServicePrioMap->get("
-        << "_hidl_impl, {SCHED_NORMAL, 0});\n";
+    out << "auto prio = ::android::hardware::getMinSchedulerPolicy(_hidl_impl);\n";
     out << "mSchedPolicy = prio.sched_policy;\n";
     out << "mSchedPriority = prio.prio;\n";
-    out << "setRequestingSid(::android::hardware::details::gServiceSidMap->get(_hidl_impl, "
-           "false));\n";
+    out << "setRequestingSid(::android::hardware::getRequestingSid(_hidl_impl));\n";
     out.unindent();
 
     out.unindent();
