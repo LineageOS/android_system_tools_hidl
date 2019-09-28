@@ -919,7 +919,7 @@ void AST::generateCppSource(Formatter& out) const {
                 out << "});\n";
             });
         });
-        out << "};\n\n";
+        out << "}\n\n";
         out << "__attribute__((destructor))";
         out << "static void static_destructor() {\n";
         out.indent([&] {
@@ -928,7 +928,7 @@ void AST::generateCppSource(Formatter& out) const {
             out << "::android::hardware::details::getBsConstructorMap().erase("
                 << iface->definedName() << "::descriptor);\n";
         });
-        out << "};\n\n";
+        out << "}\n\n";
 
         generateInterfaceSource(out);
         generateProxySource(out, iface->fqName());
