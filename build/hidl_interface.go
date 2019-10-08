@@ -30,7 +30,8 @@ import (
 )
 
 var (
-	hidlInterfaceSuffix = "_interface"
+	hidlInterfaceSuffix       = "_interface"
+	hidlMetadataSingletonName = "hidl_metadata_json"
 
 	pctx = android.NewPackageContext("android/hidl")
 
@@ -102,21 +103,32 @@ func init() {
 	android.RegisterModuleType("hidl_interface", hidlInterfaceFactory)
 	android.RegisterSingletonType("all_hidl_lints", allHidlLintsFactory)
 	android.RegisterMakeVarsProvider(pctx, makeVarsProvider)
-	android.RegisterSingletonType("hidl_interfaces_metadata", hidlInterfacesMetadataSingletonFactory)
+	android.RegisterModuleType("hidl_interfaces_metadata", hidlInterfacesMetadataSingletonFactory)
 	pctx.Import("android/soong/android")
 }
 
-func hidlInterfacesMetadataSingletonFactory() android.Singleton {
-	return &hidlInterfacesMetadataSingleton{}
+func hidlInterfacesMetadataSingletonFactory() android.Module {
+	i := &hidlInterfacesMetadataSingleton{}
+	android.InitAndroidModule(i)
+	return i
 }
 
 type hidlInterfacesMetadataSingleton struct {
+	android.ModuleBase
+
 	inheritanceHierarchyPath android.OutputPath
 }
 
-func (m *hidlInterfacesMetadataSingleton) GenerateBuildActions(ctx android.SingletonContext) {
+var _ android.OutputFileProducer = (*hidlInterfacesMetadataSingleton)(nil)
+
+func (m *hidlInterfacesMetadataSingleton) GenerateAndroidBuildActions(ctx android.ModuleContext) {
+	if m.Name() != hidlMetadataSingletonName {
+		ctx.PropertyErrorf("name", "must be %s", hidlMetadataSingletonName)
+		return
+	}
+
 	var inheritanceHierarchyOutputs android.Paths
-	ctx.VisitAllModules(func(m android.Module) {
+	ctx.VisitDirectDeps(func(m android.Module) {
 		if t, ok := m.(*hidlGenRule); ok {
 			if t.properties.Language == "inheritance-hierarchy" {
 				inheritanceHierarchyOutputs = append(inheritanceHierarchyOutputs, t.genOutputs.Paths()...)
@@ -136,8 +148,12 @@ func (m *hidlInterfacesMetadataSingleton) GenerateBuildActions(ctx android.Singl
 	})
 }
 
-func (m *hidlInterfacesMetadataSingleton) MakeVars(ctx android.MakeVarsContext) {
-	ctx.Strict("HIDL_INHERITANCE_HIERARCHY", m.inheritanceHierarchyPath.String())
+func (m *hidlInterfacesMetadataSingleton) OutputFiles(tag string) (android.Paths, error) {
+	if tag != "" {
+		return nil, fmt.Errorf("unsupported tag %q", tag)
+	}
+
+	return android.Paths{m.inheritanceHierarchyPath}, nil
 }
 
 func allHidlLintsFactory() android.Singleton {
@@ -331,6 +347,8 @@ func (g *hidlGenRule) DepsMutator(ctx android.BottomUpMutatorContext) {
 	ctx.AddDependency(ctx.Module(), nil, g.properties.FqName+hidlInterfaceSuffix)
 	ctx.AddDependency(ctx.Module(), nil, wrap("", g.properties.Interfaces, hidlInterfaceSuffix)...)
 	ctx.AddDependency(ctx.Module(), nil, g.properties.Root)
+
+	ctx.AddReverseDependency(ctx.Module(), nil, hidlMetadataSingletonName)
 }
 
 func hidlGenFactory() android.Module {
