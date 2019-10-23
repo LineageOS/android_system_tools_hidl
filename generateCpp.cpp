@@ -285,7 +285,7 @@ void AST::generateInterfaceHeader(Formatter& out) const {
         DocComment("Type tag for use in template logic that indicates this is a 'pure' class.",
                    HIDL_LOCATION_HERE)
                 .emit(out);
-        generateCppTag(out, "android::hardware::details::i_tag");
+        generateCppTag(out, "::android::hardware::details::i_tag");
 
         DocComment("Fully qualified interface name: \"" + iface->fqName().string() + "\"",
                    HIDL_LOCATION_HERE)
@@ -697,7 +697,7 @@ void AST::generateStubHeader(Formatter& out) const {
     DocComment("Type tag for use in template logic that indicates this is a 'native' class.",
                HIDL_LOCATION_HERE)
             .emit(out);
-    generateCppTag(out, "android::hardware::details::bnhw_tag");
+    generateCppTag(out, "::android::hardware::details::bnhw_tag");
 
     out << "::android::sp<" << iface->definedName() << "> getImpl() { return _hidl_mImpl; }\n";
 
@@ -789,7 +789,7 @@ void AST::generateProxyHeader(Formatter& out) const {
     DocComment("Type tag for use in template logic that indicates this is a 'proxy' class.",
                HIDL_LOCATION_HERE)
             .emit(out);
-    generateCppTag(out, "android::hardware::details::bphw_tag");
+    generateCppTag(out, "::android::hardware::details::bphw_tag");
 
     out << "virtual bool isRemote() const override { return true; }\n\n";
 
@@ -1675,7 +1675,7 @@ void AST::generatePassthroughHeader(Formatter& out) const {
 
     out.endl();
     generateTemplatizationLink(out);
-    generateCppTag(out, "android::hardware::details::bs_tag");
+    generateCppTag(out, "::android::hardware::details::bs_tag");
 
     generateMethods(out, [&](const Method* method, const Interface* superInterface) {
         generatePassthroughMethod(out, method, superInterface);
