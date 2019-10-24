@@ -40,11 +40,11 @@ const std::vector<EnumValue *> &EnumType::values() const {
     return mValues;
 }
 
-void EnumType::forEachValueFromRoot(const std::function<void(EnumValue*)> f) const {
+void EnumType::forEachValueFromRoot(const std::function<void(const EnumValue*)> f) const {
     std::vector<const EnumType*> chain = typeChain();
     for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
         const auto& type = *it;
-        for (EnumValue* v : type->values()) {
+        for (const EnumValue* v : type->values()) {
             f(v);
         }
     }
@@ -449,7 +449,7 @@ void EnumType::emitPackageTypeHeaderDefinitions(Formatter& out) const {
             << "std::string os;\n"
             << getBitfieldCppType(StorageMode_Stack) << " flipped = 0;\n"
             << "bool first = true;\n";
-        forEachValueFromRoot([&](EnumValue* value) {
+        forEachValueFromRoot([&](const EnumValue* value) {
             std::string valueName = fullName() + "::" + value->name();
             out.sIf("(o & " + valueName + ")" +
                     " == static_cast<" + scalarType->getCppStackType() +
@@ -476,7 +476,7 @@ void EnumType::emitPackageTypeHeaderDefinitions(Formatter& out) const {
 
     out.block([&] {
         out << "using ::android::hardware::details::toHexString;\n";
-        forEachValueFromRoot([&](EnumValue* value) {
+        forEachValueFromRoot([&](const EnumValue* value) {
             out.sIf("o == " + fullName() + "::" + value->name(), [&] {
                 out << "return \"" << value->name() << "\";\n";
             }).endl();
@@ -523,7 +523,7 @@ void EnumType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) const {
     out << "public static final String toString("
         << typeName << " o) ";
     out.block([&] {
-        forEachValueFromRoot([&](EnumValue* value) {
+        forEachValueFromRoot([&](const EnumValue* value) {
             out.sIf("o == " + value->name(), [&] {
                 out << "return \"" << value->name() << "\";\n";
             }).endl();
@@ -540,7 +540,7 @@ void EnumType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) const {
     out.block([&] {
         out << "java.util.ArrayList<String> list = new java.util.ArrayList<>();\n";
         out << bitfieldType << " flipped = 0;\n";
-        forEachValueFromRoot([&](EnumValue* value) {
+        forEachValueFromRoot([&](const EnumValue* value) {
             if (value->constExpr()->castSizeT() == 0) {
                 out << "list.add(\"" << value->name() << "\"); // " << value->name() << " == 0\n";
                 return;  // continue to next value
