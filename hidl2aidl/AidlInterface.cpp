@@ -220,7 +220,8 @@ void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordin
                             transformed = true;
                         } else {
                             CHECK(transform.type == ResultTransformation::TransformType::REMOVED);
-                            tokens.insert(tokens.begin(), "The following return was removed\n");
+                            tokens.insert(tokens.begin(),
+                                          "FIXME: The following return was removed\n");
                             transformed = true;
                         }
                     }
