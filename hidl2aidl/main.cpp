@@ -165,7 +165,7 @@ int main(int argc, char** argv) {
         }
     });
 
-    if (outputPath.back() != '/') {
+    if (!outputPath.empty() && outputPath.back() != '/') {
         outputPath += "/";
     }
     coordinator.setOutputPath(outputPath);
