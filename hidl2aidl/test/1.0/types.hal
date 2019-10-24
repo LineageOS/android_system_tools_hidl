@@ -29,3 +29,9 @@ struct OverrideMe {
 struct OnlyIn10 {
     string str;
 };
+
+enum Value : uint32_t {
+    A = 1 + 2,
+    B = 7,
+    C,
+};

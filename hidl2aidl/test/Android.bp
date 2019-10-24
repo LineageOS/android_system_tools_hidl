@@ -39,6 +39,7 @@ genrule {
         "hidl2aidl/Outer.aidl",
         "hidl2aidl/OuterInner.aidl",
         "hidl2aidl/OverrideMe.aidl",
+        "hidl2aidl/Value.aidl",
         // "hidl2aidl/conversion.log",
         "hidl2aidl2/IFoo.aidl",
     ],
@@ -59,6 +60,7 @@ genrule {
         "hidl2aidl/Outer.java",
         "hidl2aidl/OuterInner.java",
         "hidl2aidl/OverrideMe.java",
+        "hidl2aidl/Value.java",
         "hidl2aidl2/IFoo.java",
     ],
 }
@@ -115,6 +117,7 @@ genrule {
         "hidl2aidl/Outer.h",
         "hidl2aidl/OuterInner.h",
         "hidl2aidl/OverrideMe.h",
+        "hidl2aidl/Value.h",
         "hidl2aidl2/BnFoo.h",
         "hidl2aidl2/BpFoo.h",
         "hidl2aidl2/IFoo.h",
