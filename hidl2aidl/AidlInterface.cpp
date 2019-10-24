@@ -171,10 +171,12 @@ void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordin
             std::vector<NamedReference<Type>*> results;
             std::vector<ResultTransformation> transformations;
             for (NamedReference<Type>* res : method->results()) {
-                if (StringHelper::EndsWith(StringHelper::Uppercase(res->name()), "STATUS") ||
-                    StringHelper::EndsWith(StringHelper::Uppercase(res->name()), "ERROR")) {
-                    out << "// Ignoring result " << getAidlType(*res->get(), interface.fqName())
-                        << " " << res->name() << " since AIDL has built in status types.\n";
+                const std::string aidlType = getAidlType(*res->get(), interface.fqName());
+
+                if (StringHelper::EndsWith(StringHelper::Uppercase(aidlType), "STATUS") ||
+                    StringHelper::EndsWith(StringHelper::Uppercase(aidlType), "ERROR")) {
+                    out << "// Ignoring result " << aidlType << " " << res->name()
+                        << " since AIDL has built in status types.\n";
                     transformations.emplace_back(ResultTransformation{
                             res->name(), ResultTransformation::TransformType::REMOVED});
                 } else {
