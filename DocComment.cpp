@@ -16,6 +16,7 @@
 
 #include "DocComment.h"
 
+#include <android-base/logging.h>
 #include <android-base/strings.h>
 #include <hidl-util/StringHelper.h>
 
@@ -26,7 +27,8 @@
 
 namespace android {
 
-DocComment::DocComment(const std::string& comment, const Location& location) : mLocation(location) {
+DocComment::DocComment(const std::string& comment, const Location& location, CommentType type)
+    : mType(type), mLocation(location) {
     std::vector<std::string> lines = base::Split(base::Trim(comment), "\n");
 
     bool foundFirstLine = false;
@@ -64,23 +66,36 @@ void DocComment::merge(const DocComment* comment) {
 }
 
 void DocComment::emit(Formatter& out, CommentType type) const {
-    switch (type) {
-        case CommentType::DOC_MULTILINE:
-            out << "/**\n";
-            break;
-        case CommentType::MULTILINE:
-            out << "/*\n";
-            break;
-    }
+    CommentType useType = type;
+    if (useType == CommentType::UNSPECIFIED) useType = mType;
+    if (useType == CommentType::UNSPECIFIED) useType = CommentType::DOC_MULTILINE;
 
-    out.pushLinePrefix(" *");
+    bool isMultiline = useType != CommentType::SINGLELINE;
+
+    // singleline comments include '//' as part of line text
+    if (isMultiline) {
+        switch (useType) {
+            case CommentType::DOC_MULTILINE:
+                out << "/**\n";
+                break;
+            case CommentType::MULTILINE:
+                out << "/*\n";
+                break;
+            default:
+                LOG(FATAL) << "bad type: " << static_cast<int>(useType);
+        }
+
+        out.pushLinePrefix(" *");
+    }
 
     for (const std::string& line : mLines) {
-        out << (line.empty() ? "" : " ") << line << "\n";
+        out << (line.empty() && isMultiline ? "" : " ") << line << "\n";
     }
 
-    out.popLinePrefix();
-    out << " */\n";
+    if (isMultiline) {
+        out.popLinePrefix();
+        out << " */\n";
+    }
 }
 
 }  // namespace android
