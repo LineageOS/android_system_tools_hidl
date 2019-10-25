@@ -37,14 +37,14 @@ int main(int argc, char** argv) {
     std::cout << "#include <hidl/metadata.h>" << std::endl;
     std::cout << "namespace android {" << std::endl;
     std::cout << "std::vector<HidlInterfaceMetadata> HidlInterfaceMetadata::all() {" << std::endl;
-    std::cout << "return {" << std::endl;
+    std::cout << "return std::vector<HidlInterfaceMetadata>{" << std::endl;
     for (const Json::Value& entry : root) {
-        std::cout << "{" << std::endl;
+        std::cout << "HidlInterfaceMetadata{" << std::endl;
         // HIDL interface characters guaranteed to be accepted in C++ string
-        std::cout << "\"" << entry["interface"].asString() << "\"," << std::endl;
-        std::cout << "{" << std::endl;
+        std::cout << "std::string(\"" << entry["interface"].asString() << "\")," << std::endl;
+        std::cout << "std::vector<std::string>{" << std::endl;
         for (const Json::Value& intf : entry["inheritedInterfaces"]) {
-            std::cout << "\"" << intf.asString() << "\"," << std::endl;
+            std::cout << "std::string(\"" << intf.asString() << "\")," << std::endl;
         }
         std::cout << "}," << std::endl;
         std::cout << "}," << std::endl;
