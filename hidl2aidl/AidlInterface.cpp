@@ -233,7 +233,7 @@ void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordin
                     modifiedDocComment.emplace_back(base::Join(tokens, " "));
                 }
 
-                DocComment(base::Join(modifiedDocComment, "\n"), HIDL_LOCATION_HERE).emit(out);
+                DocComment(modifiedDocComment, HIDL_LOCATION_HERE).emit(out);
             }
 
             WrappedOutput wrappedOutput(MAX_LINE_LENGTH);

@@ -87,15 +87,21 @@ using token = yy::parser::token;
                                 yylloc->lines(std::count(str.begin(), str.end(), '\n'));
 
                                 str = StringHelper::LTrim(str, "/");
+                                bool isDoc = StringHelper::StartsWith(str, "**");
                                 str = StringHelper::LTrimAll(str, "*");
                                 str = StringHelper::RTrim(str, "/");
                                 str = StringHelper::RTrimAll(str, "*");
 
                                 yylval->str = strdup(str.c_str());
-                                return token::DOC_COMMENT;
+                                return isDoc ? token::DOC_COMMENT : token::MULTILINE_COMMENT;
                             }
 
-"//"[^\r\n]*        { ast->addUnhandledComment(new DocComment(yytext, convertYYLoc(*yylloc, ast))); }
+"//"[^\r\n]*        {
+                        ast->addUnhandledComment(
+                                new DocComment(yytext,
+                                               convertYYLoc(*yylloc, ast),
+                                               CommentType::SINGLELINE));
+                    }
 
 "enum"              { return token::ENUM; }
 "extends"           { return token::EXTENDS; }
