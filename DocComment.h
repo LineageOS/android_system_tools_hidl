@@ -28,18 +28,28 @@
 namespace android {
 
 enum class CommentType {
+    // when no particular style is specified
+    UNSPECIFIED,
+
     // multiline comment that begins with /**
     DOC_MULTILINE,
     // begins with /* (used for headers)
-    MULTILINE
+    MULTILINE,
+    // begins with '//'
+    SINGLELINE,
 };
 
 struct DocComment {
-    DocComment(const std::string& comment, const Location& location);
+    // parse comment and remove leading comment characters
+    DocComment(const std::string& comment, const Location& location,
+               CommentType type = CommentType::UNSPECIFIED);
+    // raw comment
+    DocComment(const std::vector<std::string>& lines, const Location& location,
+               CommentType type = CommentType::UNSPECIFIED);
 
     void merge(const DocComment* comment);
 
-    void emit(Formatter& out, CommentType type = CommentType::DOC_MULTILINE) const;
+    void emit(Formatter& out, CommentType type = CommentType::UNSPECIFIED) const;
 
     const std::vector<std::string>& lines() const { return mLines; }
 
@@ -47,6 +57,7 @@ struct DocComment {
 
   private:
     std::vector<std::string> mLines;
+    CommentType mType;
     Location mLocation;
 };
 
