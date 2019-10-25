@@ -41,10 +41,12 @@ static void emitEnumAidlDefinition(Formatter& out, const EnumType& enumType) {
     const ScalarType* scalar = enumType.storageType()->resolveToScalarType();
     CHECK(scalar != nullptr) << enumType.typeName();
 
+    enumType.emitDocComment(out);
     out << "@Backing(type=\"" << AidlHelper::getAidlType(*scalar, enumType.fqName()) << "\")\n";
     out << "enum " << enumType.fqName().name() << " ";
     out.block([&] {
         enumType.forEachValueFromRoot([&](const EnumValue* value) {
+            value->emitDocComment(out);
             out << value->name();
             if (!value->isAutoFill()) {
                 out << " = " << value->constExpr()->expression();
