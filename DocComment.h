@@ -40,7 +40,11 @@ enum class CommentType {
 };
 
 struct DocComment {
+    // parse comment and remove leading comment characters
     DocComment(const std::string& comment, const Location& location,
+               CommentType type = CommentType::UNSPECIFIED);
+    // raw comment
+    DocComment(const std::vector<std::string>& lines, const Location& location,
                CommentType type = CommentType::UNSPECIFIED);
 
     void merge(const DocComment* comment);

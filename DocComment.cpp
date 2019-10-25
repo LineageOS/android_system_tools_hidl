@@ -28,7 +28,7 @@
 namespace android {
 
 DocComment::DocComment(const std::string& comment, const Location& location, CommentType type)
-    : mType(type), mLocation(location) {
+    : DocComment(std::vector<std::string>(), location, type) {
     std::vector<std::string> lines = base::Split(base::Trim(comment), "\n");
 
     bool foundFirstLine = false;
@@ -58,6 +58,10 @@ DocComment::DocComment(const std::string& comment, const Location& location, Com
         mLines.push_back(sanitizedLine.substr(0, i));
     }
 }
+
+DocComment::DocComment(const std::vector<std::string>& lines, const Location& location,
+                       CommentType type)
+    : mLines(lines), mType(type), mLocation(location) {}
 
 void DocComment::merge(const DocComment* comment) {
     mLines.insert(mLines.end(), 2, "");
