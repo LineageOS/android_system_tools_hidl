@@ -4,6 +4,8 @@ cc_library {
     host_supported: true,
     srcs: [":hidl_metadata_in_cpp"],
     export_include_dirs: ["include"],
+
+    cflags: ["-O0"],
 }
 
 // private impl below
