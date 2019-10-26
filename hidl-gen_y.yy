@@ -231,6 +231,7 @@ bool isValidTypeName(const std::string& identifier, std::string *errorMsg) {
 %verbose
 %debug
 
+%token<str> MULTILINE_COMMENT "multiline comment"
 %token<str> DOC_COMMENT "doc comment"
 
 %token<void> ENUM "keyword `enum`"
@@ -279,7 +280,7 @@ bool isValidTypeName(const std::string& identifier, std::string *errorMsg) {
 
 %token '#'
 
-%type<docComment> doc_comments ignore_doc_comments
+%type<docComment> doc_comment doc_comments ignore_doc_comments
 
 %type<str> error_stmt error
 %type<str> package
@@ -349,11 +350,16 @@ program
     | package declarations ignore_doc_comments
     ;
 
+doc_comment
+    : DOC_COMMENT { $$ = new DocComment($1, convertYYLoc(@1, ast), CommentType::DOC_MULTILINE); }
+    | MULTILINE_COMMENT { $$ = new DocComment($1, convertYYLoc(@1, ast), CommentType::MULTILINE); }
+    ;
+
 doc_comments
-    : DOC_COMMENT { $$ = new DocComment($1, convertYYLoc(@1, ast)); }
-    | doc_comments DOC_COMMENT
+    : doc_comment { $$ = $1; }
+    | doc_comments doc_comment
       {
-        $1->merge(new DocComment($2, convertYYLoc(@2, ast)));
+        $1->merge($2);
         $$ = $1;
       }
     ;
