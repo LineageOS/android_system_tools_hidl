@@ -16,10 +16,18 @@
 
 package hidl2aidl@1.1;
 
+import @1.0::Value;
+
 struct OverrideMe {
     string a;
 };
 
 struct OnlyIn11 {
     int32_t str;
+};
+
+enum Value : @1.0::Value {
+    D,
+    E = 27,
+    F,
 };
