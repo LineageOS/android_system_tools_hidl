@@ -51,6 +51,10 @@ std::string AidlHelper::getAidlType(const Type& type, const FQName& relativeTo) 
                                   getAidlType(*fmq.getElementType(), relativeTo) + ">");
     } else if (type.isPointer()) {
         return getPlaceholderType("pointer");
+    } else if (type.isEnum()) {
+        // enum type goes to the primitive java type in HIDL, but AIDL should use
+        // the enum type name itself
+        return type.definedName();
     } else {
         return type.getJavaType();
     }
