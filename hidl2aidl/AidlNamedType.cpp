@@ -38,9 +38,22 @@ static void emitTypeDefAidlDefinition(Formatter& out, const TypeDef& typeDef) {
 }
 
 static void emitEnumAidlDefinition(Formatter& out, const EnumType& enumType) {
-    out << "// Cannot convert enum " << enumType.fqName().string()
-        << " since AIDL does not support enums.\n";
-    emitConversionNotes(out, enumType);
+    const ScalarType* scalar = enumType.storageType()->resolveToScalarType();
+    CHECK(scalar != nullptr) << enumType.typeName();
+
+    enumType.emitDocComment(out);
+    out << "@Backing(type=\"" << AidlHelper::getAidlType(*scalar, enumType.fqName()) << "\")\n";
+    out << "enum " << enumType.fqName().name() << " ";
+    out.block([&] {
+        enumType.forEachValueFromRoot([&](const EnumValue* value) {
+            value->emitDocComment(out);
+            out << value->name();
+            if (!value->isAutoFill()) {
+                out << " = " << value->constExpr()->expression();
+            }
+            out << ",\n";
+        });
+    });
 }
 
 static void emitCompoundTypeAidlDefinition(Formatter& out, const CompoundType& compoundType,
