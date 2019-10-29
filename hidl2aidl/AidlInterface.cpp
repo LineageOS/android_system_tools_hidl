@@ -258,12 +258,13 @@ void AidlHelper::emitAidl(const Interface& interface, const Coordinator& coordin
                 emitAidlMethodParams(&wrappedOutput, method->args(), /* prefix */ "in ",
                                      /* attachToLast */ ");\n", interface);
             } else {
-                emitAidlMethodParams(&wrappedOutput, method->args(), /* prefix */ "in ",
-                                     /* attachToLast */ ",", interface);
-                wrappedOutput.printUnlessWrapped(" ");
+                if (!method->args().empty()) {
+                    emitAidlMethodParams(&wrappedOutput, method->args(), /* prefix */ "in ",
+                                         /* attachToLast */ ",", interface);
+                    wrappedOutput.printUnlessWrapped(" ");
+                }
 
                 // TODO: Emit warning if a primitive is given as a out param.
-                if (!method->args().empty()) out << ", ";
                 emitAidlMethodParams(&wrappedOutput, results, /* prefix */ "out ",
                                      /* attachToLast */ ");\n", interface);
             }
