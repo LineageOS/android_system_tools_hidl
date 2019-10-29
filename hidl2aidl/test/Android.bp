@@ -134,6 +134,7 @@ cc_test_library {
     generated_sources: ["hidl2aidl_test_gen_cpp_srcs"],
     generated_headers: ["hidl2aidl_test_gen_cpp_headers"],
     export_generated_headers: ["hidl2aidl_test_gen_cpp_headers"],
+    srcs: ["cpp_test_compile.cpp"],
     shared_libs: [
         "libbinder",
         "libutils",
