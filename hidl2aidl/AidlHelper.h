@@ -33,11 +33,11 @@ struct Type;
 struct AidlHelper {
     /* FQName helpers */
     // getAidlName returns the type names
-    // android.hardware.foo@1.0::IBar.Bar -> IBarBaz
+    // android.hardware.foo@1.0::IBar.Baz -> IBarBaz
     static std::string getAidlName(const FQName& fqName);
 
     // getAidlPackage returns the AIDL package
-    // android.harware.foo@1.x -> android.hardware.foo
+    // android.hardware.foo@1.x -> android.hardware.foo
     // android.hardware.foo@2.x -> android.hardware.foo2
     static std::string getAidlPackage(const FQName& fqName);
 
