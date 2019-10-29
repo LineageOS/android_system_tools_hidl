@@ -50,6 +50,14 @@ interface IFoo extends @1.0::IFoo {
      */
      multipleOutputs() generates (BigStruct out1, BigStruct out2);
 
+     multipleInputs(string in1, string in2);
+
+     /**
+      * @return out1 out
+      * @return out2 out
+      */
+     multipleInputsAndOutputs(string in1, string in2) generates (BigStruct out1, BigStruct out2);
+
     /**
      * @return status removed
      */
