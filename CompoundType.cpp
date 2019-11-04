@@ -1378,7 +1378,7 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
             << discriminatorStorageType
             << " getDiscriminator() { return hidl_d; }\n\n";
 
-    } else {
+    } else if (mStyle == STYLE_STRUCT) {
         for (const auto& field : mFields) {
             field->emitDocComment(out);
 
@@ -1387,6 +1387,8 @@ void CompoundType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) con
         }
 
         out << "\n";
+    } else {
+        LOG(FATAL) << "Java output doesn't support " << mStyle;
     }
 
     ////////////////////////////////////////////////////////////////////////////
