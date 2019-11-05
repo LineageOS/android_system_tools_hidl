@@ -294,19 +294,35 @@ static status_t generateJavaForPackage(const FQName& fqName, const Coordinator* 
                                        const FileGenerator::GetFormatter& getFormatter) {
     AST* ast;
     std::string limitToType;
+    FQName typeName;
 
-    // Required for legacy -Lmakefile files
+    // See appendPerTypeTargets.
+    // 'a.b.c@1.0::types.Foo' is used to compile 'Foo' for Java even though in
+    // the rest of the compiler, this type is simply called 'a.b.c@1.0::Foo'.
+    // However, here, we need to disambiguate an interface name and a type in
+    // types.hal in order to figure out what to parse, so this legacy behavior
+    // is kept.
     if (fqName.name().find("types.") == 0) {
         limitToType = fqName.name().substr(strlen("types."));
 
-        FQName typesName = fqName.getTypesForPackage();
-        ast = coordinator->parse(typesName);
+        ast = coordinator->parse(fqName.getTypesForPackage());
+
+        const auto& names = fqName.names();
+        CHECK(names.size() == 2 && names[0] == "types") << fqName.string();
+        typeName = FQName(fqName.package(), fqName.version(), names[1]);
     } else {
         ast = coordinator->parse(fqName);
+        typeName = fqName;
     }
     if (ast == nullptr) {
         fprintf(stderr, "ERROR: Could not parse %s. Aborting.\n", fqName.string().c_str());
         return UNKNOWN_ERROR;
+    }
+
+    Type* type = ast->lookupType(typeName, &ast->getRootScope());
+    CHECK(type != nullptr) << typeName.string();
+    if (!type->isJavaCompatible()) {
+        return OK;
     }
 
     Formatter out = getFormatter();

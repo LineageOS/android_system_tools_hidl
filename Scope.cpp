@@ -227,10 +227,14 @@ void Scope::emitVtsTypeDeclarations(Formatter& out) const {
 
 bool Scope::deepIsJavaCompatible(std::unordered_set<const Type*>* visited) const {
     for (const Type* type : mTypes) {
-        if (!type->isJavaCompatible(visited)) {
+        // Java compatibility focuses on types that are actually used by interfaces.
+        // Declarations of java-incompatible types are simply omitted from
+        // corresponding Java libraries.
+        if (type->isInterface() && !type->isJavaCompatible(visited)) {
             return false;
         }
     }
+
     return Type::deepIsJavaCompatible(visited);
 }
 
