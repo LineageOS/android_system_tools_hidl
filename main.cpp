@@ -191,6 +191,7 @@ status_t OutputHandler::appendTargets(const FQName& fqName, const Coordinator* c
             if (fqName.isFullyQualified()) {
                 status_t err = appendPerTypeTargets(fqName, coordinator, targets);
                 if (err != OK) return err;
+                break;
             }
 
             std::vector<FQName> packageInterfaces;
