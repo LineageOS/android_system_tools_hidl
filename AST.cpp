@@ -510,7 +510,8 @@ void AST::addScopedType(NamedType* type, Scope* scope) {
     mDefinedTypesByFullName[type->fqName()] = type;
 }
 
-LocalIdentifier* AST::lookupLocalIdentifier(const Reference<LocalIdentifier>& ref, Scope* scope) {
+LocalIdentifier* AST::lookupLocalIdentifier(const Reference<LocalIdentifier>& ref,
+                                            const Scope* scope) {
     const FQName& fqName = ref.getLookupFqName();
 
     if (fqName.isIdentifier()) {
@@ -532,7 +533,7 @@ LocalIdentifier* AST::lookupLocalIdentifier(const Reference<LocalIdentifier>& re
     }
 }
 
-EnumValue* AST::lookupEnumValue(const FQName& fqName, std::string* errorMsg, Scope* scope) {
+EnumValue* AST::lookupEnumValue(const FQName& fqName, std::string* errorMsg, const Scope* scope) {
     FQName enumTypeName = fqName.typeName();
     std::string enumValueName = fqName.valueName();
 
@@ -561,7 +562,7 @@ EnumValue* AST::lookupEnumValue(const FQName& fqName, std::string* errorMsg, Sco
     return v;
 }
 
-Type* AST::lookupType(const FQName& fqName, Scope* scope) {
+Type* AST::lookupType(const FQName& fqName, const Scope* scope) {
     if (fqName.name().empty()) {
         // Given a package and version???
         return nullptr;
@@ -589,7 +590,7 @@ Type* AST::lookupType(const FQName& fqName, Scope* scope) {
 }
 
 // Rule 0: try resolve locally
-Type* AST::lookupTypeLocally(const FQName& fqName, Scope* scope) {
+Type* AST::lookupTypeLocally(const FQName& fqName, const Scope* scope) {
     CHECK(fqName.package().empty() && fqName.version().empty()
         && !fqName.name().empty() && fqName.valueName().empty());
 
