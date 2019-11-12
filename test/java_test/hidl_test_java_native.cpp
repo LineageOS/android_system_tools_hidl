@@ -21,9 +21,13 @@
 #include <android-base/logging.h>
 
 #include <android/hardware/tests/baz/1.0/IBaz.h>
+#include <android/hardware/tests/memory/2.0/IMemoryInterface.h>
+#include <android/hardware/tests/memory/2.0/types.h>
 #include <android/hardware/tests/safeunion/1.0/IOtherInterface.h>
 #include <android/hardware/tests/safeunion/1.0/ISafeUnion.h>
+#include <android/hidl/allocator/1.0/IAllocator.h>
 
+#include <hidlmemory/mapping.h>
 #include <hidl/LegacySupport.h>
 #include <hidl/ServiceManagement.h>
 #include <gtest/gtest.h>
@@ -38,16 +42,23 @@ using ::android::sp;
 using ::android::hardware::tests::baz::V1_0::IBase;
 using ::android::hardware::tests::baz::V1_0::IBaz;
 using ::android::hardware::tests::baz::V1_0::IBazCallback;
+using ::android::hardware::tests::memory::V2_0::IMemoryInterface;
+using ::android::hardware::tests::memory::V2_0::TwoMemory;
 using ::android::hardware::tests::safeunion::V1_0::IOtherInterface;
 using ::android::hardware::tests::safeunion::V1_0::ISafeUnion;
 
 using ::android::hardware::hidl_array;
 using ::android::hardware::hidl_vec;
+using ::android::hardware::hidl_memory;
 using ::android::hardware::hidl_handle;
 using ::android::hardware::hidl_string;
 using ::android::hardware::defaultPassthroughServiceImplementation;
 using ::android::hardware::Return;
+using ::android::hardware::Status;
 using ::android::hardware::Void;
+
+using ::android::hidl::allocator::V1_0::IAllocator;
+using ::android::hidl::memory::V1_0::IMemory;
 
 using HandleTypeSafeUnion = ISafeUnion::HandleTypeSafeUnion;
 using InterfaceTypeSafeUnion = ISafeUnion::InterfaceTypeSafeUnion;
@@ -80,6 +91,118 @@ struct OtherInterface : public IOtherInterface {
 
         return Void();
     }
+};
+
+struct MemoryInterface : public IMemoryInterface {
+    MemoryInterface() {
+        sp<IAllocator> ashmem = IAllocator::getService("ashmem");
+        LOG_FATAL_IF(ashmem == nullptr);
+        ashmem->allocate(8, [&](bool success, const hidl_memory& m) {
+            LOG_FATAL_IF(!success);
+            (void) success;
+            mMemory = m;
+        });
+        sp<IMemory> memory = mapMemory(mMemory);
+
+        LOG_FATAL_IF(memory == nullptr);
+        uint8_t* data =
+            static_cast<uint8_t*>(static_cast<void*>(memory->getPointer()));
+        for (size_t i = 0; i < 8; ++i) {
+            data[i] = i;
+        }
+        memory->commit();
+    }
+
+    Return<void> bitwiseNot(const hidl_memory& mem) override {
+        sp<IMemory> memory = mapMemory(mem);
+        if (memory == nullptr) {
+            return Status::fromExceptionCode(Status::EX_ILLEGAL_ARGUMENT,
+                                             "Could not map hidl_memory");
+        }
+        uint8_t* data =
+            static_cast<uint8_t*>(static_cast<void*>(memory->getPointer()));
+
+        memory->update();
+        for (size_t i = 0; i < memory->getSize(); i++) {
+            data[i] = ~data[i];
+        }
+        memory->commit();
+
+        return Void();
+    }
+
+    Return<void> getTestMem(getTestMem_cb _hidl_cb) override {
+        _hidl_cb(mMemory);
+        return Status::ok();
+    }
+
+    Return<void> getSumDiff(const TwoMemory& in, getSumDiff_cb _hidl_cb) override {
+        if (in.mem1.size() != in.mem2.size()) {
+            return Status::fromExceptionCode(Status::EX_ILLEGAL_ARGUMENT,
+                                             "Buffers must be the same size.");
+        }
+        const size_t size = in.mem1.size();
+
+        // Map first input.
+        sp<IMemory> memory_in1 = mapMemory(in.mem1);
+        if (memory_in1 == nullptr) {
+            return Status::fromExceptionCode(Status::EX_ILLEGAL_ARGUMENT,
+                                             "Could not map hidl_memory");
+        }
+        uint8_t* data_in1 =
+            static_cast<uint8_t*>(static_cast<void*>(memory_in1->getPointer()));
+        memory_in1->update();
+
+        // Map second input.
+        sp<IMemory> memory_in2 = mapMemory(in.mem2);
+        if (memory_in2 == nullptr) {
+            return Status::fromExceptionCode(Status::EX_ILLEGAL_ARGUMENT,
+                                             "Could not map hidl_memory");
+        }
+        uint8_t* data_in2 =
+            static_cast<uint8_t*>(static_cast<void*>(memory_in2->getPointer()));
+        memory_in2->update();
+
+        TwoMemory out;
+        sp<IAllocator> ashmem = IAllocator::getService("ashmem");
+        LOG_FATAL_IF(ashmem == nullptr);
+
+        // Map first output.
+        ashmem->allocate(size, [&](bool success, const hidl_memory& m) {
+            LOG_FATAL_IF(!success);
+            (void) success;
+            out.mem1 = m;
+        });
+        sp<IMemory> memory_out1 = mapMemory(out.mem1);
+        LOG_FATAL_IF(memory_out1 == nullptr);
+        uint8_t* data_out1 =
+            static_cast<uint8_t*>(static_cast<void*>(memory_out1->getPointer()));
+
+        // Map second output.
+        ashmem->allocate(size, [&](bool success, const hidl_memory& m) {
+            LOG_FATAL_IF(!success);
+            (void) success;
+            out.mem2 = m;
+        });
+        sp<IMemory> memory_out2 = mapMemory(out.mem2);
+        LOG_FATAL_IF(memory_out2 == nullptr);
+        uint8_t* data_out2 =
+            static_cast<uint8_t*>(static_cast<void*>(memory_out2->getPointer()));
+
+        for (size_t i = 0; i < size; ++i) {
+            data_out1[i] = data_in1[i] + data_in2[i];
+            data_out2[i] = data_in1[i] - data_in2[i];
+        }
+
+        memory_out1->commit();
+        memory_out2->commit();
+
+        _hidl_cb(out);
+        return Status::ok();
+    }
+
+ private:
+    hidl_memory mMemory;
 };
 
 using std::to_string;
@@ -1164,6 +1287,10 @@ int main(int argc, char **argv) {
     sp<IOtherInterface> otherInterface = new OtherInterface();
     status = otherInterface->registerAsService();
     CHECK(status == ::android::OK) << "IOtherInterface didn't register";
+
+    sp<IMemoryInterface> memoryInterface = new MemoryInterface();
+    status = memoryInterface->registerAsService();
+    CHECK(status == ::android::OK) << "IMemoryInterface didn't register";
 
     joinRpcThreadpool();
     return 0;
