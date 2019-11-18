@@ -777,8 +777,8 @@ void CompoundType::emitTypeForwardDeclaration(Formatter& out) const {
 void CompoundType::emitPackageTypeDeclarations(Formatter& out) const {
     Scope::emitPackageTypeDeclarations(out);
 
-    out << "static inline std::string toString(" << getCppArgumentType()
-        << (mFields.empty() ? "" : " o") << ");\n";
+    out << "static inline std::string toString(" << getCppArgumentType() << " o);\n";
+    out << "static inline void PrintTo(" << getCppArgumentType() << " o, ::std::ostream*);\n";
 
     if (canCheckEquality()) {
         out << "static inline bool operator==("
@@ -850,6 +850,9 @@ void CompoundType::emitPackageTypeHeaderDefinitions(Formatter& out) const {
         }
         out << "os += \"}\"; return os;\n";
     }).endl().endl();
+
+    out << "static inline void PrintTo(" << getCppArgumentType() << " o, ::std::ostream* os) ";
+    out.block([&] { out << "*os << toString(o);\n"; }).endl().endl();
 
     if (canCheckEquality()) {
         out << "static inline bool operator==(" << getCppArgumentType() << " "
