@@ -912,6 +912,8 @@ void CompoundType::emitPackageTypeHeaderDefinitions(Formatter& out) const {
 }
 
 void CompoundType::emitPackageHwDeclarations(Formatter& out) const {
+    Scope::emitPackageHwDeclarations(out);
+
     if (needsEmbeddedReadWrite()) {
         out << "::android::status_t readEmbeddedFromParcel(\n";
 
