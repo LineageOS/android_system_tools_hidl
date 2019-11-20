@@ -506,6 +506,29 @@ TEST_F(HidlTest, ToStringTest) {
     // statement can be written here.
 }
 
+TEST_F(HidlTest, PrintToTest) {
+    using namespace android::hardware::tests;
+    using ::testing::PrintToString;
+
+    trie::V1_0::TrieNode trieNode;
+    trieNode.isTerminal = true;
+    LOG(INFO) << PrintToString(trieNode);
+
+    // The exact contents of the string are for debugging purposes, but to be
+    // friendly it should provide a name for the boolean field.
+    EXPECT_TRUE(PrintToString(trieNode).find("isTerminal") != std::string::npos);
+
+    LOG(INFO) << PrintToString(trie::V1_0::E1::OK);
+    LOG(INFO) << PrintToString(trie::V1_0::E1::ANOTHER);
+    LOG(INFO) << PrintToString(trie::V1_0::E2::ACCEPT);
+
+    // The exact contents of the string are for debugging purposes, but to be
+    // friendly it should provide a name for each enum value.
+    EXPECT_TRUE(PrintToString(trie::V1_0::E1::OK).find("OK") != std::string::npos);
+    EXPECT_TRUE(PrintToString(trie::V1_0::E1::ANOTHER).find("ANOTHER") != std::string::npos);
+    EXPECT_TRUE(PrintToString(trie::V1_0::E2::ACCEPT).find("ACCEPT") != std::string::npos);
+}
+
 TEST_F(HidlTest, ConstantExpressionTest) {
     // these tests are written so that these always evaluate to one
 

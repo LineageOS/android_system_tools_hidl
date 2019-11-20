@@ -421,7 +421,8 @@ void EnumType::emitPackageTypeDeclarations(Formatter& out) const {
     out << "template<typename>\n"
         << "static inline std::string toString(" << resolveToScalarType()->getCppArgumentType()
         << " o);\n";
-    out << "static inline std::string toString(" << getCppArgumentType() << " o);\n\n";
+    out << "static inline std::string toString(" << getCppArgumentType() << " o);\n";
+    out << "static inline void PrintTo(" << getCppArgumentType() << " o, ::std::ostream* os);\n";
 
     emitEnumBitwiseOperator(out, true  /* lhsIsEnum */, true  /* rhsIsEnum */, "|");
     emitEnumBitwiseOperator(out, false /* lhsIsEnum */, true  /* rhsIsEnum */, "|");
@@ -486,6 +487,10 @@ void EnumType::emitPackageTypeHeaderDefinitions(Formatter& out) const {
             "static_cast<" + scalarType->getCppStackType() + ">(o)");
         out << "return os;\n";
     }).endl().endl();
+
+    out << "static inline void PrintTo(" << getCppArgumentType() << " o, ::std::ostream* os) ";
+
+    out.block([&] { out << "*os << toString(o);\n"; }).endl().endl();
 }
 
 void EnumType::emitJavaTypeDeclarations(Formatter& out, bool atTopLevel) const {
