@@ -40,103 +40,26 @@ genrule {
         "hidl2aidl/OuterInner.aidl",
         "hidl2aidl/OverrideMe.aidl",
         "hidl2aidl/Value.aidl",
-        // "hidl2aidl/conversion.log",
         "hidl2aidl2/IFoo.aidl",
     ],
 }
 
-genrule {
-    name: "hidl2aidl_test_gen_java",
-    tools: ["aidl"],
-    cmd: "$(location aidl) --lang=java -o $(genDir) $(in)",
+aidl_interface {
+    name: "hidl2aidl_test_gen",
     srcs: [":hidl2aidl_test_gen_aidl"],
-    out: [
-        "hidl2aidl/IBar.java",
-        "hidl2aidl/IBarInner.java",
-        "hidl2aidl/IFoo.java",
-        "hidl2aidl/IFooBigStruct.java",
-        "hidl2aidl/OnlyIn10.java",
-        "hidl2aidl/OnlyIn11.java",
-        "hidl2aidl/Outer.java",
-        "hidl2aidl/OuterInner.java",
-        "hidl2aidl/OverrideMe.java",
-        "hidl2aidl/Value.java",
-        "hidl2aidl2/IFoo.java",
-    ],
-}
-
-genrule {
-    name: "hidl2aidl_test_gen_cpp_srcs",
-    tools: ["aidl"],
-    cmd: "$(location aidl) --lang=cpp -o $(genDir) --header_out=$(genDir) $(in)",
-    srcs: [":hidl2aidl_test_gen_aidl"],
-    out: [
-        "hidl2aidl/IBar.cpp",
-        "hidl2aidl/IBarInner.cpp",
-        "hidl2aidl/IFoo.cpp",
-        "hidl2aidl/IFooBigStruct.cpp",
-        "hidl2aidl/OnlyIn10.cpp",
-        "hidl2aidl/OnlyIn11.cpp",
-        "hidl2aidl/Outer.cpp",
-        "hidl2aidl/OuterInner.cpp",
-        "hidl2aidl/OverrideMe.cpp",
-        "hidl2aidl2/IFoo.cpp",
-    ],
-}
-
-genrule {
-    name: "hidl2aidl_test_gen_cpp_headers",
-    tools: ["aidl"],
-    cmd: "$(location aidl) --lang=cpp -o $(genDir) --header_out=$(genDir) $(in)",
-    srcs: [":hidl2aidl_test_gen_aidl"],
-    out: [
-        "hidl2aidl/BnBar.h",
-        "hidl2aidl/BnBarInner.h",
-        "hidl2aidl/BnFoo.h",
-        "hidl2aidl/BnFooBigStruct.h",
-        "hidl2aidl/BnOnlyIn10.h",
-        "hidl2aidl/BnOnlyIn11.h",
-        "hidl2aidl/BnOuter.h",
-        "hidl2aidl/BnOuterInner.h",
-        "hidl2aidl/BnOverrideMe.h",
-        "hidl2aidl/BpBar.h",
-        "hidl2aidl/BpBarInner.h",
-        "hidl2aidl/BpFoo.h",
-        "hidl2aidl/BpFooBigStruct.h",
-        "hidl2aidl/BpOnlyIn10.h",
-        "hidl2aidl/BpOnlyIn11.h",
-        "hidl2aidl/BpOuter.h",
-        "hidl2aidl/BpOuterInner.h",
-        "hidl2aidl/BpOverrideMe.h",
-        "hidl2aidl/IBar.h",
-        "hidl2aidl/IBarInner.h",
-        "hidl2aidl/IFoo.h",
-        "hidl2aidl/IFooBigStruct.h",
-        "hidl2aidl/OnlyIn10.h",
-        "hidl2aidl/OnlyIn11.h",
-        "hidl2aidl/Outer.h",
-        "hidl2aidl/OuterInner.h",
-        "hidl2aidl/OverrideMe.h",
-        "hidl2aidl/Value.h",
-        "hidl2aidl2/BnFoo.h",
-        "hidl2aidl2/BpFoo.h",
-        "hidl2aidl2/IFoo.h",
-    ],
-}
-
-java_library {
-    name: "hidl2aidl_test_comp_java",
-    srcs: [":hidl2aidl_test_gen_java"],
 }
 
 cc_test_library {
     name: "hidl2aidl_test_comp_cc",
-    generated_sources: ["hidl2aidl_test_gen_cpp_srcs"],
-    generated_headers: ["hidl2aidl_test_gen_cpp_headers"],
-    export_generated_headers: ["hidl2aidl_test_gen_cpp_headers"],
-    srcs: ["cpp_test_compile.cpp"],
+    srcs: [
+        "cpp_test_compile.cpp",
+        "ndk_test_compile.cpp",
+    ],
     shared_libs: [
+        "hidl2aidl_test_gen-cpp",
+        "hidl2aidl_test_gen-ndk_platform",
         "libbinder",
+        "libbinder_ndk",
         "libutils",
     ],
     gtest: false,
@@ -146,6 +69,6 @@ phony {
     name: "hidl2aidl_test",
     required: [
         "hidl2aidl_test_comp_cc",
-        "hidl2aidl_test_comp_java",
+        "hidl2aidl_test_gen",
     ],
 }
