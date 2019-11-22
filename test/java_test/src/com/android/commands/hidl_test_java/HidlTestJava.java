@@ -16,6 +16,10 @@
 
 package com.android.commands.hidl_test_java;
 
+import static android.system.OsConstants.MAP_SHARED;
+import static android.system.OsConstants.PROT_READ;
+import static android.system.OsConstants.PROT_WRITE;
+
 import android.hidl.manager.V1_0.IServiceManager;
 import android.hardware.tests.baz.V1_0.IBase;
 import android.hardware.tests.baz.V1_0.IBaz;
@@ -23,12 +27,16 @@ import android.hardware.tests.baz.V1_0.IQuux;
 import android.hardware.tests.baz.V1_0.IBaz.MyHandle;
 import android.hardware.tests.baz.V1_0.IBaz.NestedStruct;
 import android.hardware.tests.baz.V1_0.IBazCallback;
+import android.hardware.tests.memory.V2_0.IMemoryInterface;
+import android.hardware.tests.memory.V2_0.TwoMemory;
 import android.hardware.tests.safeunion.V1_0.IOtherInterface;
 import android.hardware.tests.safeunion.V1_0.ISafeUnion;
 import android.hardware.tests.safeunion.V1_0.ISafeUnion.HandleTypeSafeUnion;
 import android.hardware.tests.safeunion.V1_0.ISafeUnion.InterfaceTypeSafeUnion;
 import android.hardware.tests.safeunion.V1_0.ISafeUnion.LargeSafeUnion;
 import android.hardware.tests.safeunion.V1_0.ISafeUnion.SmallSafeUnion;
+import android.os.HidlMemory;
+import android.os.HidlMemoryUtil;
 import android.os.HwBinder;
 import android.os.HwParcel;
 import android.os.IBinder;
@@ -36,6 +44,9 @@ import android.os.IHwBinder;
 import android.os.NativeHandle;
 import android.os.RemoteException;
 import android.os.HidlSupport;
+import android.os.SharedMemory;
+import android.system.ErrnoException;
+import android.system.Os;
 import android.util.Log;
 
 import java.io.File;
@@ -43,6 +54,8 @@ import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.DirectByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
@@ -62,7 +75,7 @@ public final class HidlTestJava {
         System.exit(exitCode);
     }
 
-    public int run(String[] args) throws RemoteException, IOException {
+    public int run(String[] args) throws RemoteException, IOException, ErrnoException {
         if (args[0].equals("-c")) {
             client();
         } else if (args[0].equals("-s")) {
@@ -228,6 +241,46 @@ public final class HidlTestJava {
 
     private void ExpectDeepNe(Object l, Object r) {
         ExpectTrue(!HidlSupport.deepEquals(l, r));
+    }
+
+    private void runClientMemoryTests() throws RemoteException, IOException, ErrnoException {
+        IMemoryInterface memoryInterface = IMemoryInterface.getService();
+
+        {
+            HidlMemory hidlMem = HidlMemoryUtil.byteArrayToHidlMemory(
+                    new byte[]{0x00, 0x12, 0x34, 0x56});
+            memoryInterface.bitwiseNot(hidlMem);
+            byte[] result = HidlMemoryUtil.hidlMemoryToByteArray(hidlMem);
+
+            ExpectTrue(Arrays.equals(result,
+                    new byte[]{(byte) 0xFF, (byte) 0xED, (byte) 0xCB, (byte) 0xA9}));
+
+            hidlMem.close();
+        }
+
+        {
+            HidlMemory hidlMem = memoryInterface.getTestMem();
+            byte[] data = HidlMemoryUtil.hidlMemoryToByteArray(hidlMem);
+            for (int i = 0; i < 8; ++i) {
+                ExpectTrue(data[i] == (byte) i);
+            }
+            hidlMem.close();
+        }
+
+        {
+            TwoMemory in = new TwoMemory();
+            in.mem1 = HidlMemoryUtil.byteArrayToHidlMemory(new byte[]{10, 11, 12, 13});
+            in.mem2 = HidlMemoryUtil.byteArrayToHidlMemory(new byte[]{2, 4, 6, 8});
+            TwoMemory out = memoryInterface.getSumDiff(in);
+            ExpectTrue(Arrays.equals(HidlMemoryUtil.hidlMemoryToByteArray(out.mem1),
+                    new byte[]{12, 15, 18, 21}));
+            ExpectTrue(Arrays.equals(HidlMemoryUtil.hidlMemoryToByteArray(out.mem2),
+                    new byte[]{8, 7, 6, 5}));
+            in.mem1.close();
+            in.mem2.close();
+            out.mem1.close();
+            out.mem2.close();
+        }
     }
 
     private void runClientSafeUnionTests() throws RemoteException, IOException {
@@ -492,7 +545,7 @@ public final class HidlTestJava {
         }
     }
 
-    private void client() throws RemoteException, IOException {
+    private void client() throws RemoteException, IOException, ErrnoException {
 
         ExpectDeepEq(null, null);
         ExpectDeepNe(null, new String());
@@ -1153,6 +1206,7 @@ public final class HidlTestJava {
         }
 
         runClientSafeUnionTests();
+        runClientMemoryTests();
 
         // --- DEATH RECIPIENT TESTING ---
         // This must always be done last, since it will kill the native server process
@@ -1178,7 +1232,6 @@ public final class HidlTestJava {
         ExpectTrue(!recipient2.waitUntilServiceDied(2000 /*timeoutMillis*/));
         ExpectTrue(recipient1.cookieMatches(cookie1));
         Log.d(TAG, "OK, exiting");
-
     }
 
     class Baz extends IBaz.Stub {
