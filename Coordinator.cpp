@@ -559,7 +559,7 @@ status_t Coordinator::addUnreferencedTypes(const std::vector<FQName>& packageInt
     std::set<FQName> typesDefinedTypes;  // only types.hal types
 
     for (const auto& fqName : packageInterfaces) {
-        AST* ast = parse(fqName);
+        AST* ast = parse(fqName, nullptr /*imported*/, Coordinator::Enforce::NONE);
         if (!ast) {
             std::cerr << "ERROR: Could not parse " << fqName.string() << ". Aborting." << std::endl;
 
@@ -827,6 +827,12 @@ Coordinator::HashStatus Coordinator::checkHash(const FQName& fqName) const {
 
     // hash not defined, interface not frozen
     if (frozen.size() == 0) {
+        if (isVerbose()) {
+            std::cerr << "VERBOSE: clearing runtime hash for " << fqName.string()
+                      << " because it is not frozen and so its hash cannot be depended upon as an "
+                         "indication of stability."
+                      << std::endl;
+        }
         // This ensures that it can be detected.
         Hash::clearHash(ast->getFilename());
 
