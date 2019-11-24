@@ -19,10 +19,16 @@ package hidl_java_partial_test@1.0;
 struct ExistsInJava {
     uint32_t happyHippo;
     uint32_t hippoHappy;
+    memory shmemory;
+};
+
+union UnionDoesNotExistInJava {
+    uint32_t a;
+    uint64_t b;
 };
 
 struct DoesNotExistInJava {
-    memory shmemory;
+    UnionDoesNotExistInJava u;
 };
 
 struct DoesNotExistInJavaTransitive {
@@ -31,9 +37,4 @@ struct DoesNotExistInJavaTransitive {
 
 struct DoesNotExistInJavaVec {
     vec<DoesNotExistInJava> avec;
-};
-
-union UnionDoesNotExistInJava {
-    uint32_t a;
-    uint64_t b;
 };
