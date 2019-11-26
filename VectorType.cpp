@@ -627,6 +627,10 @@ bool VectorType::deepIsJavaCompatible(std::unordered_set<const Type*>* visited) 
         return false;
     }
 
+    if (mElementType->isMemory()) {
+        return false;
+    }
+
     if (isVectorOfBinders()) {
         return false;
     }
