@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "AidlHelper.h"
+#include "ArrayType.h"
 #include "Coordinator.h"
 #include "Interface.h"
 #include "Method.h"
@@ -66,53 +67,63 @@ std::string AidlHelper::getAidlFQName(const FQName& fqName) {
     return getAidlPackage(fqName) + "." + getAidlName(fqName);
 }
 
-static void importNamedType(Formatter& out, const NamedType& namedType,
-                            std::set<std::string>& imports) {
-    std::string import = AidlHelper::getAidlFQName(namedType.fqName());
-    if (imports.find(import) == imports.end()) {
-        out << "import " << import << ";\n";
-        imports.insert(import);
+static void importLocallyReferencedType(const Type& type, std::set<std::string>* imports) {
+    if (type.isArray()) {
+        return importLocallyReferencedType(*static_cast<const ArrayType*>(&type)->getElementType(),
+                                           imports);
     }
+    if (type.isTemplatedType()) {
+        return importLocallyReferencedType(
+                *static_cast<const TemplatedType*>(&type)->getElementType(), imports);
+    }
+
+    if (!type.isNamedType()) return;
+    const NamedType& namedType = *static_cast<const NamedType*>(&type);
+
+    std::string import = AidlHelper::getAidlFQName(namedType.fqName());
+    imports->insert(import);
 }
 
+// This tries iterating over the HIDL AST which is a bit messy because
+// it has to encode the logic in the rest of hidl2aidl. It would be better
+// if we could iterate over the AIDL structure which has already been
+// processed.
 void AidlHelper::emitFileHeader(Formatter& out, const NamedType& type) {
     out << "// FIXME: license file if you have one\n\n";
     out << "package " << getAidlPackage(type.fqName()) << ";\n\n";
 
     std::set<std::string> imports;
-    imports.insert(getAidlFQName(gIBaseFqName));
 
     // Import all the defined types since they will now be in a different file
     if (type.isScope()) {
         const Scope& scope = static_cast<const Scope&>(type);
         for (const NamedType* namedType : scope.getSubTypes()) {
-            importNamedType(out, *namedType, imports);
+            importLocallyReferencedType(*namedType, &imports);
         }
     }
 
     // Import all the referenced types
     if (type.isInterface()) {
-        // This is a separate case becase getReferences doesn't correctly traverse all the
-        // superTypes and sometimes includes references to types that would not exist on AIDL
+        // This is a separate case becase getReferences doesn't traverse all the superTypes and
+        // sometimes includes references to types that would not exist on AIDL
         const std::vector<const Method*>& methods =
                 getUserDefinedMethods(static_cast<const Interface&>(type));
         for (const Method* method : methods) {
             for (const Reference<Type>* ref : method->getReferences()) {
-                if (ref->get()->isNamedType()) {
-                    importNamedType(out, *static_cast<const NamedType*>(ref->get()), imports);
-                }
+                importLocallyReferencedType(*ref->get(), &imports);
             }
         }
     } else {
         for (const Reference<Type>* ref : type.getReferences()) {
-            if (ref->get()->isNamedType()) {
-                importNamedType(out, *static_cast<const NamedType*>(ref->get()), imports);
-            }
+            importLocallyReferencedType(*ref->get(), &imports);
         }
     }
 
-    // anything other than implicit IBase import
-    if (imports.size() > 1) {
+    for (const std::string& import : imports) {
+        out << "import " << import << ";\n";
+    }
+
+    if (imports.size() > 0) {
         out << "\n";
     }
 }
