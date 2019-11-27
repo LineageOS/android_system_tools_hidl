@@ -573,6 +573,10 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 	shouldGenerateJava := proptools.BoolDefault(i.properties.Gen_java, true)
 	shouldGenerateJavaConstants := i.properties.Gen_java_constants
 	shouldGenerateVts := shouldGenerateLibrary && proptools.BoolDefault(i.properties.Gen_vts, true)
+	// TODO(b/145240569): cc_fuzz_packaging can't deal with soong namespaces yet.
+	// Dirty hack: assume Android-defined interfaces have globally unique names
+	// and only build those.
+	shouldGenerateFuzzer := strings.HasPrefix(name.string(), "android")
 
 	var libraryIfExists []string
 	if shouldGenerateLibrary {
@@ -840,6 +844,15 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 			// TODO(b/126244142)
 			Cflags: []string{"-Wno-unused-variable"},
 		})
+
+		if shouldGenerateFuzzer {
+			mctx.CreateModule(cc.FuzzFactory, &ccProperties{
+				Name:        proptools.StringPtr(name.vtsFuzzerName()),
+				Defaults:    []string{"vts_proto_fuzzer_default"},
+				Static_libs: []string{name.vtsDriverName()},
+				Cflags:      []string{"-DSTATIC_TARGET_FQ_NAME=" + name.string()},
+			})
+		}
 	}
 
 	mctx.CreateModule(hidlGenFactory, &nameProperties{
