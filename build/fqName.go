@@ -149,6 +149,9 @@ func (f *fqName) vtsProfilerHeadersName() string {
 func (f *fqName) vtsProfilerName() string {
 	return f.string() + "-vts.profiler"
 }
+func (f *fqName) vtsFuzzerName() string {
+	return f.string() + "-vts.fuzzer"
+}
 
 func (f *fqName) lintName() string {
 	return f.string() + "-hidl-lint"
