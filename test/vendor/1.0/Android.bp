@@ -4,7 +4,7 @@ hidl_interface {
     name: "hidl.tests.vendor@1.0",
     owner: "some-owner-name",
     root: "hidl.tests",
-    product_specific: true,
+    system_ext_specific: true,
     srcs: [
         "types.hal",
         "IVendor.hal",
