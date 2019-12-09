@@ -394,8 +394,7 @@ FQName FQName::getTopLevelType() const {
 }
 
 std::string FQName::tokenName() const {
-    std::vector<std::string> components;
-    getPackageAndVersionComponents(&components, true /* cpp_compatible */);
+    std::vector<std::string> components = getPackageAndVersionComponents(true /* sanitized */);
 
     if (!mName.empty()) {
         std::vector<std::string> nameComponents = base::Split(mName, ".");
@@ -407,13 +406,8 @@ std::string FQName::tokenName() const {
 }
 
 std::string FQName::cppNamespace() const {
-    std::vector<std::string> components;
-    getPackageAndVersionComponents(&components, true /* cpp_compatible */);
-
-    std::string out = "::";
-    out += base::Join(components, "::");
-
-    return out;
+    std::vector<std::string> components = getPackageAndVersionComponents(true /* sanitized */);
+    return "::" + base::Join(components, "::");
 }
 
 std::string FQName::cppLocalName() const {
@@ -437,9 +431,7 @@ std::string FQName::cppName() const {
 }
 
 std::string FQName::javaPackage() const {
-    std::vector<std::string> components;
-    getPackageAndVersionComponents(&components, true /* cpp_compatible */);
-
+    std::vector<std::string> components = getPackageAndVersionComponents(true /* sanitized */);
     return base::Join(components, ".");
 }
 
@@ -448,27 +440,20 @@ std::string FQName::javaName() const {
             + (mValueName.empty() ? "" : ("." + mValueName));
 }
 
-void FQName::getPackageComponents(std::vector<std::string> *components) const {
-    *components = base::Split(package(), ".");
+std::vector<std::string> FQName::getPackageComponents() const {
+    return base::Split(package(), ".");
 }
 
-void FQName::getPackageAndVersionComponents(
-        std::vector<std::string> *components,
-        bool cpp_compatible) const {
-    getPackageComponents(components);
+std::vector<std::string> FQName::getPackageAndVersionComponents(bool sanitized) const {
+    CHECK(hasVersion()) << string() << ": getPackageAndVersionComponents expects version.";
 
-    if (!hasVersion()) {
-        LOG(WARNING) << "FQName: getPackageAndVersionComponents expects version.";
-        return;
+    std::vector<std::string> components = getPackageComponents();
+    if (sanitized) {
+        components.push_back(sanitizedVersion());
+    } else {
+        components.push_back(version());
     }
-
-    if (!cpp_compatible) {
-        components->push_back(std::to_string(getPackageMajorVersion()) +
-                "." + std::to_string(getPackageMinorVersion()));
-        return;
-    }
-
-    components->push_back(sanitizedVersion());
+    return components;
 }
 
 bool FQName::hasVersion() const {
@@ -535,9 +520,7 @@ bool FQName::endsWith(const FQName &other) const {
 }
 
 bool FQName::inPackage(const std::string &package) const {
-    std::vector<std::string> components;
-    getPackageComponents(&components);
-
+    std::vector<std::string> components = getPackageComponents();
     std::vector<std::string> inComponents = base::Split(package, ".");
 
     if (inComponents.size() > components.size()) {
