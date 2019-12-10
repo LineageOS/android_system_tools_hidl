@@ -35,16 +35,6 @@
 
 namespace android {
 
-void AST::getPackageComponents(
-        std::vector<std::string> *components) const {
-    mPackage.getPackageComponents(components);
-}
-
-void AST::getPackageAndVersionComponents(
-        std::vector<std::string> *components, bool cpp_compatible) const {
-    mPackage.getPackageAndVersionComponents(components, cpp_compatible);
-}
-
 std::string AST::makeHeaderGuard(const std::string &baseName,
                                  bool indicateGenerated) const {
     std::string guard;
@@ -68,8 +58,8 @@ void AST::generateCppPackageInclude(
 
     out << "#include <";
 
-    std::vector<std::string> components;
-    package.getPackageAndVersionComponents(&components, false /* cpp_compatible */);
+    std::vector<std::string> components =
+            package.getPackageAndVersionComponents(false /* sanitized */);
 
     for (const auto &component : components) {
         out << component << "/";
@@ -80,9 +70,8 @@ void AST::generateCppPackageInclude(
 }
 
 void AST::enterLeaveNamespace(Formatter &out, bool enter) const {
-    std::vector<std::string> packageComponents;
-    getPackageAndVersionComponents(
-            &packageComponents, true /* cpp_compatible */);
+    std::vector<std::string> packageComponents =
+            mPackage.getPackageAndVersionComponents(true /* sanitized */);
 
     if (enter) {
         for (const auto &component : packageComponents) {
@@ -773,10 +762,6 @@ void AST::generateProxyHeader(Formatter& out) const {
     out << "#define " << guard << "\n\n";
 
     out << "#include <hidl/HidlTransportSupport.h>\n\n";
-
-    std::vector<std::string> packageComponents;
-    getPackageAndVersionComponents(
-            &packageComponents, false /* cpp_compatible */);
 
     generateCppPackageInclude(out, mPackage, iface->getHwName());
     out << "\n";
@@ -1662,10 +1647,6 @@ void AST::generatePassthroughHeader(Formatter& out) const {
 
     out << "#ifndef " << guard << "\n";
     out << "#define " << guard << "\n\n";
-
-    std::vector<std::string> packageComponents;
-    getPackageAndVersionComponents(
-            &packageComponents, false /* cpp_compatible */);
 
     out << "#include <android-base/macros.h>\n";
     out << "#include <cutils/trace.h>\n";
