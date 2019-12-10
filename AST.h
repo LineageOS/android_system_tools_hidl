@@ -292,11 +292,6 @@ struct AST {
     // Only types defined in this very AST are considered.
     Type *findDefinedType(const FQName &fqName, FQName *matchingName) const;
 
-    void getPackageComponents(std::vector<std::string> *components) const;
-
-    void getPackageAndVersionComponents(
-            std::vector<std::string> *components, bool cpp_compatible) const;
-
     std::string makeHeaderGuard(const std::string &baseName,
                                 bool indicateGenerated = true) const;
     void enterLeaveNamespace(Formatter &out, bool enter) const;
