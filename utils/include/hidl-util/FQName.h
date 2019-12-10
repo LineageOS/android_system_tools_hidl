@@ -218,11 +218,9 @@ struct FQName {
     // package = "android.hardware@1.0" -> false
     bool inPackage(const std::string &package) const;
 
-    void getPackageComponents(std::vector<std::string> *components) const;
+    std::vector<std::string> getPackageComponents() const;
 
-    void getPackageAndVersionComponents(
-            std::vector<std::string> *components,
-            bool cpp_compatible) const;
+    std::vector<std::string> getPackageAndVersionComponents(bool sanitized) const;
 
     // return major and minor version if they exist, else abort program.
     // Existence of version can be checked via hasVersion().
