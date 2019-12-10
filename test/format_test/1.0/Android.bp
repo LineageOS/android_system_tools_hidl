@@ -3,7 +3,7 @@
 hidl_interface {
     name: "hidl_format_test_pkg@1.0",
     root: "hidl_format_test_pkg",
-    product_specific: true,
+    system_ext_specific: true,
     srcs: [
         "IBar.hal",
         "IFoo.hal",
