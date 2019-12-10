@@ -54,10 +54,6 @@ void AST::generateJavaTypes(Formatter& out, const std::string& limitToType) cons
         if (type->isTypeDef()) continue;
         if (typeName != limitToType) continue;
 
-        std::vector<std::string> packageComponents;
-        getPackageAndVersionComponents(
-                &packageComponents, true /* cpp_compatible */);
-
         out << "package " << mPackage.javaPackage() << ";\n\n\n";
 
         type->emitJavaTypeDeclarations(out, true /* atTopLevel */);
