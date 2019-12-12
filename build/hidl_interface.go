@@ -685,7 +685,7 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 		mctx.CreateModule(java.LibraryFactory, &javaProperties{
 			Name:        proptools.StringPtr(name.javaConstantsName()),
 			Defaults:    []string{"hidl-java-module-defaults"},
-			Sdk_version: proptools.StringPtr("core_platform"),
+			Sdk_version: proptools.StringPtr("core_current"),
 			Srcs:        []string{":" + name.javaConstantsSourcesName()},
 		})
 	}
