@@ -214,7 +214,8 @@ status_t AST::lookupTypes() {
                 if (nextType == nullptr) {
                     std::cerr << "ERROR: Failed to lookup type '"
                               << nextRef->getLookupFqName().string() << "' at "
-                              << nextRef->location() << "\n";
+                              << nextRef->location()
+                              << " (is it imported and spelled correctly?)\n";
                     return UNKNOWN_ERROR;
                 }
                 nextRef->set(nextType);
