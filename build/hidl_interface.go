@@ -919,6 +919,8 @@ var doubleLoadablePackageNames = []string{
 	"android.hardware.graphics.allocator@",
 	"android.hardware.graphics.bufferqueue@",
 	"android.hardware.media@",
+	"android.hardware.media.bufferpool@",
+	"android.hardware.media.c2@",
 	"android.hardware.media.omx@",
 	"android.hardware.memtrack@1.0",
 	"android.hardware.neuralnetworks@",
