@@ -23,6 +23,7 @@ cc_test_host {
         "libhidl-gen-hash",
         "libhidl-gen-host-utils",
         "libhidl-gen-utils",
+        "liblog",
     ],
     srcs: ["main.cpp"],
     test_suites: ["device-tests"],
