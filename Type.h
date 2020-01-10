@@ -194,7 +194,6 @@ struct Type : DocCommentable {
     virtual std::string getVtsValueName() const;
 
     enum ErrorMode {
-        ErrorMode_Ignore,
         ErrorMode_Goto,
         ErrorMode_Break,
         ErrorMode_Return,

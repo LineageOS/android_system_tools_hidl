@@ -507,12 +507,6 @@ void Type::emitJavaFieldReaderWriter(
 
 void Type::handleError(Formatter &out, ErrorMode mode) {
     switch (mode) {
-        case ErrorMode_Ignore:
-        {
-            out << "/* _hidl_err ignored! */\n\n";
-            break;
-        }
-
         case ErrorMode_Goto:
         {
             out << "if (_hidl_err != ::android::OK) { goto _hidl_error; }\n\n";
