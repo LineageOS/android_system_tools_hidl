@@ -28,6 +28,7 @@ cc_test_host {
         "libhidl-gen-host-utils",
         "libhidl-gen-utils",
         "libjsoncpp",
+        "liblog",
     ],
     whole_static_libs: ["libhidl-lint"],
 }
