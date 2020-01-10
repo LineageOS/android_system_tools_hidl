@@ -852,6 +852,9 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 			},
 		}, &fuzzProperties{
 			Data: wrap(":", specDependencies, "-vts.spec"),
+			Fuzz_config: &fuzzConfig{
+				Fuzz_on_haiku_device: proptools.BoolPtr(isFuzzerEnabled(name.vtsFuzzerName())),
+			},
 		})
 	}
 
@@ -946,6 +949,20 @@ var coreDependencyPackageNames = []string{
 
 func isCorePackage(name string) bool {
 	for _, pkgname := range coreDependencyPackageNames {
+		if strings.HasPrefix(name, pkgname) {
+			return true
+		}
+	}
+	return false
+}
+
+// TODO(b/143375436): eventually enable all fuzzers by default
+var fuzzablePackageNames = []string{
+	"android.hardware.light@2.0",
+}
+
+func isFuzzerEnabled(name string) bool {
+	for _, pkgname := range fuzzablePackageNames {
 		if strings.HasPrefix(name, pkgname) {
 			return true
 		}
