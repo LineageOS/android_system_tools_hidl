@@ -54,6 +54,11 @@ type javaProperties struct {
 	Static_libs []string
 }
 
+type fuzzConfig struct {
+	Fuzz_on_haiku_device *bool
+}
+
 type fuzzProperties struct {
-	Data []string
+	Data        []string
+	Fuzz_config *fuzzConfig
 }

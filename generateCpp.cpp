@@ -1529,7 +1529,11 @@ void AST::generateStaticStubMethodSource(Formatter& out, const FQName& fqName,
                 "_hidl_reply",
                 true, /* parcelObjIsPointer */
                 false, /* isReader */
-                Type::ErrorMode_Ignore);
+                Type::ErrorMode_Goto);
+
+        out.unindent();
+        out << "_hidl_error:\n";
+        out.indent();
 
         generateCppInstrumentationCall(
                 out,
@@ -1537,6 +1541,7 @@ void AST::generateStaticStubMethodSource(Formatter& out, const FQName& fqName,
                 method,
             superInterface);
 
+        out << "if (_hidl_err != ::android::OK) { return _hidl_err; }\n";
         out << "_hidl_cb(*_hidl_reply);\n";
     } else {
         if (returnsValue) {
@@ -1586,8 +1591,14 @@ void AST::generateStaticStubMethodSource(Formatter& out, const FQName& fqName,
                         true /* parcelObjIsPointer */,
                         arg,
                         false /* reader */,
-                        Type::ErrorMode_Ignore,
+                        Type::ErrorMode_Goto,
                         true /* addPrefixToName */);
+            }
+
+            if (!method->results().empty()) {
+                out.unindent();
+                out << "_hidl_error:\n";
+                out.indent();
             }
 
             generateCppInstrumentationCall(
@@ -1596,6 +1607,7 @@ void AST::generateStaticStubMethodSource(Formatter& out, const FQName& fqName,
                     method,
                     superInterface);
 
+            out << "if (_hidl_err != ::android::OK) { return; }\n";
             out << "_hidl_cb(*_hidl_reply);\n";
 
             out.unindent();
