@@ -48,7 +48,6 @@ FQNAME              ({COMPONENT}|{VERSION})(({DOT}|":"+){COMPONENT}|{VERSION})*
 #include "FmqType.h"
 
 #include "hidl-gen_y-helpers.h"
-#include "hidl-gen_y.h"
 
 #include <assert.h>
 #include <algorithm>
