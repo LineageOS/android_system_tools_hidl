@@ -32,7 +32,6 @@
 #include "VectorType.h"
 
 #include "hidl-gen_y-helpers.h"
-#include "hidl-gen_y.h"
 
 #include <android-base/logging.h>
 #include <hidl-util/FQName.h>
@@ -221,12 +220,12 @@ bool isValidTypeName(const std::string& identifier, std::string *errorMsg) {
 %lex-param { void* scanner }
 %lex-param { android::AST* const ast }
 %lex-param { android::Scope** const scope }
-%pure-parser
 %glr-parser
 %skeleton "glr.cc"
 
 %expect-rr 0
-%error-verbose
+%define parse.error verbose
+%locations
 
 %verbose
 %debug
