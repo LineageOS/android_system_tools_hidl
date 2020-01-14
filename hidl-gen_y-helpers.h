@@ -16,7 +16,12 @@
 
 #pragma once
 
+// generated code prints std::string* which is disallowed
+// by android-base/logging.h
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wuser-defined-warnings"
 #include "hidl-gen_y.h"
+#pragma clang diagnostic pop
 
 namespace android {
 struct Location;
