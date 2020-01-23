@@ -488,6 +488,8 @@ bool AST::addImport(const char* import, const Location& location) {
         return true;
     }
 
+    std::cerr << "while importing " << import << " at " << location << "." << std::endl;
+
     return false;
 }
 
