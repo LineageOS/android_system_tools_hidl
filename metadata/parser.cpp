@@ -22,6 +22,7 @@
 int main(int argc, char** argv) {
     if (argc != 2) {
         std::cerr << "Usage: hidl_metadata_parser *.json" << std::endl;
+        return EXIT_FAILURE;
     }
     const std::string path = argv[1];
 
@@ -32,6 +33,7 @@ int main(int argc, char** argv) {
     if (!reader.parse(stream, root)) {
         std::cerr << "Failed to read interface inheritance hierarchy file: " << path << std::endl
                   << reader.getFormattedErrorMessages() << std::endl;
+        return EXIT_FAILURE;
     }
 
     std::cout << "#include <hidl/metadata.h>" << std::endl;
@@ -52,5 +54,5 @@ int main(int argc, char** argv) {
     std::cout << "};" << std::endl;
     std::cout << "}" << std::endl;
     std::cout << "}  // namespace android" << std::endl;
-    return 0;
+    return EXIT_SUCCESS;
 }
