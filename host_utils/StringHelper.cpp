@@ -95,7 +95,7 @@ void StringHelper::Tokenize(const std::string& in, std::vector<std::string>* vec
     vec->clear();
     if (in.empty()) return;
 
-    if (in.find("_") != std::string::npos) {
+    if (in.find('_') != std::string::npos) {
         std::vector<std::string> snakeCaseComponents;
         SplitString(in, '_', &snakeCaseComponents);
         for (const std::string& comp : snakeCaseComponents) {

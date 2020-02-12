@@ -83,11 +83,11 @@ static void pushVersionedMethodOntoMap(MethodWithVersion versionedMethod,
                                        std::vector<const MethodWithVersion*>* ignored) {
     const Method* method = versionedMethod.method;
     std::string name = method->name();
-    size_t underscore = name.find("_");
+    size_t underscore = name.find('_');
     if (underscore != std::string::npos) {
         std::string version = name.substr(underscore + 1);  // don't include _
         std::string nameWithoutVersion = name.substr(0, underscore);
-        underscore = version.find("_");
+        underscore = version.find('_');
 
         size_t major, minor;
         if (underscore != std::string::npos &&
