@@ -33,17 +33,17 @@ using namespace std::string_literals;
 
 namespace android {
 static std::string getSanitizedMethodName(const Method& method) {
-    size_t underscore = method.name().find("_");
+    size_t underscore = method.name().find('_');
     return (underscore == std::string::npos) ? method.name() : method.name().substr(0, underscore);
 }
 
 static bool checkMethodVersion(const Method& method, const FQName& fqName, std::string* error) {
-    size_t underscore = method.name().find("_");
+    size_t underscore = method.name().find('_');
     CHECK(underscore != std::string::npos);  // only called on versionedMethods
 
     std::string version = method.name().substr(underscore + 1);  // don't include _
     std::string nameWithoutVersion = method.name().substr(0, underscore);
-    underscore = version.find("_");
+    underscore = version.find('_');
 
     std::string camelCaseMessage =
             "Methods should follow the camelCase naming convention.\n"
@@ -94,7 +94,7 @@ static void methodVersions(const AST& ast, std::vector<Lint>* errors) {
     }
 
     for (Method* method : iface->userDefinedMethods()) {
-        if (method->name().find("_") == std::string::npos) {
+        if (method->name().find('_') == std::string::npos) {
             if (method->name() != StringHelper::ToCamelCase(method->name())) {
                 errors->push_back(Lint(WARNING, method->location(),
                                        "Methods should follow the camelCase naming convention.\n"));
