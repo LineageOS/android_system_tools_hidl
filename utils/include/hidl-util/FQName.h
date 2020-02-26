@@ -258,9 +258,6 @@ struct FQName {
     void clearVersion();
 };
 
-extern const FQName gIBaseFqName;
-extern const FQName gIManagerFqName;
-
 }  // namespace android
 
 #endif  // FQNAME_H_
