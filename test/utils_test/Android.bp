@@ -18,5 +18,23 @@ cc_test {
     host_supported: true,
     shared_libs: ["libhidl-gen-utils"],
     srcs: ["main.cpp"],
-    test_suites: ["device-tests"],
+    test_suites: ["general-tests"],
+}
+
+cc_fuzz {
+    name: "fqname_fuzzer",
+    defaults: ["hidl-gen-defaults"],
+    host_supported: true,
+    fuzz_config: {
+        cc: [
+            "elsk@google.com",
+            "smoreland@google.com",
+        ],
+    },
+    static_libs: [
+        "libbase",
+        "libhidl-gen-utils",
+        "liblog",
+    ],
+    srcs: ["fuzzer.cpp"],
 }
