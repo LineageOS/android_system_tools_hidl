@@ -8,6 +8,13 @@ cc_library {
     cflags: ["-O0"],
 }
 
+cc_library_headers {
+    name: "libhidlmetadata_headers",
+    recovery_available: true,
+    host_supported: true,
+    export_include_dirs: ["include"],
+}
+
 // private impl below
 
 cc_binary {
