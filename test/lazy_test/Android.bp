@@ -12,6 +12,7 @@ cc_test {
     ],
 
     test_suites: ["general-tests"],
+    require_root: true,
 }
 
 cc_binary {
