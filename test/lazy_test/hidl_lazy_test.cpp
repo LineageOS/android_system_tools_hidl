@@ -25,11 +25,13 @@
 
 #include <android/hidl/manager/1.2/IServiceManager.h>
 #include <gtest/gtest.h>
+#include <hidl-util/FqInstance.h>
 #include <hidl/HidlSupport.h>
 #include <hidl/HidlTransportSupport.h>
 #include <hidl/HidlTransportUtils.h>
 #include <hwbinder/IPCThreadState.h>
 
+using ::android::FqInstance;
 using ::android::sp;
 using ::android::hardware::hidl_string;
 using ::android::hardware::hidl_vec;
@@ -37,11 +39,11 @@ using ::android::hardware::IPCThreadState;
 using ::android::hidl::base::V1_0::IBase;
 using ::android::hidl::manager::V1_2::IServiceManager;
 
-static std::string gDescriptor;
-static std::string gInstance;
+static FqInstance gInstance;
 
 sp<IBase> getHal() {
-    return ::android::hardware::details::getRawServiceInternal(gDescriptor, gInstance,
+    return ::android::hardware::details::getRawServiceInternal(gInstance.getFqName().string(),
+                                                               gInstance.getInstance(),
                                                                true /*retry*/, false /*getStub*/);
 }
 
@@ -53,10 +55,10 @@ class HidlLazyTest : public ::testing::Test {
         manager = IServiceManager::getService();
         ASSERT_NE(manager, nullptr);
 
-        ASSERT_FALSE(isServiceRunning()) << "Service '" << gDescriptor << "/" << gInstance
-                                         << "' is already running. Please ensure this "
-                                         << "service is implemented as a lazy HAL, then kill all "
-                                         << "clients of this service and try again.";
+        ASSERT_FALSE(isServiceRunning())
+                << "Service '" << gInstance.string() << "' is already running. Please ensure this "
+                << "service is implemented as a lazy HAL, then kill all "
+                << "clients of this service and try again.";
     }
 
     static constexpr size_t SHUTDOWN_WAIT_TIME = 10;
@@ -71,10 +73,10 @@ class HidlLazyTest : public ::testing::Test {
     bool isServiceRunning() {
         bool isRunning = false;
         EXPECT_TRUE(
-                manager->listByInterface(gDescriptor,
+                manager->listByInterface(gInstance.getFqName().string(),
                                          [&isRunning](const hidl_vec<hidl_string>& instanceNames) {
                                              for (const hidl_string& name : instanceNames) {
-                                                 if (name == gInstance) {
+                                                 if (name == gInstance.getInstance()) {
                                                      isRunning = true;
                                                      break;
                                                  }
@@ -143,13 +145,21 @@ int main(int argc, char** argv) {
 
     srand(time(nullptr));
 
-    if (argc != 3) {
-        std::cerr << "Usage: lazy_test fqname instance" << std::endl;
+    std::string fqInstance;
+
+    if (argc == 1) {
+        fqInstance = "android.hardware.tests.lazy@1.0::ILazy/default";
+    } else if (argc == 2) {
+        fqInstance = argv[1];
+    } else {
+        std::cerr << "Usage: lazy_test fqinstance" << std::endl;
         return 1;
     }
 
-    gDescriptor = argv[1];
-    gInstance = argv[2];
+    if (!gInstance.setTo(fqInstance)) {
+        std::cerr << "Invalid fqinstance: " << fqInstance << std::endl;
+        return 1;
+    }
 
     return RUN_ALL_TESTS();
 }
