@@ -655,6 +655,7 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 			}),
 			Export_generated_headers: []string{name.headersName()},
 			Apex_available:           i.properties.Apex_available,
+			Min_sdk_version:          getMinSdkVersion(name.string()),
 		}, &i.properties.VndkProperties)
 	}
 
@@ -933,6 +934,37 @@ func hidlInterfaceFactory() android.Module {
 	android.AddLoadHook(i, func(ctx android.LoadHookContext) { hidlInterfaceMutator(ctx, i) })
 
 	return i
+}
+
+var minSdkVersion = map[string]string{
+	"android.hardware.cas.native@1.0":           "29",
+	"android.hardware.cas@1.0":                  "29",
+	"android.hardware.graphics.allocator@2.0":   "29",
+	"android.hardware.graphics.allocator@3.0":   "29",
+	"android.hardware.graphics.bufferqueue@1.0": "29",
+	"android.hardware.graphics.bufferqueue@2.0": "29",
+	"android.hardware.graphics.common@1.0":      "29",
+	"android.hardware.graphics.common@1.1":      "29",
+	"android.hardware.graphics.common@1.2":      "29",
+	"android.hardware.graphics.mapper@2.0":      "29",
+	"android.hardware.graphics.mapper@2.1":      "29",
+	"android.hardware.graphics.mapper@3.0":      "29",
+	"android.hardware.media.bufferpool@2.0":     "29",
+	"android.hardware.media.c2@1.0":             "29",
+	"android.hardware.media.omx@1.0":            "29",
+	"android.hardware.media@1.0":                "29",
+	"android.hidl.allocator@1.0":                "29",
+	"android.hidl.memory.token@1.0":             "29",
+	"android.hidl.memory@1.0":                   "29",
+	"android.hidl.safe_union@1.0":               "29",
+	"android.hidl.token@1.0":                    "29",
+}
+
+func getMinSdkVersion(name string) *string {
+	if ver, ok := minSdkVersion[name]; ok {
+		return proptools.StringPtr(ver)
+	}
+	return nil
 }
 
 var doubleLoadablePackageNames = []string{
