@@ -42,6 +42,7 @@ type ccProperties struct {
 	Double_loadable           *bool
 	Cflags                    []string
 	Apex_available            []string
+	Min_sdk_version           *string
 }
 
 type javaProperties struct {
