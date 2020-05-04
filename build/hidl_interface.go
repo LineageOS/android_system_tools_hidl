@@ -129,6 +129,9 @@ func (m *hidlInterfacesMetadataSingleton) GenerateAndroidBuildActions(ctx androi
 
 	var inheritanceHierarchyOutputs android.Paths
 	ctx.VisitDirectDeps(func(m android.Module) {
+		if !m.ExportedToMake() {
+			return
+		}
 		if t, ok := m.(*hidlGenRule); ok {
 			if t.properties.Language == "inheritance-hierarchy" {
 				inheritanceHierarchyOutputs = append(inheritanceHierarchyOutputs, t.genOutputs.Paths()...)
@@ -893,17 +896,15 @@ This corresponds to the "-r%s:<some path>" option that would be passed into hidl
 		Inputs:     i.properties.Srcs,
 	})
 
-	if i.ModuleBase.ExportedToMake() {
-		mctx.CreateModule(hidlGenFactory, &nameProperties{
-			Name: proptools.StringPtr(name.inheritanceHierarchyName()),
-		}, &hidlGenProperties{
-			Language:   "inheritance-hierarchy",
-			FqName:     name.string(),
-			Root:       i.properties.Root,
-			Interfaces: i.properties.Interfaces,
-			Inputs:     i.properties.Srcs,
-		})
-	}
+	mctx.CreateModule(hidlGenFactory, &nameProperties{
+		Name: proptools.StringPtr(name.inheritanceHierarchyName()),
+	}, &hidlGenProperties{
+		Language:   "inheritance-hierarchy",
+		FqName:     name.string(),
+		Root:       i.properties.Root,
+		Interfaces: i.properties.Interfaces,
+		Inputs:     i.properties.Srcs,
+	})
 }
 
 func (h *hidlInterface) Name() string {
