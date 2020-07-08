@@ -89,6 +89,8 @@ var (
 		Command: "rm -rf ${out} && " +
 			// Start the output array with an opening bracket.
 			"echo '[' >> ${out} && " +
+			// Add prebuilt declarations
+			"echo \"${extras}\" >> ${out} && " +
 			// Append each input file and a comma to the output.
 			"for file in $$(cat ${out}.rsp); do " +
 			"cat $$file >> ${out}; echo ',' >> ${out}; " +
@@ -96,10 +98,11 @@ var (
 			// Remove the last comma, replacing it with the closing bracket.
 			"sed -i '$$d' ${out} && echo ']' >> ${out}",
 		Description: "Joining JSON objects into array ${out}",
-	}, "files")
+	}, "extras", "files")
 )
 
 func init() {
+	android.RegisterModuleType("prebuilt_hidl_interfaces", prebuiltHidlInterfaceFactory)
 	android.RegisterModuleType("hidl_interface", hidlInterfaceFactory)
 	android.RegisterSingletonType("all_hidl_lints", allHidlLintsFactory)
 	android.RegisterMakeVarsProvider(pctx, makeVarsProvider)
@@ -128,6 +131,7 @@ func (m *hidlInterfacesMetadataSingleton) GenerateAndroidBuildActions(ctx androi
 	}
 
 	var inheritanceHierarchyOutputs android.Paths
+	additionalInterfaces := []string{}
 	ctx.VisitDirectDeps(func(m android.Module) {
 		if !m.ExportedToMake() {
 			return
@@ -136,6 +140,8 @@ func (m *hidlInterfacesMetadataSingleton) GenerateAndroidBuildActions(ctx androi
 			if t.properties.Language == "inheritance-hierarchy" {
 				inheritanceHierarchyOutputs = append(inheritanceHierarchyOutputs, t.genOutputs.Paths()...)
 			}
+		} else if t, ok := m.(*prebuiltHidlInterface); ok {
+			additionalInterfaces = append(additionalInterfaces, t.properties.Interfaces...)
 		}
 	})
 
@@ -146,7 +152,8 @@ func (m *hidlInterfacesMetadataSingleton) GenerateAndroidBuildActions(ctx androi
 		Inputs: inheritanceHierarchyOutputs,
 		Output: m.inheritanceHierarchyPath,
 		Args: map[string]string{
-			"files": strings.Join(inheritanceHierarchyOutputs.Strings(), " "),
+			"extras": strings.Join(wrap("{\\\"interface\\\":\\\"", additionalInterfaces, "\\\"},"), " "),
+			"files":  strings.Join(inheritanceHierarchyOutputs.Strings(), " "),
 		},
 	})
 }
@@ -437,6 +444,33 @@ func vtscFactory() android.Module {
 	g.AddProperties(&g.properties)
 	android.InitAndroidModule(g)
 	return g
+}
+
+type prebuiltHidlInterfaceProperties struct {
+	// List of interfaces to consider valid, e.g. "vendor.foo.bar@1.0::IFoo" for typo checking
+	// between init.rc, VINTF, and elsewhere. Note that inheritance properties will not be
+	// checked for these (but would be checked in a branch where the actual hidl_interface
+	// exists).
+	Interfaces []string
+}
+
+type prebuiltHidlInterface struct {
+	android.ModuleBase
+
+	properties prebuiltHidlInterfaceProperties
+}
+
+func (p *prebuiltHidlInterface) GenerateAndroidBuildActions(ctx android.ModuleContext) {}
+
+func (p *prebuiltHidlInterface) DepsMutator(ctx android.BottomUpMutatorContext) {
+	ctx.AddReverseDependency(ctx.Module(), nil, hidlMetadataSingletonName)
+}
+
+func prebuiltHidlInterfaceFactory() android.Module {
+	i := &prebuiltHidlInterface{}
+	i.AddProperties(&i.properties)
+	android.InitAndroidModule(i)
+	return i
 }
 
 type hidlInterfaceProperties struct {

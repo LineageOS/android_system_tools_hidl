@@ -25,6 +25,21 @@ cc_test_host {
     test_suites: ["general-tests"],
 }
 
+prebuilt_hidl_interfaces {
+    name: "hidl_metadata_test_interfaces1",
+    interfaces: [
+        "hidl.metadata.test@1.0::IBar",
+    ],
+}
+
+prebuilt_hidl_interfaces {
+    name: "hidl_metadata_test_interfaces2",
+    interfaces: [
+        "hidl.metadata.test@1.0::IBaz",
+        "hidl.metadata.test@1.0::IFoo",
+    ],
+}
+
 // private impl below
 
 cc_binary {

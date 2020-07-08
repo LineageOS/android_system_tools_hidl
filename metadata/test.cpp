@@ -35,3 +35,11 @@ TEST(AidlMetadata, HasTestInstances) {
     ASSERT_NE(info, std::nullopt);
     EXPECT_THAT(info->inherited, ElementsAre("android.hardware.tests.foo@1.0::IFoo"));
 }
+
+TEST(AidlMetadata, HasPrebuiltInstances) {
+    for (const std::string& iface : {"hidl.metadata.test@1.0::IBar", "hidl.metadata.test@1.0::IBaz",
+                                     "hidl.metadata.test@1.0::IFoo"}) {
+        const auto& info = metadataForModule(iface);
+        ASSERT_NE(info, std::nullopt) << iface;
+    }
+}
