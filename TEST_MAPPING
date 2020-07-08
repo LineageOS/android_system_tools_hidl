@@ -17,6 +17,10 @@
     },
     {
       "name": "hidl_lazy_test"
+    },
+    {
+      "name": "hidl_metadata_test",
+      "host": true
     }
   ]
 }
