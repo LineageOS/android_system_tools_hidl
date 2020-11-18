@@ -178,13 +178,11 @@ TEST_F(HidlTest, SomeOtherBaseMethodInvalidString) {
         }
     };
 
-    auto ret = baz->someOtherBaseMethod(foo, [&](const auto&) {
-        ADD_FAILURE() << "Should not accept invalid UTF-8 String";
+    auto ret = baz->someOtherBaseMethod(foo, [](const IBase::Foo& ret) {
+        EXPECT_EQ(ret.y.s, "?");  // :)
     });
 
-    EXPECT_FALSE(ret.isOk());
-
-    EXPECT_OK(baz->ping());
+    EXPECT_TRUE(ret.isOk());
 }
 
 TEST_F(HidlTest, BazSomeMethodWithFooArraysTest) {
